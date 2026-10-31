@@ -1,0 +1,59 @@
+{
+  "_comment": "Evoker lord: summons vexes, chains lightning, and opens a black hole on its target when cornered. Death still summons help.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:chain_lightning",
+      "level": 2,
+      "cooldown": 300,
+      "priority": 1,
+      "range": 20,
+      "chance": 0.5,
+      "castTime": 20,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:summon_vex",
+      "level": 1,
+      "cooldown": 500,
+      "priority": 2,
+      "range": 8,
+      "castTime": 30,
+      "target": "SELF"
+    }
+  ],
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.5
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:black_hole",
+          "level": 1,
+          "cooldown": 500,
+          "priority": 0,
+          "range": 16,
+          "castTime": 40,
+          "target": {
+            "type": "POSITION",
+            "positionMode": "TARGET_ENTITY"
+          }
+        },
+        {
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 2,
+          "cooldown": 260,
+          "priority": 1,
+          "range": 20,
+          "castTime": 20,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ],
+  "onDeath": {
+    "spell": "irons_spellbooks:summon_vex",
+    "level": 1,
+    "target": "SELF"
+  }
+}

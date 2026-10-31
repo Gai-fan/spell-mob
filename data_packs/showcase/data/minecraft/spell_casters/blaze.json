@@ -1,0 +1,36 @@
+{
+  "_comment": "Blaze chanter: fireballs and a fire-breath channel share one cooldown group; explodes when hurt.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:fireball",
+      "level": 2,
+      "cooldown": 180,
+      "priority": 1,
+      "range": 20,
+      "castTime": 15,
+      "cooldownGroup": "blaze_cycle",
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:fire_breath",
+      "level": 1,
+      "cooldown": 360,
+      "priority": 2,
+      "range": 10,
+      "castTime": 40,
+      "cooldownGroup": "blaze_cycle",
+      "interruptOnDamage": true,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:firecracker",
+    "level": 1,
+    "cooldown": 300,
+    "range": 3,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "EYES_LOOK"
+    }
+  }
+}

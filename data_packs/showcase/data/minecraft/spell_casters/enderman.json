@@ -1,0 +1,25 @@
+{
+  "_comment": "Void walker: fires magic arrows and blinks away when hurt.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magic_arrow",
+      "level": 2,
+      "cooldown": 240,
+      "priority": 1,
+      "range": 24,
+      "castTime": 20,
+      "checkInterval": 5,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:teleport",
+    "level": 1,
+    "cooldown": 240,
+    "range": 10,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "RANDOM_IN_RANGE"
+    }
+  }
+}

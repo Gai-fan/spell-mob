@@ -1,0 +1,30 @@
+{
+  "_comment": "Frost archer: icicles at range and a freezing burst when hurt.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:icicle",
+      "level": 2,
+      "cooldown": 150,
+      "priority": 1,
+      "range": 22,
+      "castTime": 12,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:ice_spikes",
+      "level": 2,
+      "cooldown": 220,
+      "priority": 2,
+      "range": 18,
+      "castTime": 20,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:frostwave",
+    "level": 1,
+    "cooldown": 320,
+    "range": 6,
+    "target": "SELF"
+  }
+}

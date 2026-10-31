@@ -1,0 +1,24 @@
+{
+  "_comment": "Iron warden: quakes the ground around its target and fortifies itself when hurt.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:earthquake",
+      "level": 1,
+      "cooldown": 300,
+      "priority": 1,
+      "range": 10,
+      "castTime": 30,
+      "checkInterval": 20,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:fortify",
+    "level": 1,
+    "cooldown": 400,
+    "target": "SELF",
+    "conditions": {
+      "healthBelow": 0.8
+    }
+  }
+}

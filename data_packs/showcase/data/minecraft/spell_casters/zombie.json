@@ -1,0 +1,63 @@
+{
+  "_comment": "Rotting apprentice: a weak ranged caster that heals itself when hurt, and enrages below 40% health.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 1,
+      "cooldown": 160,
+      "priority": 1,
+      "range": 16,
+      "castTime": 15,
+      "target": "ATTACK_TARGET",
+      "conditions": {
+        "minTargetDistance": 3.0,
+        "maxTargetDistance": 16.0
+      }
+    },
+    {
+      "spell": "irons_spellbooks:slow",
+      "level": 1,
+      "cooldown": 240,
+      "priority": 2,
+      "range": 20,
+      "chance": 0.45,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:heal",
+    "level": 1,
+    "cooldown": 400,
+    "target": "SELF",
+    "conditions": {
+      "healthBelow": 0.5
+    }
+  },
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.4
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 16,
+          "castTime": 10,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 1,
+          "cooldown": 220,
+          "priority": 2,
+          "range": 6,
+          "castTime": 10,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

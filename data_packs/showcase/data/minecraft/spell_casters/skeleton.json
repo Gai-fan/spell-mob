@@ -1,0 +1,75 @@
+{
+  "_comment": "Bone chanter: arrow volleys and a slowing hex. Below half health it switches to lightning; the 'spellmob_elite' tag turns it into a champion.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:arrow_volley",
+      "level": 2,
+      "cooldown": 180,
+      "priority": 1,
+      "range": 24,
+      "castTime": 30,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onTarget": {
+    "spell": "irons_spellbooks:slow",
+    "level": 1,
+    "cooldown": 260,
+    "range": 24,
+    "target": "ATTACK_TARGET"
+  },
+  "variants": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_elite"
+        ]
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:arrow_volley",
+          "level": 3,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 26,
+          "castTime": 25,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 2,
+          "range": 20,
+          "chance": 0.5,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    },
+    {
+      "select": {
+        "healthBelow": 0.5
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 1,
+          "range": 24,
+          "castTime": 30,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:arrow_volley",
+          "level": 2,
+          "cooldown": 150,
+          "priority": 2,
+          "range": 24,
+          "castTime": 25,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "_comment": "Venom fang: a short-range poison caster that bursts into poison on death.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:poison_splash",
+      "level": 1,
+      "cooldown": 190,
+      "priority": 1,
+      "range": 8,
+      "castTime": 10,
+      "target": "ATTACK_TARGET",
+      "conditions": {
+        "maxTargetDistance": 8.0
+      }
+    }
+  ],
+  "onDeath": {
+    "spell": "irons_spellbooks:poison_splash",
+    "level": 1,
+    "range": 4,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "FEET_LOOK"
+    }
+  }
+}

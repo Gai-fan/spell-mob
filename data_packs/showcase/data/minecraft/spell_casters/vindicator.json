@@ -1,0 +1,43 @@
+{
+  "_comment": "Axe chanter: fang lines at melee range, a bleeding slash, and an execution strike on weakened foes.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:fang_strike",
+      "level": 2,
+      "cooldown": 200,
+      "priority": 1,
+      "range": 6,
+      "castTime": 10,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:blood_slash",
+      "level": 2,
+      "cooldown": 180,
+      "priority": 2,
+      "range": 6,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:blood_slash",
+      "level": 3,
+      "cooldown": 260,
+      "priority": 0,
+      "range": 6,
+      "target": {
+        "type": "NEAREST_HOSTILE",
+        "sort": "LOWEST_HEALTH",
+        "maxHealthPercent": 0.5
+      }
+    }
+  ],
+  "onTarget": {
+    "spell": "irons_spellbooks:haste",
+    "level": 1,
+    "cooldown": 400,
+    "target": "SELF",
+    "conditions": {
+      "healthAbove": 0.5
+    }
+  }
+}

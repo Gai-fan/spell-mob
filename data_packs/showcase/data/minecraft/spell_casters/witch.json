@@ -1,0 +1,42 @@
+{
+  "_comment": "Swamp hag: channels a poison cone, curses through walls, heals itself when hurt, and speeds up after a kill.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:poison_breath",
+      "level": 1,
+      "cooldown": 300,
+      "priority": 1,
+      "range": 8,
+      "castTime": 60,
+      "interruptOnDamage": true,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:blight",
+      "level": 1,
+      "cooldown": 260,
+      "priority": 2,
+      "range": 16,
+      "target": {
+        "type": "ATTACK_TARGET",
+        "lineOfSight": false
+      }
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:heal",
+    "level": 2,
+    "cooldown": 350,
+    "target": "SELF",
+    "conditions": {
+      "healthBelow": 0.6,
+      "healthAbove": 0.1
+    }
+  },
+  "onKill": {
+    "spell": "irons_spellbooks:haste",
+    "level": 1,
+    "cooldown": 300,
+    "target": "SELF"
+  }
+}

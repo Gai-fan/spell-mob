@@ -1,0 +1,68 @@
+{
+  "_comment": "Raid chanter: snipes the farthest hostile with magic arrows, hides behind a shield when low, and carries emeralds.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magic_arrow",
+      "level": 2,
+      "cooldown": 200,
+      "priority": 0,
+      "range": 28,
+      "castTime": 25,
+      "target": {
+        "type": "NEAREST_HOSTILE",
+        "sort": "FARTHEST"
+      }
+    },
+    {
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 1,
+      "cooldown": 140,
+      "priority": 2,
+      "range": 20,
+      "castTime": 12,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:shield",
+      "level": 1,
+      "cooldown": 600,
+      "priority": 3,
+      "range": 2,
+      "castTime": 10,
+      "target": {
+        "type": "POSITION",
+        "positionMode": "RELATIVE",
+        "relativeOffset": [
+          0,
+          0,
+          2
+        ]
+      },
+      "conditions": {
+        "healthBelow": 0.5
+      }
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:evasion",
+    "level": 1,
+    "cooldown": 500,
+    "target": "SELF"
+  },
+  "dropRules": [
+    {
+      "select": {
+        "healthAbove": 0.0
+      },
+      "chance": 1.0,
+      "drops": [
+        {
+          "item": "minecraft:emerald",
+          "minCount": 1,
+          "maxCount": 2,
+          "chance": 0.5
+        }
+      ]
+    }
+  ]
+}

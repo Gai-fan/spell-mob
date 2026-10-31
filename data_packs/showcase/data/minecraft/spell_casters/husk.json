@@ -1,0 +1,24 @@
+{
+  "_comment": "Dune wanderer: scorches the ground at range and bursts into flame when it dies.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:scorch",
+      "level": 1,
+      "cooldown": 220,
+      "priority": 1,
+      "range": 16,
+      "castTime": 20,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onDeath": {
+    "spell": "irons_spellbooks:firecracker",
+    "level": 1,
+    "range": 3,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "EYES_LOOK",
+      "lineOfSight": false
+    }
+  }
+}

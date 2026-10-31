@@ -1,0 +1,51 @@
+{
+  "_comment": "Wither knight: wither skulls and blood needles share one cooldown group; heals itself after a kill and drops coal and, rarely, its skull.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:wither_skull",
+      "level": 2,
+      "cooldown": 220,
+      "priority": 1,
+      "range": 20,
+      "castTime": 20,
+      "cooldownGroup": "wither_volley",
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:blood_needles",
+      "level": 2,
+      "cooldown": 260,
+      "priority": 2,
+      "range": 18,
+      "cooldownGroup": "wither_volley",
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onKill": {
+    "spell": "irons_spellbooks:heal",
+    "level": 1,
+    "cooldown": 200,
+    "target": "SELF"
+  },
+  "dropRules": [
+    {
+      "select": {
+        "healthAbove": 0.0
+      },
+      "chance": 1.0,
+      "drops": [
+        {
+          "item": "minecraft:coal",
+          "minCount": 1,
+          "maxCount": 3,
+          "looting": true
+        },
+        {
+          "item": "minecraft:wither_skeleton_skull",
+          "chance": 0.05,
+          "looting": true
+        }
+      ]
+    }
+  ]
+}

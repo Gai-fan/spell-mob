@@ -1,0 +1,32 @@
+{
+  "_comment": "Drowned priest: poison waves and blood needles; leaves a toxic splash on death.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:poison_splash",
+      "level": 1,
+      "cooldown": 200,
+      "priority": 1,
+      "range": 14,
+      "castTime": 15,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:blood_needles",
+      "level": 2,
+      "cooldown": 260,
+      "priority": 2,
+      "range": 18,
+      "chance": 0.4,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onDeath": {
+    "spell": "irons_spellbooks:poison_splash",
+    "level": 1,
+    "range": 6,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "RANDOM_IN_RANGE"
+    }
+  }
+}
