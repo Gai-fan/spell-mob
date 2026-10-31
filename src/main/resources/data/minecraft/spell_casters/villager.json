@@ -1,0 +1,29 @@
+{
+  "_comment": "测试数据 2：未命名村民统一施放治疗；被命名为 C 或 D 的村民使用空配置，完全不施法。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:heal",
+      "level": 1,
+      "cooldown": 400,
+      "priority": 2,
+      "range": 12,
+      "target": "SELF"
+    }
+  ],
+  "variants": [
+    {
+      "_comment": "C：override 为 true 且没有任何 goals，因此覆盖掉上面的默认配置，什么都不放。",
+      "select": {
+        "name": "C"
+      },
+      "override": true
+    },
+    {
+      "_comment": "D：同上。",
+      "select": {
+        "name": "D"
+      },
+      "override": true
+    }
+  ]
+}

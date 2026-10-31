@@ -1,0 +1,23 @@
+{
+  "_comment": "2.7.3 验证用：卫道士身上只挂两个诊断法术——starfall（末影流星）和 ray_of_siphoning（鲜血射线）。冷却压到 40 tick，方便一两次循环内就确认修复是否生效。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:starfall",
+      "level": 3,
+      "cooldown": 40,
+      "priority": 1,
+      "range": 24.0,
+      "castTime": 60,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:ray_of_siphoning",
+      "level": 3,
+      "cooldown": 40,
+      "priority": 1,
+      "range": 24.0,
+      "castTime": 60,
+      "target": "ATTACK_TARGET"
+    }
+  ]
+}

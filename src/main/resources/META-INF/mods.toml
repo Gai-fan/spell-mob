@@ -1,0 +1,39 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="spellmob"
+version="${file.jarVersion}"
+displayName="SpellMob"
+authors="GAIFAN404"
+description='''
+A data-driven addon for Iron's Spells 'n Spellbooks that lets any mob cast spells.
+
+Define which spells a mob knows in a datapack (data/<namespace>/spell_casters/<entity>.json)
+and the mob will use them in combat, when hurt, or when it acquires a new target.
+
+Everything runs server side and uses the same casting pipeline Iron's Spells 'n
+Spellbooks uses for its own spell-casting mobs.
+'''
+
+[[dependencies.spellmob]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.spellmob]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.spellmob]]
+modId="irons_spellbooks"
+mandatory=true
+versionRange="[1.20.1-3.4.0.9,)"
+ordering="NONE"
+side="BOTH"

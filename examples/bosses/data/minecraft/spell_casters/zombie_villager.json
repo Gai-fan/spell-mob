@@ -1,0 +1,95 @@
+{
+  "_comment": "Boss 2: 血誓祭司 / Blood Oath Hierophant —— 召唤流法系 Boss。基底：僵尸村民 zombie_villager。必须用 summon 生成，名字完全一致，且带 spellmob_boss + blood 两个 tag；普通僵尸村民不会施法。",
+  "variants": [
+    {
+      "_comment": "第二阶段（<50%）：血针连射 + 加速，召唤频率提高。raise_dead 可被打断。",
+      "select": { "name": "血誓祭司", "tags": ["spellmob_boss", "blood"], "healthBelow": 0.5 },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 2,
+          "cooldown": 300,
+          "priority": 1,
+          "range": 16.0,
+          "interruptOnDamage": true,
+          "checkInterval": 5,
+          "target": "SELF"
+        },
+        {
+          "spell": "irons_spellbooks:blood_needles",
+          "level": 2,
+          "cooldown": 90,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:haste",
+          "level": 2,
+          "cooldown": 600,
+          "priority": 2,
+          "chance": 0.6,
+          "target": "SELF"
+        }
+      ],
+      "onKill": {
+        "_comment": "每击杀一名玩家/生物就再召唤一批亡灵，冷却与上面的 raise_dead 共用。",
+        "spell": "irons_spellbooks:raise_dead",
+        "level": 1,
+        "cooldown": 300,
+        "target": "SELF"
+      },
+      "onDeath": {
+        "_comment": "临终再召唤最后一波。",
+        "spell": "irons_spellbooks:raise_dead",
+        "level": 3,
+        "target": "SELF"
+      }
+    },
+    {
+      "_comment": "第一阶段（>50%）：单发血针 + 低频召唤。",
+      "select": { "name": "血誓祭司", "tags": ["spellmob_boss", "blood"] },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:blood_needles",
+          "level": 1,
+          "cooldown": 120,
+          "priority": 1,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 1,
+          "cooldown": 400,
+          "priority": 2,
+          "range": 16.0,
+          "interruptOnDamage": true,
+          "target": "SELF"
+        },
+        {
+          "_comment": "引导型（CONTINUOUS）：虹吸射线。血系持续伤害，引导期间每 10 tick 结算一次；带 spellmob_boss 标签所以不会被打断。",
+          "spell": "irons_spellbooks:ray_of_siphoning",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 3,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onKill": {
+        "spell": "irons_spellbooks:raise_dead",
+        "level": 1,
+        "cooldown": 300,
+        "target": "SELF"
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:raise_dead",
+        "level": 3,
+        "target": "SELF"
+      }
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+plugins {
+    id 'java-library'
+    id 'eclipse'
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+group = mod_group_id
+version = mod_version
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+        gameTestServer {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+    }
+}
+
+repositories {
+    maven {
+        name = "Iron's Maven - Release"
+        url = "https://code.redspace.io/releases"
+    }
+    maven {
+        name = "Iron's Maven - Snapshots"
+        url = "https://code.redspace.io/snapshots"
+    }
+    mavenCentral()
+    maven { url = 'https://maven.minecraftforge.net/' }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // The full jar is used instead of the ":api" classifier on purpose: MagicData cannot be used
+    // without a SyncedSpellData instance (initiateCast NPEs otherwise) and that class is not part
+    // of the published API surface.
+    compileOnly fg.deobf("io.redspace.ironsspellbooks:irons_spellbooks:${irons_spells_version}")
+    runtimeOnly fg.deobf("io.redspace.ironsspellbooks:irons_spellbooks:${irons_spells_version}")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    archiveBaseName = mod_id
+    manifest {
+        attributes('Implementation-Version': project.version)
+    }
+}
+
+idea {
+    module {
+        inheritOutputDirs = true
+    }
+}
+
+eclipse {
+    classpath {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

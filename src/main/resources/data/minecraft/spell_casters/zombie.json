@@ -1,0 +1,92 @@
+{
+  "_comment": "测试数据 1：只有被命名为 A 或 B 的僵尸会施法，且两者法术不同；其余僵尸完全不施法。A 还带一个二阶段：血量低于 40% 时换成冰刺（吟唱会被打火打断），并演示概率施法与共享冷却组。",
+  "variants": [
+    {
+      "_comment": "A 的第二阶段（血量 < 40%）。这条必须放在普通 A 之前：变体按数组顺序取首个命中。override=true 表示完全替换默认配置（僵尸本来没有默认配置）。",
+      "select": {
+        "name": "A",
+        "healthBelow": 0.4
+      },
+      "override": true,
+      "goals": [
+        {
+          "_comment": "冰刺：吟唱 20 tick，期间受到任意伤害都会被打断（interruptOnDamage）；和火球共用 a_phase 冷却组，切阶段时不会背靠背连放。",
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 2,
+          "cooldown": 90,
+          "priority": 1,
+          "range": 20,
+          "castTime": 20,
+          "interruptOnDamage": true,
+          "cooldownGroup": "a_phase",
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导型（CONTINUOUS）冰锥：吟唱期间每 10 tick 结算一次，靠得越近伤害越高。",
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "治疗：每次冷却结束只有 50% 概率真的尝试；没掷中就在下一次 checkInterval 再掷。",
+          "spell": "irons_spellbooks:heal",
+          "level": 1,
+          "cooldown": 260,
+          "priority": 2,
+          "range": 12,
+          "chance": 0.5,
+          "target": "SELF"
+        }
+      ]
+    },
+    {
+      "_comment": "A 的第一阶段（血量 >= 40%）：火球，3 级，靠得近一点、吟唱短一些。",
+      "select": {
+        "name": "A"
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 3,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24,
+          "castTime": 20,
+          "cooldownGroup": "a_phase",
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    },
+    {
+      "_comment": "B 僵尸：闪电枪，2 级，吟唱更长、冷却更久。",
+      "select": {
+        "name": "B"
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 24,
+          "castTime": 30,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导型（CONTINUOUS）电刑：持续照射持续掉血，引导期间每 10 tick 结算一次。",
+          "spell": "irons_spellbooks:electrocute",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 2,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

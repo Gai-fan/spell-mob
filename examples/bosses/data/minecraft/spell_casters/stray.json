@@ -1,0 +1,143 @@
+{
+  "_comment": "Boss 1: 霜寂领主 / Frost Sovereign —— 冰系阶段型法系 Boss。基底：流浪者 stray。必须用 summon 生成，名字完全一致，且带 spellmob_boss + frost 两个 tag；野生流浪者不会施法（fallback 为空）。",
+  "variants": [
+    {
+      "_comment": "第三阶段（<25%）：狂暴。冰环连发，冰锥与冰墙交替压制。",
+      "select": { "name": "霜寂领主", "tags": ["spellmob_boss", "frost"], "healthBelow": 0.25 },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:frostwave",
+          "level": 3,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 16.0,
+          "interruptOnDamage": true,
+          "checkInterval": 5,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 3,
+          "cooldown": 80,
+          "priority": 2,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ice_block",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:teleport",
+        "level": 3,
+        "cooldown": 200,
+        "range": 10.0,
+        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:frostwave",
+        "level": 3,
+        "range": 8.0,
+        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+      }
+    },
+    {
+      "_comment": "第二阶段（25%~60%）：远程压制 + 召唤冰熊。",
+      "select": { "name": "霜寂领主", "tags": ["spellmob_boss", "frost"], "healthBelow": 0.6 },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:frostwave",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 1,
+          "range": 16.0,
+          "interruptOnDamage": true,
+          "checkInterval": 5,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ice_block",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:summon_polar_bear",
+          "level": 1,
+          "cooldown": 600,
+          "priority": 2,
+          "chance": 0.5,
+          "target": "SELF"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:teleport",
+        "level": 3,
+        "cooldown": 200,
+        "range": 10.0,
+        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:frostwave",
+        "level": 3,
+        "range": 8.0,
+        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+      }
+    },
+    {
+      "_comment": "第一阶段（>60%）：只用远程冰系法术，留出学习时间。",
+      "select": { "name": "霜寂领主", "tags": ["spellmob_boss", "frost"] },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:ice_block",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 1,
+          "range": 24.0,
+          "checkInterval": 5,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 2,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导型（CONTINUOUS）：冰锥。引导期间每 10 tick 结算一次；带 spellmob_boss 标签所以不会被打断。",
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 3,
+          "range": 10.0,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:teleport",
+        "level": 3,
+        "cooldown": 200,
+        "range": 10.0,
+        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:frostwave",
+        "level": 3,
+        "range": 8.0,
+        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+      }
+    }
+  ]
+}

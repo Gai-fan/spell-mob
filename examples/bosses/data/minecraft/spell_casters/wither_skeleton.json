@@ -1,0 +1,93 @@
+{
+  "_comment": "Boss 4: 虚空织法者 / Void Weaver —— 虚空系控场 Boss。基底：凋灵骷髅 wither_skeleton。必须用 summon 生成，名字完全一致，且带 spellmob_boss + void 两个 tag；普通凋灵骷髅不会施法。",
+  "variants": [
+    {
+      "_comment": "第二阶段（<40%）：黑洞拉扯 + 声波穿墙 + 致盲触手。黑洞可被打断。",
+      "select": { "name": "虚空织法者", "tags": ["spellmob_boss", "void"], "healthBelow": 0.4 },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:black_hole",
+          "level": 2,
+          "cooldown": 400,
+          "priority": 1,
+          "range": 24.0,
+          "interruptOnDamage": true,
+          "checkInterval": 5,
+          "target": { "type": "POSITION", "positionMode": "TARGET_ENTITY" }
+        },
+        {
+          "spell": "irons_spellbooks:sonic_boom",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:sculk_tentacles",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 2,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onDeath": {
+        "_comment": "阵亡时在尸体位置开黑洞，别贴脸收尾。",
+        "spell": "irons_spellbooks:black_hole",
+        "level": 2,
+        "range": 8.0,
+        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+      }
+    },
+    {
+      "_comment": "第一阶段（>40%）：声波与触手交替，逼玩家离开掩体。",
+      "select": { "name": "虚空织法者", "tags": ["spellmob_boss", "void"] },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:sonic_boom",
+          "level": 1,
+          "cooldown": 220,
+          "priority": 1,
+          "range": 24.0,
+          "checkInterval": 5,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:sculk_tentacles",
+          "level": 1,
+          "cooldown": 300,
+          "priority": 2,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导型（CONTINUOUS）：龙息。引导期间每 10 tick 结算一次；带 spellmob_boss 标签所以不会被打断。",
+          "spell": "irons_spellbooks:dragon_breath",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 3,
+          "range": 12.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导型（CONTINUOUS）：念力。把目标往自己身边拽，和黑洞轮换使用。",
+          "spell": "irons_spellbooks:telekinesis",
+          "level": 2,
+          "cooldown": 260,
+          "priority": 3,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onDeath": {
+        "spell": "irons_spellbooks:black_hole",
+        "level": 2,
+        "range": 8.0,
+        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+      }
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "_comment": "暮色森林 - 巫妖王（人形 Boss）。测试点：人形 + 亡灵 Boss + 血量阶段；半血后从飞弹改成吟唱箭雨。",
+  "goals": [
+    {
+      "_comment": "一阶段：快速飞弹压制。",
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 2,
+      "cooldown": 100,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "把玩家冻在原地，给自己争取吟唱时间。",
+      "spell": "irons_spellbooks:ice_block",
+      "level": 1,
+      "cooldown": 200,
+      "priority": 3,
+      "range": 20.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "位置法术：随机传送到身边 8 格内。",
+      "spell": "irons_spellbooks:teleport",
+      "level": 1,
+      "cooldown": 160,
+      "priority": 2,
+      "range": 8.0,
+      "target": { "type": "POSITION", "positionMode": "RANDOM_IN_RANGE" }
+    }
+  ],
+  "onHurt": {
+    "_comment": "挨打时给自己套盾。",
+    "spell": "irons_spellbooks:shield",
+    "level": 1,
+    "cooldown": 300,
+    "target": "SELF"
+  },
+  "variants": [
+    {
+      "_comment": "二阶段（半血以下）：箭雨是长吟唱，法阵会明显变大变亮。",
+      "select": { "healthBelow": 0.5 },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:arrow_volley",
+          "level": 3,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 28.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:summon_vex",
+          "level": 2,
+          "cooldown": 300,
+          "priority": 3,
+          "range": 16.0,
+          "target": "SELF"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:shield",
+        "level": 1,
+        "cooldown": 240,
+        "target": "SELF"
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "_comment": "Skeleton: volley of arrows at range, random blink when hurt and blood needles at a new target.",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:arrow_volley",
+      "level": 3,
+      "cooldown": 150,
+      "priority": 1,
+      "range": 30,
+      "castTime": 40,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "引导型（CONTINUOUS）虹吸射线：持续照射持续掉血，引导期间每 10 tick 结算一次。",
+      "spell": "irons_spellbooks:ray_of_siphoning",
+      "level": 2,
+      "cooldown": 240,
+      "priority": 2,
+      "range": 20,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "_comment": "POSITION spells aim at a point instead of an entity, so the caster never looks at itself.",
+    "spell": "irons_spellbooks:teleport",
+    "level": 1,
+    "cooldown": 500,
+    "range": 15,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "RANDOM_IN_RANGE",
+      "lineOfSight": false
+    }
+  },
+  "onTarget": {
+    "spell": "irons_spellbooks:blood_needles",
+    "level": 2,
+    "cooldown": 100,
+    "range": 30,
+    "target": "ATTACK_TARGET"
+  }
+}

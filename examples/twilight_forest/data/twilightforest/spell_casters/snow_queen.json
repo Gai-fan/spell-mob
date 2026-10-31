@@ -1,0 +1,72 @@
+{
+  "_comment": "暮色森林 - 冰雪女王（飞行 Boss）。测试点：飞行 + 悬停时的朝向；半血后改为暴雪 + 引导冰锥。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:ice_spikes",
+      "level": 2,
+      "cooldown": 120,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:frostwave",
+      "level": 2,
+      "cooldown": 170,
+      "priority": 2,
+      "range": 20.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "召唤北极熊当肉盾，很符合女王的人设。",
+      "spell": "irons_spellbooks:summon_polar_bear",
+      "level": 1,
+      "cooldown": 400,
+      "priority": 3,
+      "range": 8.0,
+      "target": "SELF"
+    }
+  ],
+  "onHurt": {
+    "_comment": "挨打就闪现走，测试飞行生物的位置传送。",
+    "spell": "irons_spellbooks:teleport",
+    "level": 1,
+    "cooldown": 260,
+    "range": 10.0,
+    "target": { "type": "POSITION", "positionMode": "RANDOM_IN_RANGE" }
+  },
+  "variants": [
+    {
+      "select": { "healthBelow": 0.6 },
+      "override": true,
+      "goals": [
+        {
+          "_comment": "暴雪是长吟唱，法阵会完整走一遍。",
+          "spell": "irons_spellbooks:blizzard",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 1,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导型冰锥，测试飞行生物引导时会不会被自己的移动打断。",
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 170,
+          "priority": 2,
+          "range": 12.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

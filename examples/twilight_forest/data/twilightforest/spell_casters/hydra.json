@@ -1,0 +1,62 @@
+{
+  "_comment": "暮色森林 - 九头蛇（多头 Boss，超大碰撞箱）。测试点：大体积生物的距离判定 + 引导火焰；残血后进入暴怒阶段。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magma_bomb",
+      "level": 2,
+      "cooldown": 140,
+      "priority": 1,
+      "range": 28.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:fireball",
+      "level": 2,
+      "cooldown": 100,
+      "priority": 2,
+      "range": 28.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:scorch",
+      "level": 1,
+      "cooldown": 180,
+      "priority": 3,
+      "range": 16.0,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "variants": [
+    {
+      "_comment": "残血暴怒：火息引导 + 陨石雨。九头蛇体型大，注意火息扇形是否跟着它的头转。",
+      "select": { "healthBelow": 0.4 },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fire_breath",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 1,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:raise_hell",
+          "level": 2,
+          "cooldown": 300,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:magma_bomb",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 28.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

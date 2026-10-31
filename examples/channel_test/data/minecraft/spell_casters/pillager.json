@@ -1,0 +1,87 @@
+{
+  "_comment": "引导法术测试：把目前 10 个引导型（CONTINUOUS）法术全部挂在同一只生物上。召唤一只没有弩的掠夺者，它会按下面的顺序轮流引导每一种，法阵颜色就是该法术所属学派的颜色。",
+  "_comment_summon": "/summon minecraft:pillager ~ ~ ~10 {CustomName:'\"引导测试\"',CustomNameVisible:1b,Tags:[\"channel_test\"],PersistenceRequired:1b,Attributes:[{Name:\"generic.max_health\",Base:200.0}],Health:200.0f}",
+  "goals": [
+    {
+      "_comment": "ICE 冰霜 - 锥形",
+      "spell": "irons_spellbooks:cone_of_cold",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "LIGHTNING 闪电",
+      "spell": "irons_spellbooks:electrocute",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "BLOOD 鲜血 - 射线",
+      "spell": "irons_spellbooks:ray_of_siphoning",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "FIRE 火焰",
+      "spell": "irons_spellbooks:blaze_storm",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "FIRE 火焰 - 吐息",
+      "spell": "irons_spellbooks:fire_breath",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "ENDER 末影 - 吐息",
+      "spell": "irons_spellbooks:dragon_breath",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "NATURE 自然 - 吐息",
+      "spell": "irons_spellbooks:poison_breath",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "ENDER 末影 - 引导期间持续落点",
+      "spell": "irons_spellbooks:starfall",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "ELDRITCH 诡异",
+      "spell": "irons_spellbooks:telekinesis",
+      "level": 3,
+      "cooldown": 60,
+      "priority": 1,
+      "range": 24.0,
+      "target": "ATTACK_TARGET"
+    }
+  ]
+}

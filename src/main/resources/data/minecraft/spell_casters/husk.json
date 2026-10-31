@@ -1,0 +1,297 @@
+{
+  "_comment": "内置示例（husk）：随模组发布的完整示例，把目前所有触发器、筛选条件、施法字段都用了一遍。husk 白天不燃烧、又是常规人形亡灵，适合直接 /summon 观察。默认（未命名）husk 只在血量 ≤90% 且目标距离 4~16 格时放魔法飞弹，受伤时会向 +Z 传送 6 格；命名为 A 且带 spellmob_demo 标签的放火球；名字形如 B-12 的放闪电枪（50% 概率）；C 是合并示例；D 是闭嘴示例；带 spellmob_demo + boss 标签的是“看颜色”用的 Boss（九个学派各一条吟唱法术按顺序轮换，外加一条箭雨终结技，用来确认不同学派的法阵颜色）；带 phase_demo 标签且血量在 25%~75% 的放冰刺（吟唱中挨打会断）。复制本文件、改名成别的生物 id，即可套用到其它生物。",
+
+  "goals": [
+    {
+      "_comment": "兜底配置：没有任何变体命中时使用。这里把 conditions 的四个键全用上——自身血量要落在 10%~90% 之间，且目标距离 4~16 格才施法（太近太远都不放，所以满血时它不会主动出手，打一下就开始放）。castTime 会把原本瞬发的法术改成 10 tick 吟唱。",
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 1,
+      "cooldown": 120,
+      "priority": 1,
+      "range": 16.0,
+      "castTime": 10,
+      "checkInterval": 10,
+      "chance": 1.0,
+      "interruptOnDamage": false,
+      "conditions": {
+        "healthBelow": 0.9,
+        "healthAbove": 0.1,
+        "minTargetDistance": 4.0,
+        "maxTargetDistance": 16.0
+      },
+      "target": "ATTACK_TARGET"
+    }
+  ],
+
+  "onHurt": {
+    "_comment": "兜底配置的受伤触发：POSITION + RELATIVE，落点 = 自身位置 + relativeOffset（这里向 +Z 位移 6 格）。POSITION 模式不看 lineOfSight，range 也不参与 RELATIVE 计算。",
+    "spell": "irons_spellbooks:teleport",
+    "level": 1,
+    "cooldown": 200,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "RELATIVE",
+      "relativeOffset": [0, 0, 6]
+    }
+  },
+
+  "variants": [
+    {
+      "_comment": "条件① name + tags（精确名字，且带 spellmob_demo 标签）。override=true：完全替代上面的兜底配置，不再合并。cooldownGroup 让多个法术共用同一份冷却。",
+      "select": {
+        "name": "A",
+        "tags": ["spellmob_demo"]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24.0,
+          "castTime": 20,
+          "cooldownGroup": "demo_phase",
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "_comment": "POSITION + EYES_LOOK：落点 = 眼睛位置 + 视线方向 × range（这里 8 格），relativeOffset 不参与。",
+        "spell": "irons_spellbooks:teleport",
+        "level": 1,
+        "cooldown": 300,
+        "range": 8.0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "EYES_LOOK"
+        }
+      }
+    },
+    {
+      "_comment": "条件② nameRegex（整串匹配，不是包含）：名字必须形如 B-12。override 省略时默认 true。chance=0.5：每次尝试只有一半概率真的放出来，没放出来会等 checkInterval 后再试。",
+      "select": {
+        "nameRegex": "^B-[0-9]+$"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 24.0,
+          "castTime": 30,
+          "chance": 0.5,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onTarget": {
+        "_comment": "锁定新目标时施放；range 24 格内才算有效目标。",
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 200,
+        "range": 24.0,
+        "target": "ATTACK_TARGET"
+      }
+    },
+    {
+      "_comment": "条件③ name（精确）。override=false（合并）：以兜底配置为底，再追加下面这条 haste；这里没写 onHurt，就沿用兜底里的 onHurt。",
+      "select": {
+        "name": "C"
+      },
+      "override": false,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:haste",
+          "level": 1,
+          "cooldown": 400,
+          "priority": 2,
+          "range": 8.0,
+          "target": "SELF"
+        }
+      ]
+    },
+    {
+      "_comment": "条件④ name（精确）+ 空配置 + override=true：命中后什么法术都不放，连兜底也没了。用来单独让某只生物闭嘴。",
+      "select": {
+        "name": "D"
+      },
+      "override": true
+    },
+    {
+      "_comment": "条件⑤ tags 单独使用（列出的标签必须全部包含）。这个变体是给“看颜色”用的：九个学派各一条吟唱法术、共用优先级 2，按顺序轮换——每条放完进入自己的 200 tick 冷却，于是下一次轮到下一条，一轮正好把九个学派的法阵颜色看一遍。",
+      "select": {
+        "tags": ["spellmob_demo", "boss"]
+      },
+      "override": true,
+      "goals": [
+        {
+          "_comment": "终结技（EVOCATION 学派，也有法阵）：优先级 0 高于轮换，冷却 600 tick，大约 30 秒才抢一次出手机会。",
+          "spell": "irons_spellbooks:arrow_volley",
+          "level": 3,
+          "cooldown": 600,
+          "priority": 0,
+          "range": 30.0,
+          "castTime": 40,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "sort": "FARTHEST",
+            "maxHealthPercent": 0.8,
+            "lineOfSight": true
+          }
+        },
+        {
+          "_comment": "FIRE —— 火球。下面九条都不写 castTime，交给 ISS 自己的吟唱时长（这九个法术本身就是需要吟唱的 LONG 类型），法阵会跟着各自的读条时间出现。",
+          "spell": "irons_spellbooks:fireball",
+          "level": 3,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "ICE —— 霜波。",
+          "spell": "irons_spellbooks:frostwave",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "LIGHTNING —— 闪电枪。",
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "HOLY —— 神圣打击。",
+          "spell": "irons_spellbooks:divine_smite",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "ENDER —— 魔法箭。",
+          "spell": "irons_spellbooks:magic_arrow",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "BLOOD —— 这是九个里血学派唯一的长吟唱法术；它会召唤僵尸，看起来不像攻击，但法阵照样会亮。",
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 1,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "EVOCATION —— 尖牙突刺。",
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "NATURE —— 毒液喷溅。",
+          "spell": "irons_spellbooks:poison_splash",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "ELDRITCH —— 音爆。顺便保留 lineOfSight=false 的演示：隔墙也能锁定目标。",
+          "spell": "irons_spellbooks:sonic_boom",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 24.0,
+          "target": {
+            "type": "ATTACK_TARGET",
+            "lineOfSight": false
+          }
+        },
+        {
+          "_comment": "FIRE 引导型（CONTINUOUS）：烈焰风暴。引导期间每 10 tick 结算一次，冷却从引导结束才开始计；优先级 3 排在九个学派轮换之后，不抢节奏。",
+          "spell": "irons_spellbooks:blaze_storm",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 3,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "NATURE 引导型（CONTINUOUS）：剧毒吐息。锥形持续伤害，和上面的毒液喷溅不是同一个法术。",
+          "spell": "irons_spellbooks:poison_breath",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 3,
+          "range": 10.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    },
+    {
+      "_comment": "条件⑥ healthBelow + healthAbove 同时用（必须 below > above）：血量严格落在 25%~75% 之间才命中。放最后，避免抢走上面按名字匹配的变体。interruptOnDamage=true：这一发吟唱期间挨打会中断；cooldownGroup 让两个法术共用一份冷却。",
+      "select": {
+        "tags": ["phase_demo"],
+        "healthBelow": 0.75,
+        "healthAbove": 0.25
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 2,
+          "cooldown": 90,
+          "priority": 1,
+          "range": 20.0,
+          "castTime": 20,
+          "interruptOnDamage": true,
+          "cooldownGroup": "demo_phase",
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "和上面共用 demo_phase 冷却组：任意一个刚放完，另一个也在冷却中。",
+          "spell": "irons_spellbooks:heal",
+          "level": 1,
+          "cooldown": 260,
+          "priority": 2,
+          "range": 12.0,
+          "chance": 0.5,
+          "cooldownGroup": "demo_phase",
+          "target": "SELF"
+        }
+      ],
+      "onDeath": {
+        "_comment": "死亡时立刻施放（强制瞬发，不走冷却判定）：POSITION + RANDOM_IN_RANGE，在自身周围 8 格内随机落点。",
+        "spell": "irons_spellbooks:ice_spikes",
+        "level": 1,
+        "range": 8.0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE"
+        }
+      },
+      "onKill": {
+        "_comment": "击杀时施放（走正常冷却与条件判定）。",
+        "spell": "irons_spellbooks:heal",
+        "level": 1,
+        "cooldown": 200,
+        "target": "SELF"
+      }
+    }
+  ]
+}

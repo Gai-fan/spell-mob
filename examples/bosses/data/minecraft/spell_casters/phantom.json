@@ -1,0 +1,124 @@
+{
+  "_comment": "Boss 6: 虚空之眼 / Void Eye —— 幻翼系法系 Boss。必须用 summon 生成，且名字 + 两个 tag 同时匹配；普通幻翼不会施法。这份配置刻意用满了机制：5 种触发器、conditions 四个键、select 五个键、5 种位置模式，以及末影/邪术/雷电/鲜血/幻术/冰霜六个学派。",
+  "dropRules": [
+    {
+      "_comment": "虚空之眼：玩家击杀必掉 4~8 个末影珍珠，30% 概率追加 2~6 个紫水晶碎片（吃抢夺）。",
+      "select": { "tags": ["spellmob_boss", "void"] },
+      "drops": [
+        { "item": "minecraft:ender_pearl", "min": 4, "max": 8 },
+        { "item": "minecraft:amethyst_shard", "min": 2, "max": 6, "chance": 0.3, "looting": true }
+      ]
+    }
+  ],
+  "variants": [
+    {
+      "_comment": "第二阶段（<50%）：虚空仪式。星陨（引导 100 tick）与黑洞共享 void_ritual 冷却组，交替出现；龙息也是引导型。",
+      "select": { "name": "虚空之眼", "tags": ["spellmob_boss", "void"], "healthBelow": 0.5 },
+      "override": true,
+      "goals": [
+        { "spell": "irons_spellbooks:magic_missile", "level": 4, "cooldown": 40, "priority": 1, "range": 28.0, "checkInterval": 5, "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:dragon_breath", "level": 2, "cooldown": 200, "priority": 2, "range": 16.0, "castTime": 60, "cooldownGroup": "void_ritual", "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:starfall", "level": 3, "cooldown": 240, "priority": 2, "range": 26.0, "castTime": 100, "cooldownGroup": "void_ritual", "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:black_hole", "level": 3, "cooldown": 280, "priority": 4, "range": 22.0, "conditions": { "minTargetDistance": 5.0 }, "target": { "type": "POSITION", "positionMode": "FEET_LOOK" } },
+        { "spell": "irons_spellbooks:telekinesis", "level": 2, "cooldown": 220, "priority": 4, "range": 16.0, "target": { "type": "ATTACK_TARGET", "lineOfSight": false } },
+        { "spell": "irons_spellbooks:sonic_boom", "level": 2, "cooldown": 180, "priority": 3, "range": 24.0, "target": { "type": "ATTACK_TARGET", "sort": "FARTHEST", "maxHealthPercent": 0.9 } }
+      ],
+      "onHurt": {
+        "_comment": "受伤闪现，落点在自身周围 16 格内随机。",
+        "spell": "irons_spellbooks:teleport",
+        "level": 3,
+        "cooldown": 160,
+        "range": 16.0,
+        "target": { "type": "POSITION", "positionMode": "RANDOM_IN_RANGE" }
+      },
+      "onDeath": {
+        "_comment": "死亡时朝当前朝向吐一口龙息。",
+        "spell": "irons_spellbooks:dragon_breath",
+        "level": 3,
+        "cooldown": 0,
+        "target": "SELF"
+      }
+    },
+    {
+      "_comment": "第一阶段（≥50%）：远程弹幕压制，被近身就传送拉开，击杀后补刀。",
+      "select": { "name": "虚空之眼", "tags": ["spellmob_boss", "void"] },
+      "override": true,
+      "goals": [
+        { "spell": "irons_spellbooks:magic_missile", "level": 3, "cooldown": 60, "priority": 1, "range": 24.0, "checkInterval": 5, "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:lightning_lance", "level": 3, "cooldown": 120, "priority": 2, "range": 28.0, "interruptOnDamage": true, "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:sonic_boom", "level": 2, "cooldown": 180, "priority": 3, "range": 24.0, "target": { "type": "ATTACK_TARGET", "sort": "FARTHEST", "maxHealthPercent": 0.9, "lineOfSight": true } },
+        { "spell": "irons_spellbooks:starfall", "level": 2, "cooldown": 260, "priority": 2, "range": 24.0, "castTime": 80, "cooldownGroup": "void_ritual", "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:telekinesis", "level": 2, "cooldown": 220, "priority": 4, "range": 16.0, "target": { "type": "ATTACK_TARGET", "lineOfSight": false } },
+        { "spell": "irons_spellbooks:black_hole", "level": 2, "cooldown": 300, "priority": 5, "range": 20.0, "cooldownGroup": "void_ritual", "conditions": { "minTargetDistance": 6.0, "maxTargetDistance": 20.0 }, "target": { "type": "POSITION", "positionMode": "FEET_LOOK" } },
+        { "spell": "irons_spellbooks:chain_lightning", "level": 2, "cooldown": 200, "priority": 3, "range": 20.0, "target": "NEAREST_PLAYER" },
+        { "spell": "irons_spellbooks:eldritch_blast", "level": 2, "cooldown": 240, "priority": 4, "range": 18.0, "target": "THREATENING_ENTITY" }
+      ],
+      "onHurt": {
+        "_comment": "受伤闪现：位置 + 随机落点。",
+        "spell": "irons_spellbooks:teleport",
+        "level": 2,
+        "cooldown": 200,
+        "range": 12.0,
+        "target": { "type": "POSITION", "positionMode": "RANDOM_IN_RANGE" }
+      },
+      "onTarget": {
+        "_comment": "锁定目标的瞬间给一发减速。",
+        "spell": "irons_spellbooks:slow",
+        "level": 2,
+        "cooldown": 160,
+        "range": 24.0,
+        "target": "ATTACK_TARGET"
+      },
+      "onDeath": {
+        "_comment": "死亡爆裂：POSITION + RELATIVE，落点就是自己脚下（相对偏移 0,0,0）。",
+        "spell": "irons_spellbooks:ice_spikes",
+        "level": 3,
+        "cooldown": 0,
+        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+      },
+      "onKill": {
+        "_comment": "击杀后朝尸体方向补一发骷髅头。",
+        "spell": "irons_spellbooks:wither_skull",
+        "level": 2,
+        "cooldown": 240,
+        "range": 24.0,
+        "target": "ATTACK_TARGET"
+      }
+    },
+    {
+      "_comment": "测试变体（select.nameRegex）：名字形如“虚影-12”的幻翼换成一套引导测试法术；EYES_LOOK 落点 = 眼睛位置 + 视线方向 × range。",
+      "select": { "nameRegex": "^虚影-[0-9]+$" },
+      "override": true,
+      "goals": [
+        { "spell": "irons_spellbooks:starfall", "level": 1, "cooldown": 240, "priority": 1, "range": 20.0, "castTime": 60, "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:telekinesis", "level": 1, "cooldown": 200, "priority": 2, "range": 16.0, "target": "ATTACK_TARGET" }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:teleport",
+        "level": 1,
+        "cooldown": 200,
+        "range": 10.0,
+        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+      }
+    },
+    {
+      "_comment": "测试变体（select.tags + healthAbove）：带 phantom_elite 标签且血量高于 80% 时，开局先套闪避再打弹幕。",
+      "select": { "tags": ["phantom_elite"], "healthAbove": 0.8 },
+      "override": true,
+      "goals": [
+        { "spell": "irons_spellbooks:evasion", "level": 2, "cooldown": 300, "priority": 0, "range": 8.0, "target": "SELF" },
+        { "spell": "irons_spellbooks:magic_missile", "level": 3, "cooldown": 60, "priority": 1, "range": 24.0, "target": "ATTACK_TARGET" }
+      ]
+    },
+    {
+      "_comment": "测试变体（select.tags + healthBelow）：带 phantom_elite 标签且血量低于 40% 时，追加两个大招。",
+      "select": { "tags": ["phantom_elite"], "healthBelow": 0.4 },
+      "override": true,
+      "goals": [
+        { "spell": "irons_spellbooks:gravity_fissure", "level": 2, "cooldown": 200, "priority": 1, "range": 20.0, "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:electrocute", "level": 2, "cooldown": 180, "priority": 2, "range": 12.0, "target": "ATTACK_TARGET" },
+        { "spell": "irons_spellbooks:blood_slash", "level": 2, "cooldown": 220, "priority": 3, "range": 14.0, "chance": 0.5, "target": { "type": "RANDOM_HOSTILE", "sort": "RANDOM" } }
+      ]
+    }
+  ]
+}
