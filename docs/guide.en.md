@@ -213,6 +213,7 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 | `tags` | Contains all listed scoreboard tags. |
 | `healthBelow` | Health fraction strictly below this. |
 | `healthAbove` | Health fraction strictly above this. |
+| `tamed` | Whether the mob is tamed (`true` / `false`; only meaningful for tamable mobs). |
 
 Rules:
 
@@ -221,7 +222,7 @@ Rules:
 - A variant with `override: true` and no spells means "this individual casts nothing".
 - `name` and `nameRegex` require the mob to have a custom name.
 
-**Renaming** a mob re-syncs its goals automatically within a tick. **Changing tags does not** — run `/spellmob resync` afterwards.
+**Renaming** a mob re-syncs its goals automatically within a tick. **Taming or untaming** does as well. **Changing tags does not** — run `/spellmob resync` afterwards.
 
 ## Drops
 

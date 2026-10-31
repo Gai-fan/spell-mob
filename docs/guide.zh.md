@@ -213,6 +213,7 @@ saves/<世界>/datapacks/我的法术/
 | `tags` | 包含列出的全部计分板标签。 |
 | `healthBelow` | 血量比例严格低于此值。 |
 | `healthAbove` | 血量比例严格高于此值。 |
+| `tamed` | 是否已驯服（`true` / `false`，只对可驯服生物有意义）。 |
 
 规则：
 
@@ -221,7 +222,7 @@ saves/<世界>/datapacks/我的法术/
 - `override: true` 又不写任何法术 = 这个个体什么都不放。
 - `name` 与 `nameRegex` 要求生物有自定义名。
 
-**改名**会在一个 tick 内自动重同步目标；**改标签不会**——改完要执行 `/spellmob resync`。
+**改名**会在一个 tick 内自动重同步目标；**驯服或取消驯服**同样会自动重同步；**改标签不会**——改完要执行 `/spellmob resync`。
 
 ## 掉落
 

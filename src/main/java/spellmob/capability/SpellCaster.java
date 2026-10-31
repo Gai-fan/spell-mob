@@ -16,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
@@ -73,6 +74,9 @@ public final class SpellCaster implements ISpellCaster {
     /** Health value the variant rules were last evaluated against. */
     private float lastHealth;
 
+    /** Tamed state the variant rules were last evaluated against; taming unlocks variants. */
+    private boolean lastTamed;
+
     /** Variant index the current goals were built for, -1 meaning the species default. */
     private int lastVariantIndex;
 
@@ -113,7 +117,7 @@ public final class SpellCaster implements ISpellCaster {
             return;
         }
         syncGoalsIfRenamed();
-        syncGoalsIfHealthChanged();
+        syncGoalsIfVariantChanged();
         if (!SpellMobConfig.enabled()) {
             cancel(CancelReason.DISABLED);
             return;
@@ -195,23 +199,28 @@ public final class SpellCaster implements ISpellCaster {
     }
 
     /**
-     * Rebuilds the casting goals when a health based variant starts or stops matching.
+     * Rebuilds the casting goals when the mob moves into another variant.
      *
      * <p>Re-running the selectors for every loaded mob every tick would cost far more than the
-     * feature is worth, so the cheap case is one float comparison against the last seen health.
-     * The rebuild is deferred while a cast is in flight because {@code CastGoalSync#sync} removes
-     * the goals (and therefore cancels the cast); a phase change is not worth losing a cast over.</p>
+     * feature is worth, so only the cheap triggers are compared: the health value (one float) and
+     * the tamed flag (one entity data bit). Taming is checked here so a wolf unlocks its tamed
+     * variants the moment it is tamed, without a reload. The rebuild is deferred while a cast is in
+     * flight because {@code CastGoalSync#sync} removes the goals (and therefore cancels the cast);
+     * a phase change is not worth losing a cast over.</p>
      */
-    private void syncGoalsIfHealthChanged() {
+    private void syncGoalsIfVariantChanged() {
         if (!this.variantInitialized) {
             this.variantInitialized = true;
             this.lastHealth = mob.getHealth();
+            this.lastTamed = isTamed();
             this.lastVariantIndex = currentVariantIndex();
             return;
         }
         float health = mob.getHealth();
-        if (health != this.lastHealth) {
+        boolean tamed = isTamed();
+        if (health != this.lastHealth || tamed != this.lastTamed) {
             this.lastHealth = health;
+            this.lastTamed = tamed;
             int index = currentVariantIndex();
             if (index != this.lastVariantIndex) {
                 this.lastVariantIndex = index;
@@ -222,6 +231,10 @@ public final class SpellCaster implements ISpellCaster {
             this.variantResyncPending = false;
             CastGoalSync.sync(mob);
         }
+    }
+
+    private boolean isTamed() {
+        return mob instanceof TamableAnimal tamable && tamable.isTame();
     }
 
     private int currentVariantIndex() {

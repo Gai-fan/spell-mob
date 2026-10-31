@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.TamableAnimal;
 import org.jetbrains.annotations.Nullable;
 import spellmob.util.JsonHelper;
 
@@ -23,13 +24,15 @@ import spellmob.util.JsonHelper;
  *     <li>{@code tags} - scoreboard tags, all of them must be present</li>
  *     <li>{@code healthBelow} - current health below this fraction of the maximum health</li>
  *     <li>{@code healthAbove} - current health above this fraction of the maximum health</li>
+ *     <li>{@code tamed} - whether the mob is tamed (a wolf with an owner matches {@code true})</li>
  * </ul>
  *
  * <p>The health criteria turn variants into phases: put the low health variant first and it takes
  * over when the mob drops below the threshold, with the species default acting as the last phase.</p>
  */
 public record VariantSelector(@Nullable String name, @Nullable Pattern namePattern, List<String> tags,
-                              @Nullable Double healthBelow, @Nullable Double healthAbove) {
+                              @Nullable Double healthBelow, @Nullable Double healthAbove,
+                              @Nullable Boolean tamed) {
 
     public VariantSelector {
         tags = List.copyOf(tags);
@@ -78,11 +81,21 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
                     where + ": 'healthBelow' must be greater than 'healthAbove', otherwise no health matches");
         }
 
-        if (name == null && pattern == null && tags.isEmpty() && healthBelow == null && healthAbove == null) {
-            throw new IllegalArgumentException(where
-                    + ": needs at least one of 'name', 'nameRegex', 'tags', 'healthBelow' or 'healthAbove'");
+        Boolean tamed = null;
+        JsonElement tamedElement = json.get("tamed");
+        if (tamedElement != null && !tamedElement.isJsonNull()) {
+            if (!tamedElement.isJsonPrimitive() || !tamedElement.getAsJsonPrimitive().isBoolean()) {
+                throw new IllegalArgumentException(where + ": 'tamed' must be a boolean");
+            }
+            tamed = tamedElement.getAsBoolean();
         }
-        return new VariantSelector(name, pattern, tags, healthBelow, healthAbove);
+
+        if (name == null && pattern == null && tags.isEmpty() && healthBelow == null && healthAbove == null
+                && tamed == null) {
+            throw new IllegalArgumentException(where
+                    + ": needs at least one of 'name', 'nameRegex', 'tags', 'healthBelow', 'healthAbove' or 'tamed'");
+        }
+        return new VariantSelector(name, pattern, tags, healthBelow, healthAbove, tamed);
     }
 
     private static @Nullable Double optFraction(JsonObject json, String key, String where) {
@@ -122,6 +135,9 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
         if (!tags.isEmpty() && !mob.getTags().containsAll(tags)) {
             return false;
         }
+        if (tamed != null && isTamed(mob) != tamed) {
+            return false;
+        }
         if (healthBelow != null || healthAbove != null) {
             double fraction = healthFraction(mob);
             if (healthBelow != null && fraction >= healthBelow) {
@@ -132,6 +148,10 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
             }
         }
         return true;
+    }
+
+    private static boolean isTamed(Mob mob) {
+        return mob instanceof TamableAnimal tamable && tamable.isTame();
     }
 
     private static double healthFraction(Mob mob) {
@@ -149,7 +169,7 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
 
     /** @return a short human readable form, used by {@code /spellmob info} and logs */
     public String describe() {
-        List<String> parts = new ArrayList<>(5);
+        List<String> parts = new ArrayList<>(6);
         if (name != null) {
             parts.add("name=" + name);
         }
@@ -164,6 +184,9 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
         }
         if (healthAbove != null) {
             parts.add(String.format(Locale.ROOT, "health>%.2f", healthAbove));
+        }
+        if (tamed != null) {
+            parts.add("tamed=" + tamed);
         }
         return parts.isEmpty() ? "any mob" : String.join(" & ", parts);
     }
