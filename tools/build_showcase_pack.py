@@ -262,7 +262,7 @@ def main() -> int:
 
     (OUT / "pack.mcmeta").write_text(json.dumps({
         "pack": {
-            "pack_format": 15,
+            "pack_format": 48,
             "description": "SpellMob Showcase - 15 vanilla mobs that cast Iron's Spells",
         }
     }, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

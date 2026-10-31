@@ -15,9 +15,9 @@ No new items, blocks or entities. Everything is driven by Minecraft's own data p
 
 | | |
 | --- | --- |
-| Minecraft | 1.20.1 |
-| Forge | 47.x |
-| Iron's Spells 'n Spellbooks | 1.20.1-3.4.0.9 or newer (every spell used exists in both 3.4.0.9 and 3.16.3) |
+| Minecraft | 1.21.1 |
+| NeoForge | 21.1.x |
+| Iron's Spells 'n Spellbooks | 1.21.1-3.16.3 or newer (every spell used exists in 3.16.3) |
 | SpellMob | 2.0.0 or newer |
 | Configured (optional) | only needed if you want a GUI for the mod's own settings |
 

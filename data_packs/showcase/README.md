@@ -6,9 +6,9 @@
 
 | 项目 | 要求 |
 | --- | --- |
-| Minecraft | 1.20.1 |
-| Forge | 47.x |
-| Iron's Spells 'n Spellbooks | `1.20.1-3.4.0.9` 或更高（本包只使用 3.4.0.9 与 3.16.3 都存在的法术） |
+| Minecraft | 1.21.1 |
+| NeoForge | 21.1.x |
+| Iron's Spells 'n Spellbooks | `1.21.1-3.16.3` 或更高 |
 | SpellMob | `2.0.0` 或更高 |
 
 ## 安装

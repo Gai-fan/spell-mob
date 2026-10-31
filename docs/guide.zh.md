@@ -12,11 +12,11 @@ SpellMob 是 *Iron's Spells 'n Spellbooks*（ISS）的附属模组，不添加�
 
 | | |
 |---|---|
-| Minecraft | 1.20.1 |
-| Forge | 47.x |
-| Iron's Spells 'n Spellbooks | `1.20.1-3.4.0.9` 或更新（已验证到 `3.16.3`） |
+| Minecraft | 1.21.1 |
+| NeoForge | 21.1.x |
+| Iron's Spells 'n Spellbooks | `1.21.1-3.16.3` 或更新 |
 
-SpellMob 本身没有其它依赖。如果使用 ISS 3.15+，请按 ISS 的要求装好它需要的前置（新版 Forge、GeckoLib、Curios、`irons_lib`）——那是 ISS 的要求，不是本模组的。
+SpellMob 本身没有其它依赖。如果使用 ISS 3.15+，请按 ISS 的要求装好它需要的前置（新版 NeoForge、GeckoLib、Curios、`irons_lib`）——那是 ISS 的要求，不是本模组的。
 
 ## 安装
 
@@ -288,7 +288,7 @@ saves/<世界>/datapacks/我的法术/
 - **纯服务端。** 客户端不需要装模组；法阵是服务端发送的普通粒子。
 - **数据包路径必须镜像实体 id。** `data/mypack/` 下的文件永远影响不到 `minecraft:zombie`。
 - **未知 JSON 键会被忽略。** 字段名拼错不会报错——用 `validate` 和 `info` 抓。
-- **ISS 版本。** 以 3.4.0.9 的 API 编译，已在 3.16.3 上验证；jar 声明 `[1.20.1-3.4.0.9,)`。
+- **ISS 版本。** 以 3.16.3 的 API 编译并验证；jar 声明 `[1.21.1-3.16.3,)`。
 
 ## 示例
 

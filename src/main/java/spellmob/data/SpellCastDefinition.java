@@ -18,7 +18,7 @@ import spellmob.util.JsonHelper;
  * <p>Instances are immutable and shared by every mob that uses the same data pack entry.</p>
  *
  * @param spellId           id of the Iron's Spellbooks spell
- * @param level             spell level, clamped to the spell's maximum
+ * @param level             spell level, clamped to 1..10 (ISS caps it again at cast time)
  * @param cooldownTicks     cooldown in ticks, negative means "use the spell's own cooldown"
  * @param priority          goal priority, clamped to 0..9
  * @param range             maximum distance to the target, in blocks
@@ -105,7 +105,7 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
             }
         }
 
-        int level = Math.max(1, Math.min(spell.getMaxLevel(), JsonHelper.optInt(json, "level", 1)));
+        int level = JsonHelper.optInt(json, "level", 1);
         return new SpellCastDefinition(
                 spellId,
                 level,

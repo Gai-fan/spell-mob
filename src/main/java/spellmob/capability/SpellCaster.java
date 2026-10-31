@@ -361,6 +361,15 @@ public final class SpellCaster implements ISpellCaster {
             return false;
         }
 
+        // ISS resolves a spell's maximum level through its config manager, and a spell can be
+        // missing from that map while the data pack loads (before ISS fills it). Clamping here,
+        // at cast time, keeps the configured level intact and still never exceeds what ISS allows.
+        // ISS 1.21.1 reads a spell's max level from its config manager, which defaults to 1 when
+        // no per-spell entry exists. That default would flatten every configured level to 1, so the
+        // cap is only applied when the config actually declares a higher maximum.
+        int configuredMax = spell.getMaxLevel();
+        int spellLevel = configuredMax > 1 ? Math.min(definition.level(), configuredMax) : definition.level();
+
         Vec3 aim = position != null ? position : target != null && target != mob ? target.getEyePosition() : null;
         if (aim != null) {
             mob.lookAt(EntityAnchorArgument.Anchor.EYES, aim);
@@ -368,7 +377,7 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         try {
-            if (!spell.checkPreCastConditions(level, definition.level(), mob, magicData)) {
+            if (!spell.checkPreCastConditions(level, spellLevel, mob, magicData)) {
                 Logs.debug("{} failed pre-cast conditions for {}", mob, definition.spellId());
                 this.retryAtTick = mob.tickCount + FAILED_CAST_BACKOFF_TICKS;
                 return false;
@@ -381,7 +390,7 @@ public final class SpellCaster implements ISpellCaster {
 
         int castTime = instant ? 0
                 : definition.castTimeTicks() >= 0 ? definition.castTimeTicks()
-                : Math.max(0, spell.getEffectiveCastTime(definition.level(), mob));
+                : Math.max(0, spell.getEffectiveCastTime(spellLevel, mob));
         int cooldownTicks = definition.cooldownTicks() >= 0 ? definition.cooldownTicks()
                 : Math.max(1, spell.getSpellCooldown() * 20);
         // A channeled spell keeps its cooldown until the channel ends (see applyCooldown): charging
@@ -395,9 +404,9 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         try {
-            magicData.initiateCast(spell, definition.level(), castTime, CastSource.MOB,
+            magicData.initiateCast(spell, spellLevel, castTime, CastSource.MOB,
                     SpellSelectionManager.MAINHAND);
-            spell.onServerPreCast(level, definition.level(), mob, magicData);
+            spell.onServerPreCast(level, spellLevel, mob, magicData);
         } catch (Throwable throwable) {
             Logs.error("Spell " + definition.spellId() + " threw while starting its cast", throwable);
             magicData.resetCastingState();
@@ -417,10 +426,10 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         this.retryAtTick = 0;
-        ActiveCast cast = new ActiveCast(definition, spell, castTime, target, position,
+        ActiveCast cast = new ActiveCast(definition, spell, spellLevel, castTime, target, position,
                 channel, scaledCooldown, key);
         this.active = cast;
-        Logs.debug("{} starts casting {} (level {}, {} ticks)", mob, definition.spellId(), definition.level(), castTime);
+        Logs.debug("{} starts casting {} (level {}, {} ticks)", mob, definition.spellId(), spellLevel, castTime);
         CastingPresentation.onCastStart(mob, spell, castTime);
         if (castTime <= 0) {
             complete(cast);
@@ -581,12 +590,12 @@ public final class SpellCaster implements ISpellCaster {
         private int ticks;
         private boolean repeatedOnCast;
 
-        private ActiveCast(SpellCastDefinition definition, AbstractSpell spell, int totalTicks,
+        private ActiveCast(SpellCastDefinition definition, AbstractSpell spell, int level, int totalTicks,
                            @Nullable LivingEntity target, @Nullable Vec3 position,
                            boolean channel, int cooldownTicks, String cooldownKey) {
             this.definition = definition;
             this.spell = spell;
-            this.level = definition.level();
+            this.level = level;
             this.totalTicks = totalTicks;
             this.target = target;
             this.position = position;

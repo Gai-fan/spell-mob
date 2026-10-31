@@ -2,8 +2,8 @@
 
 一个数据驱动的生物施法模组：用数据包给任意生物配置法术，让它们像术士一样吟唱、索敌、开火。
 
-* Minecraft 1.20.1 / Forge 47.x
-* 必须安装 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/mc-mods/irons-spells-n-spellbooks) `1.20.1-3.4.0.9` 或更高
+* Minecraft 1.21.1 / NeoForge 21.1.x
+* 必须安装 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/mc-mods/irons-spells-n-spellbooks) `1.21.1-3.16.3` 或更高
 * 纯服务端逻辑，客户端无需安装（但联机时服务端必须装）
 
 > 完整使用文档：[中文](docs/guide.zh.md) · [English](docs/guide.en.md)
@@ -25,7 +25,7 @@
 
 ## 快速开始
 
-1. 安装 Forge 1.20.1-47.x 与 Iron's Spells 'n Spellbooks；
+1. 安装 NeoForge 21.1.x 与 Iron's Spells 'n Spellbooks；
 2. 把数据包放进世界的 `datapacks/` 目录（或模组的 `data/` 里），路径形如：
 
    ```
@@ -352,7 +352,7 @@ extraRules = [
 * `entity` 必填，其余字段与数据包 JSON 完全一致（不支持 `variants`，个体定向仍然只走数据包）；
 * 单条解析失败只会丢弃该条并打一行警告，不影响其它条目；
 * **优先级**：同一物种只要数据包里有文件，就以数据包为准，配置里的同物种条目被忽略，并在日志里打一行 `Config rule for <id> ignored: the data pack already defines it`；
-* 改完配置后重启游戏/服务器生效（Forge 不会随 `/reload` 重读配置）；若 GUI 或其它工具触发了配置热重载，本模组会自动重新应用并重建 Goal；
+* 改完配置后重启游戏/服务器生效（NeoForge 不会随 `/reload` 重读配置）；若 GUI 或其它工具触发了配置热重载，本模组会自动重新应用并重建 Goal；
 * 用 Configured 打开这份配置时，`extraRules` 就是一个字符串列表，可以逐条增删改。
 
 ### 名字锁

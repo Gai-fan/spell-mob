@@ -12,11 +12,11 @@ SpellMob is an addon for *Iron's Spells 'n Spellbooks* (ISS). It adds no blocks,
 
 | | |
 |---|---|
-| Minecraft | 1.20.1 |
-| Forge | 47.x |
-| Iron's Spells 'n Spellbooks | `1.20.1-3.4.0.9` or newer (verified up to `3.16.3`) |
+| Minecraft | 1.21.1 |
+| NeoForge | 21.1.x |
+| Iron's Spells 'n Spellbooks | `1.21.1-3.16.3` or newer |
 
-SpellMob itself has no other dependencies. If you run ISS 3.15+, install the extra dependencies ISS asks for (newer Forge, GeckoLib, Curios, `irons_lib`) — those are ISS's requirements, not SpellMob's.
+SpellMob itself has no other dependencies. If you run ISS 3.15+, install the extra dependencies ISS asks for (newer NeoForge, GeckoLib, Curios, `irons_lib`) — those are ISS's requirements, not SpellMob's.
 
 ## Installation
 
@@ -288,7 +288,7 @@ Permission level 2 required.
 - **Server-side only.** Clients do not need the mod; the circles are ordinary particles the server sends.
 - **Data pack paths mirror entity ids.** A file under `data/mypack/` can never affect `minecraft:zombie`.
 - **Unknown JSON keys are ignored.** Typos in field names fail silently — `validate` and `info` are the way to catch them.
-- **ISS versions.** Built against the 3.4.0.9 API and verified against 3.16.3; the jar declares `[1.20.1-3.4.0.9,)`.
+- **ISS versions.** Built against and verified with 3.16.3; the jar declares `[1.21.1-3.16.3,)`.
 
 ## Examples
 

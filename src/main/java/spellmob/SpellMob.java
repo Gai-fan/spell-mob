@@ -8,6 +8,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import org.slf4j.Logger;
+import spellmob.capability.SpellCasterAttachments;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.SpellCasterReloadListener;
 
@@ -25,6 +26,7 @@ public final class SpellMob {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public SpellMob(IEventBus modEventBus, ModContainer modContainer) {
+        SpellCasterAttachments.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.COMMON, SpellMobConfig.SPEC, "spellmob-common.toml");
         NeoForge.EVENT_BUS.addListener(SpellMob::onAddReloadListener);
         LOGGER.info("SpellMob is loading: data packs under data/<namespace>/spell_casters are parsed on /reload");
