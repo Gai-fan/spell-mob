@@ -1,77 +1,76 @@
 {
-  "_comment": "驯服狼示例：野生狼保持原版行为，被玩家驯服后才解锁法术。判据是 select.tamed，它在驯服/取消驯服的同一秒内生效，不需要 /reload。",
+  "_comment": "保存为 数据包/data/minecraft/spell_casters/wolf.json，进世界 /reload 生效。普通狼会施法；已驯服的狼在普通狼的全部配置之上追加新法术（override:false = 合并，不删除原有内容）。",
+
+  "goals": [
+    {
+      "_comment": "所有狼（含未驯服）共有：6 格内用唤魔獠牙开撕。",
+      "spell": "irons_spellbooks:fang_strike",
+      "level": 2,
+      "cooldown": 100,
+      "priority": 1,
+      "range": 6.0,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "_comment": "所有狼共有：目标拉开距离后补奥术飞弹。",
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 2,
+      "cooldown": 140,
+      "priority": 2,
+      "range": 16.0,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+
+  "onHurt": {
+    "_comment": "所有狼共有：挨打时放守护，会同时覆盖 8 格内的盟友（狼与主人算盟友）。",
+    "spell": "irons_spellbooks:fortify",
+    "level": 1,
+    "cooldown": 240,
+    "target": "SELF"
+  },
+
+  "onTarget": {
+    "_comment": "所有狼共有：锁定目标时先挂减速。",
+    "spell": "irons_spellbooks:slow",
+    "level": 1,
+    "cooldown": 200,
+    "range": 16.0,
+    "target": "ATTACK_TARGET"
+  },
+
   "variants": [
     {
-      "_comment": "阶段 1（残血保命）：生命低于 35% 时先奶自己，再套护盾。优先级 0 保证压过战斗法术。",
       "select": {
-        "tamed": true,
-        "healthBelow": 0.35
+        "tamed": true
       },
+      "override": false,
+      "_comment": "只对已驯服的狼生效。override:false 表示合并：这里的 goals 排在顶层 goals 之前，顶层两条攻击法术一条都不丢；这里没有重写 onHurt/onTarget，所以继续沿用顶层的守护与减速。",
       "goals": [
         {
+          "_comment": "驯服后新增：血量低于 60% 时先自愈，优先级 0 压过所有攻击法术。",
           "spell": "irons_spellbooks:heal",
           "level": 2,
-          "cooldown": 300,
+          "cooldown": 260,
           "priority": 0,
-          "target": "SELF"
+          "target": "SELF",
+          "conditions": {
+            "healthBelow": 0.6
+          }
         },
         {
+          "_comment": "驯服后新增：套盾，10 tick 吟唱，期间受伤会被打断。",
           "spell": "irons_spellbooks:shield",
           "level": 1,
-          "cooldown": 400,
+          "cooldown": 360,
           "priority": 1,
           "castTime": 10,
           "interruptOnDamage": true,
           "target": "SELF"
         }
-      ]
-    },
-    {
-      "_comment": "阶段 2（驯服后的战斗包）：近身用唤魔獠牙，拉开距离用奥术飞弹；挨打时给主人和自己补守护，锁敌时先减速，收尾后加速追击。",
-      "select": {
-        "tamed": true
-      },
-      "goals": [
-        {
-          "spell": "irons_spellbooks:fang_strike",
-          "level": 2,
-          "cooldown": 120,
-          "priority": 0,
-          "range": 6.0,
-          "castTime": 10,
-          "target": "ATTACK_TARGET"
-        },
-        {
-          "spell": "irons_spellbooks:magic_missile",
-          "level": 1,
-          "cooldown": 160,
-          "priority": 1,
-          "range": 14.0,
-          "castTime": 8,
-          "target": "ATTACK_TARGET",
-          "conditions": {
-            "minTargetDistance": 5.0
-          }
-        }
       ],
-      "onHurt": {
-        "_comment": "狼被打时放守护：范围增益会同时覆盖 8 格内的主人——驯服动物对主人算盟友。",
-        "spell": "irons_spellbooks:fortify",
-        "level": 1,
-        "cooldown": 240,
-        "castTime": 10,
-        "target": "SELF"
-      },
-      "onTarget": {
-        "_comment": "锁定目标时先挂减速，方便主人补刀。",
-        "spell": "irons_spellbooks:slow",
-        "level": 1,
-        "cooldown": 200,
-        "range": 16.0,
-        "target": "ATTACK_TARGET"
-      },
       "onKill": {
-        "_comment": "收尾后短暂加速，继续追下一个目标。",
+        "_comment": "驯服后新增触发器：击杀目标后加速追击。普通狼没有这条，因为 onKill 只写在变体里；而变体没写的触发器才继承顶层。",
         "spell": "irons_spellbooks:haste",
         "level": 1,
         "cooldown": 260,
