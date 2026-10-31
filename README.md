@@ -6,12 +6,14 @@
 * 必须安装 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/mc-mods/irons-spells-n-spellbooks) `1.20.1-3.4.0.9` 或更高
 * 纯服务端逻辑，客户端无需安装（但联机时服务端必须装）
 
+> 完整使用文档：[中文](docs/guide.zh.md) · [English](docs/guide.en.md)
+
 ## 特性
 
 * **数据包驱动** —— 不注册任何新实体、方块或物品，只解析 `data/<namespace>/spell_casters/<entity_id>.json`
 * **五种触发方式** —— 周期性施法（`goals`）、受伤时（`onHurt`）、锁定目标时（`onTarget`）、死亡时（`onDeath`）、击杀后（`onKill`）
 * **15 种目标类型 + 5 种位置模式**，覆盖"打当前目标""打最近的亡灵""传送到随机位置"等常见需求
-* **走 Iron's Spellbooks 自己的施法管线** —— 读条、施法音效、冷却、`CastSource.MOB` 语义全部与 ISS 一致，而不是直接调 `onCast`
+* **走 Iron's Spellbooks 自己的施法管线** —— 读条、施法音效与 `CastSource.MOB` 语义与 ISS 一致（冷却由数据包控制），而不是直接调 `onCast`
 * **真正可用的优先级** —— JSON 里的 `priority` 会用于 `GoalSelector`，施法期间占用 `MOVE` + `LOOK`，不会再被原版近战 AI 抢掉
 * **全局配置** —— `config/spellmob-common.toml`：总开关、冷却倍率、最大射程、实体/维度黑名单、名字保护、粒子表现、物种规则
 * **个体定向** —— `variants` 按名字、正则或 scoreboard tag 挑出个别生物：同名物种里 A 与 B 可以放不同法术，其余个体完全不施法
