@@ -36,11 +36,11 @@
 3. 进游戏执行 `/reload`；
 4. 生成对应生物验证。
 
-内置示例：`skeleton`（箭雨 + 受伤传送）、`wolf`（尖牙护盾 + 治疗主人），两份个体定向测试数据：`zombie`（只有命名为 `A` / `B` 的僵尸分别放火球 / 闪电枪，其余僵尸不施法；`A` 血量低于 40% 后会换成冰刺并演示打断、概率施法、共享冷却组）、`villager`（未命名村民统一放治疗，命名为 `C` / `D` 的村民不施法），以及一份**全量参考示例** `husk`（五类触发器、五种筛选条件、所有施法字段都用到；和仓库里的 `examples/full-reference.json` 内容一致）。
+安装后**模组本身不附带任何数据包**：只装模组，世界里所有生物的行为保持不变。想直接看效果，从仓库的 `examples/` 里挑一份装进世界——`classic/`（僵尸 A/B + 骷髅/狼/村民/尸壳的早期示例，后四个会作用于全部同类）、`bosses/`（六个名字+tag 双门控 Boss，只影响被命名的个体）、`channel_test/`（引导法术测试，作用于全部掠夺者/卫道士）；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
 
 ### Boss 数据包（`examples/bosses/`）
 
-仓库里的 `examples/bosses/` 是一份独立数据包，内置五个“名字 + tag”双重限定的 Boss，野生同类生物不受影响：
+仓库里的 `examples/bosses/` 是一份独立数据包，内置六个“名字 + tag”双重限定的 Boss，野生同类生物不受影响：
 
 | 文件 | Boss | 基底 | 机制 |
 |---|---|---|---|
@@ -48,7 +48,8 @@
 | `zombie_villager.json` | 血誓祭司 | 僵尸村民 | 召唤亡灵滚雪球；击杀/死亡都召唤 |
 | `ravager.json` | 雷霆战帅 | 劫掠兽 | 雷暴控场 + 冲击波反击；阵亡雷暴 |
 | `wither_skeleton.json` | 虚空织法者 | 凋灵骷髅 | 黑洞拉扯 + 穿墙声波；阵亡黑洞 |
-| `phantom.json` | 夜翼女妖 | 幻翼 | 空中雷暴 + 连锁闪电；挨打瞬移 |
+| `phantom.json` | 虚空之眼 | 幻翼 | 五阶段、九学派轮转 + 引导法术；挨打瞬移 |
+| `husk.json` | 沙海祭司 | 尸壳 | 四阶段；五类触发器全用上 + 掉落规则 |
 
 安装：把 `examples/bosses/` 整个复制到 `saves/<存档>/datapacks/spellmob_bosses/`（目录里应有 `pack.mcmeta` 与 `data/`），进游戏 `/reload`，日志出现 `Loaded N spell caster definition(s)` 即生效。
 

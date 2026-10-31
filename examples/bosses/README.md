@@ -6,7 +6,7 @@
 
 1. 把整个 `bosses/` 目录复制到 `saves/<存档>/datapacks/spellmob_bosses/`（目录里应能看到 `pack.mcmeta` 和 `data/`）；
 2. 进入世界执行 `/reload`；
-3. 日志出现 `[SpellMob] Loaded N spell caster definition(s)` 即生效（装了本包应为 10 条：4 条内置 + 6 条 Boss——本包的 `husk.json` 会覆盖内置的尸壳示例）；
+3. 日志出现 `[SpellMob] Loaded N spell caster definition(s)` 即生效（装了本包应为 6 条；模组本身不再附带内置数据包）；
 4. 用下面的命令召唤，`/spellmob info @e[tag=frost,limit=1]` 可以确认配置是否命中。
 
 ## 召唤命令
@@ -67,6 +67,6 @@
 ## 注意
 
 - Boss 是普通生物的加强版，会被原版机制影响（击退、跌落、白天燃烧、被船/矿车困住等）；
-- 本包里的 `husk.json` 与内置示例同名，会覆盖它：装了本包后普通尸壳不再施法，只有被召唤的“沙海祭司”会；想让普通尸壳继续按内置示例施法，删掉本包的 `husk.json` 即可；
+- 本包的 `husk.json` 与 `examples/classic/` 里的尸壳示例同名；若两者同时安装，本包会覆盖后者（普通尸壳回到不施法，只有被召唤的“沙海祭司”会）；
 - 幻翼在白天会燃烧，建议夜晚或室内使用；
 - 改了 tag 之后要 `/spellmob resync` 才会立即生效，改名字会自动重同步。
