@@ -1,0 +1,260 @@
+{
+  "_comment": "SpellMob 法术类型示范：按功能各取一个法术，覆盖瞬发、吟唱、引导三种施法形态，以及伤害、控制、治疗、增益、防御、位移、召唤、连锁、斩杀、穿墙与掉落。",
+  "variants": [
+    {
+      "_comment": "阶段变体放在最前：血量低于 50% 且带 storm 标签时切换到爆发组，覆盖后面的常规配置。",
+      "select": {
+        "tags": ["spellmob_demo", "storm"],
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 20,
+          "castTime": 20,
+          "target": {
+            "type": "POSITION",
+            "positionMode": "TARGET_ENTITY"
+          }
+        },
+        {
+          "spell": "irons_spellbooks:dragon_breath",
+          "level": 1,
+          "cooldown": 260,
+          "priority": 2,
+          "range": 10,
+          "castTime": 50,
+          "interruptOnDamage": false,
+          "repeatOnCast": true,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:heal",
+          "level": 3,
+          "cooldown": 200,
+          "priority": 3,
+          "target": "SELF",
+          "conditions": {
+            "healthBelow": 0.4
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "常规组：每一条对应一种法术类型，优先级与冷却按用途区分。",
+      "select": {
+        "name": "风暴术士",
+        "tags": ["spellmob_demo"]
+      },
+      "override": true,
+      "goals": [
+        {
+          "_comment": "瞬发单体伤害：castTime 写 0 表示立即结算。",
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 20,
+          "castTime": 0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "吟唱单体伤害：castTime 覆盖吟唱时长。",
+          "spell": "irons_spellbooks:magic_arrow",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 1,
+          "range": 26,
+          "castTime": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "引导持续伤害：引导期间每 10 tick 结算一次，被近战打断时中止。",
+          "spell": "irons_spellbooks:poison_breath",
+          "level": 1,
+          "cooldown": 280,
+          "priority": 2,
+          "range": 8,
+          "castTime": 60,
+          "interruptOnDamage": true,
+          "repeatOnCast": true,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "范围伤害：以目标脚下为落点。",
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 1,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 18,
+          "castTime": 15,
+          "target": {
+            "type": "POSITION",
+            "positionMode": "TARGET_ENTITY"
+          }
+        },
+        {
+          "_comment": "控制：定身，概率触发。",
+          "spell": "irons_spellbooks:root",
+          "level": 1,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 16,
+          "chance": 0.4,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "治疗：低血时对自己使用。",
+          "spell": "irons_spellbooks:heal",
+          "level": 2,
+          "cooldown": 300,
+          "priority": 3,
+          "target": "SELF",
+          "conditions": {
+            "healthBelow": 0.7
+          }
+        },
+        {
+          "_comment": "增益：提高自身移动速度。",
+          "spell": "irons_spellbooks:haste",
+          "level": 1,
+          "cooldown": 400,
+          "priority": 4,
+          "target": "SELF"
+        },
+        {
+          "_comment": "防御：护盾，吟唱可被打断。",
+          "spell": "irons_spellbooks:shield",
+          "level": 1,
+          "cooldown": 500,
+          "priority": 3,
+          "range": 2,
+          "castTime": 10,
+          "interruptOnDamage": true,
+          "target": "SELF"
+        },
+        {
+          "_comment": "位移：在自身周围随机落点。",
+          "spell": "irons_spellbooks:teleport",
+          "level": 1,
+          "cooldown": 260,
+          "priority": 4,
+          "range": 10,
+          "target": {
+            "type": "POSITION",
+            "positionMode": "RANDOM_IN_RANGE"
+          }
+        },
+        {
+          "_comment": "召唤：生成一只恼鬼。",
+          "spell": "irons_spellbooks:summon_vex",
+          "level": 1,
+          "cooldown": 450,
+          "priority": 3,
+          "castTime": 30,
+          "target": "SELF"
+        },
+        {
+          "_comment": "连锁伤害：与穿墙法术共用冷却组。",
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 1,
+          "cooldown": 220,
+          "priority": 2,
+          "range": 20,
+          "cooldownGroup": "storm_cycle",
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "_comment": "穿墙伤害：不要求视线，与连锁法术共用冷却组。",
+          "spell": "irons_spellbooks:blight",
+          "level": 1,
+          "cooldown": 240,
+          "priority": 3,
+          "range": 16,
+          "cooldownGroup": "storm_cycle",
+          "target": {
+            "type": "ATTACK_TARGET",
+            "lineOfSight": false
+          }
+        },
+        {
+          "_comment": "斩杀：只对生命值不高于 30% 的最近敌人使用。",
+          "spell": "irons_spellbooks:blood_slash",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 0,
+          "range": 8,
+          "castTime": 10,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "sort": "LOWEST_HEALTH",
+            "maxHealthPercent": 0.3
+          }
+        }
+      ],
+      "onHurt": {
+        "_comment": "受击反制：对最后伤害来源释放鲜血飞针。",
+        "spell": "irons_spellbooks:blood_needles",
+        "level": 1,
+        "cooldown": 220,
+        "range": 16,
+        "target": "LAST_DAMAGE_SOURCE"
+      },
+      "onTarget": {
+        "_comment": "锁定目标时减速。",
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 260,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      },
+      "onDeath": {
+        "_comment": "死亡时在自身周围随机落点炸开冰刺。",
+        "spell": "irons_spellbooks:ice_spikes",
+        "level": 1,
+        "range": 6,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE"
+        }
+      },
+      "onKill": {
+        "_comment": "击杀后治疗自身。",
+        "spell": "irons_spellbooks:heal",
+        "level": 1,
+        "cooldown": 240,
+        "target": "SELF"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "_comment": "演示 item 与 lootTable 两种掉落来源、抢夺加成，以及不要求玩家击杀的条目。",
+      "select": {
+        "name": "风暴术士"
+      },
+      "chance": 1.0,
+      "drops": [
+        {
+          "item": "minecraft:emerald",
+          "minCount": 3,
+          "maxCount": 6,
+          "looting": true
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "chance": 0.3
+        },
+        {
+          "lootTable": "minecraft:chests/desert_pyramid",
+          "chance": 0.15,
+          "requirePlayerKill": false
+        }
+      ]
+    }
+  ]
+}
