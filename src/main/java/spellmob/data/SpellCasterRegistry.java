@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.Nullable;
 import spellmob.util.Logs;
 
@@ -77,7 +77,7 @@ public final class SpellCasterRegistry {
      * @return the rules, or null when the entity type is not configured
      */
     public static @Nullable SpellCasterRules get(EntityType<?> type) {
-        return get(ForgeRegistries.ENTITY_TYPES.getKey(type));
+        return get(BuiltInRegistries.ENTITY_TYPE.getKey(type));
     }
 
     /** @return how many entity types are configured by either source */

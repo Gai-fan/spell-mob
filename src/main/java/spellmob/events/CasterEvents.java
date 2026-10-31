@@ -11,26 +11,28 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.CastType;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 import spellmob.SpellMob;
 import spellmob.capability.CancelReason;
 import spellmob.capability.ISpellCaster;
-import spellmob.capability.SpellCasterCapability;
+import spellmob.capability.SpellCasterAttachments;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.DropEntry;
 import spellmob.data.DropRule;
@@ -42,15 +44,10 @@ import spellmob.goal.CastGoalSync;
 import spellmob.util.TargetResolver;
 
 /** All forge event hooks of the mod. */
-@Mod.EventBusSubscriber(modid = SpellMob.MOD_ID)
+@EventBusSubscriber(modid = SpellMob.MOD_ID)
 public final class CasterEvents {
 
     private CasterEvents() {
-    }
-
-    @SubscribeEvent
-    public static void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        SpellCasterCapability.onAttachCapabilities(event);
     }
 
     @SubscribeEvent
@@ -69,8 +66,10 @@ public final class CasterEvents {
             return;
         }
         if (event.getEntity() instanceof Mob mob) {
-            mob.getCapability(SpellCasterCapability.capability())
-                    .ifPresent(caster -> caster.cancel(CancelReason.UNLOADED));
+            ISpellCaster caster = SpellCasterAttachments.get(mob);
+            if (caster != null) {
+                caster.cancel(CancelReason.UNLOADED);
+            }
         }
     }
 
@@ -105,11 +104,14 @@ public final class CasterEvents {
     }
 
     @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
+    public static void onLivingTick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide()) {
             return;
         }
-        mob.getCapability(SpellCasterCapability.capability()).ifPresent(ISpellCaster::tick);
+        ISpellCaster caster = SpellCasterAttachments.get(mob);
+        if (caster != null) {
+            caster.tick();
+        }
     }
 
     @SubscribeEvent
@@ -121,14 +123,12 @@ public final class CasterEvents {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            CastGoalSync.tick(event.getServer());
-        }
+    public static void onServerTick(ServerTickEvent.Post event) {
+        CastGoalSync.tick(event.getServer());
     }
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(LivingIncomingDamageEvent event) {
         LivingEntity hurt = event.getEntity();
         if (hurt.level().isClientSide()) {
             return;
@@ -151,33 +151,35 @@ public final class CasterEvents {
         if (!(hurt instanceof Mob mob)) {
             return;
         }
-        mob.getCapability(SpellCasterCapability.capability()).ifPresent(caster -> {
-            SpellCastDefinition casting = caster.castingDefinition();
-            if (casting == null) {
-                return;
-            }
-            AbstractSpell spell = casting.spell();
-            if (spell != null && spell.getCastType() == CastType.CONTINUOUS) {
-                // Channels follow the global switch plus the per mob immunity tag, so a boss can
-                // keep channeling through damage while ordinary mobs are easy to interrupt.
-                if (SpellMobConfig.interruptChannelsOnDamage() && !SpellMobConfig.isChannelImmune(mob)) {
-                    caster.cancel(CancelReason.DAMAGED);
-                }
-                return;
-            }
-            if (casting.interruptOnDamage()) {
+        ISpellCaster caster = SpellCasterAttachments.get(mob);
+        if (caster == null) {
+            return;
+        }
+        SpellCastDefinition casting = caster.castingDefinition();
+        if (casting == null) {
+            return;
+        }
+        AbstractSpell spell = casting.spell();
+        if (spell != null && spell.getCastType() == CastType.CONTINUOUS) {
+            // Channels follow the global switch plus the per mob immunity tag, so a boss can
+            // keep channeling through damage while ordinary mobs are easy to interrupt.
+            if (SpellMobConfig.interruptChannelsOnDamage() && !SpellMobConfig.isChannelImmune(mob)) {
                 caster.cancel(CancelReason.DAMAGED);
             }
-        });
+            return;
+        }
+        if (casting.interruptOnDamage()) {
+            caster.cancel(CancelReason.DAMAGED);
+        }
     }
 
     @SubscribeEvent
     public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity.level().isClientSide() || event.getNewTarget() == null) {
+        if (entity.level().isClientSide() || event.getNewAboutToBeSetTarget() == null) {
             return;
         }
-        trigger(entity, SpellCasterData::onTarget, event.getNewTarget());
+        trigger(entity, SpellCasterData::onTarget, event.getNewAboutToBeSetTarget());
     }
 
     /**
@@ -234,13 +236,32 @@ public final class CasterEvents {
             if (!drop.rolls(mob.getRandom())) {
                 continue;
             }
-            for (ItemStack stack : drop.createStacks(mob, killer, event.getLootingLevel())) {
+            for (ItemStack stack : drop.createStacks(mob, killer, lootingLevel(killer))) {
                 if (stack.isEmpty()) {
                     continue;
                 }
                 event.getDrops().add(new ItemEntity(mob.level(), mob.getX(), mob.getY() + 0.5D,
                         mob.getZ(), stack));
             }
+        }
+    }
+
+
+    /**
+     * Looting level of the killing player, used for the bonus rolls of drop entries.
+     *
+     * <p>NeoForge no longer exposes the looting level on the drops event, so it is read from the
+     * killer's enchantments directly. A missing enchantment registry entry is treated as level 0.</p>
+     */
+    private static int lootingLevel(@Nullable Player killer) {
+        if (killer == null) {
+            return 0;
+        }
+        try {
+            return EnchantmentHelper.getEnchantmentLevel(
+                    killer.level().registryAccess().holderOrThrow(Enchantments.LOOTING), killer);
+        } catch (RuntimeException exception) {
+            return 0;
         }
     }
 
@@ -263,22 +284,24 @@ public final class CasterEvents {
         if (definition == null) {
             return;
         }
-        mob.getCapability(SpellCasterCapability.capability()).ifPresent(caster -> {
-            if (!forced && !caster.isReady(definition)) {
-                return;
-            }
-            TargetResolver.Resolved resolved = TargetResolver.resolve(mob, definition, preferred);
-            if (resolved == null) {
-                return;
-            }
-            if (!definition.conditions().test(mob, resolved.entity())) {
-                return;
-            }
-            if (forced) {
-                caster.startForced(definition, resolved.entity(), resolved.position());
-            } else {
-                caster.start(definition, resolved.entity(), resolved.position());
-            }
-        });
+        ISpellCaster caster = SpellCasterAttachments.get(mob);
+        if (caster == null) {
+            return;
+        }
+        if (!forced && !caster.isReady(definition)) {
+            return;
+        }
+        TargetResolver.Resolved resolved = TargetResolver.resolve(mob, definition, preferred);
+        if (resolved == null) {
+            return;
+        }
+        if (!definition.conditions().test(mob, resolved.entity())) {
+            return;
+        }
+        if (forced) {
+            caster.startForced(definition, resolved.entity(), resolved.position());
+        } else {
+            caster.start(definition, resolved.entity(), resolved.position());
+        }
     }
 }

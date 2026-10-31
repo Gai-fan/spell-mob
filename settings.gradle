@@ -2,8 +2,8 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         maven {
-            name = 'MinecraftForge'
-            url = 'https://maven.minecraftforge.net/'
+            name = 'NeoForged Mirror'
+            url = 'https://bmclapi2.bangbang93.com/maven/'
         }
     }
 }

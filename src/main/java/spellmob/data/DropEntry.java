@@ -13,10 +13,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.Nullable;
 import spellmob.util.JsonHelper;
 import spellmob.util.Logs;
@@ -128,7 +130,7 @@ public record DropEntry(@Nullable ResourceLocation item, @Nullable ResourceLocat
         if (item == null) {
             return List.of();
         }
-        Item resolved = ForgeRegistries.ITEMS.getValue(item);
+        Item resolved = BuiltInRegistries.ITEM.get(item);
         if (resolved == null) {
             if (WARNED_IDS.add(item)) {
                 Logs.warn("Drop item {} is not registered, skipping", item);
@@ -145,7 +147,7 @@ public record DropEntry(@Nullable ResourceLocation item, @Nullable ResourceLocat
             count += random.nextInt(lootingLevel + 1);
         }
 
-        int stackSize = Math.max(1, resolved.getMaxStackSize());
+        int stackSize = Math.max(1, resolved.getDefaultMaxStackSize());
         List<ItemStack> stacks = new ArrayList<>();
         int remaining = count;
         while (remaining > 0) {
@@ -160,7 +162,7 @@ public record DropEntry(@Nullable ResourceLocation item, @Nullable ResourceLocat
         if (!(mob.level() instanceof ServerLevel level)) {
             return List.of();
         }
-        LootTable table = level.getServer().getLootData().getLootTable(lootTable);
+        LootTable table = level.getServer().reloadableRegistries().getLootTable(ResourceKey.create(Registries.LOOT_TABLE, lootTable));
         if (table == LootTable.EMPTY) {
             if (WARNED_IDS.add(lootTable)) {
                 Logs.warn("Drop loot table {} does not exist, skipping", lootTable);
@@ -170,7 +172,7 @@ public record DropEntry(@Nullable ResourceLocation item, @Nullable ResourceLocat
         LootParams params = new LootParams.Builder(level)
                 .withParameter(LootContextParams.THIS_ENTITY, mob)
                 .withParameter(LootContextParams.ORIGIN, mob.position())
-                .withOptionalParameter(LootContextParams.KILLER_ENTITY, killer)
+                .withOptionalParameter(LootContextParams.ATTACKING_ENTITY, killer)
                 .withOptionalParameter(LootContextParams.LAST_DAMAGE_PLAYER, killer)
                 .withLuck(lootingLevel)
                 .create(LootContextParamSets.ENTITY);

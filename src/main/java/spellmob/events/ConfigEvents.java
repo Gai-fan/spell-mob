@@ -1,8 +1,9 @@
 package spellmob.events;
 
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import spellmob.SpellMob;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.ConfigRuleLoader;
@@ -15,7 +16,7 @@ import spellmob.goal.CastGoalSync;
  * <p>Data pack rules are handled by {@link spellmob.data.SpellCasterReloadListener}; this class only
  * keeps the config side in sync and asks for the already loaded mobs to be re-evaluated.</p>
  */
-@Mod.EventBusSubscriber(modid = SpellMob.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = SpellMob.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public final class ConfigEvents {
 
     private ConfigEvents() {

@@ -18,7 +18,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.Nullable;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.SpellCastDefinition;
@@ -101,8 +101,8 @@ public final class SpellCaster implements ISpellCaster {
         // casting marker into syncedSpellData and throws a NullPointerException when it is null.
         // Iron's Spellbooks initialises its own casting mobs the same way.
         this.magicData.setSyncedData(new SyncedSpellData(mob));
-        ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(mob.getType());
-        this.entityId = id == null ? new ResourceLocation("minecraft", "unknown") : id;
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        this.entityId = id == null ? ResourceLocation.fromNamespaceAndPath("minecraft", "unknown") : id;
         this.lastName = mob.getCustomName();
         // Forge gathers capabilities from Entity#<init>, before LivingEntity has built its
         // AttributeMap. Reading health at that point throws a NullPointerException, so the variant

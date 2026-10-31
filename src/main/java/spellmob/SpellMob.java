@@ -1,11 +1,12 @@
 package spellmob;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import org.slf4j.Logger;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.SpellCasterReloadListener;
@@ -23,9 +24,9 @@ public final class SpellMob {
     public static final String MOD_ID = "spellmob";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public SpellMob() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SpellMobConfig.SPEC, "spellmob-common.toml");
-        MinecraftForge.EVENT_BUS.addListener(SpellMob::onAddReloadListener);
+    public SpellMob(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.COMMON, SpellMobConfig.SPEC, "spellmob-common.toml");
+        NeoForge.EVENT_BUS.addListener(SpellMob::onAddReloadListener);
         LOGGER.info("SpellMob is loading: data packs under data/<namespace>/spell_casters are parsed on /reload");
     }
 

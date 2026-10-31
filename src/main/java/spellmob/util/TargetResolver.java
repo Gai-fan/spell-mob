@@ -6,7 +6,7 @@ import java.util.function.Predicate;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.MobType;
+import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.monster.Enemy;
@@ -71,9 +71,9 @@ public final class TargetResolver {
             case THREATENING_ENTITY -> nearest(mob, definition, candidate -> isThreatening(mob, candidate));
             case NEAREST_HOSTILE -> nearest(mob, definition, candidate -> isHostile(mob, candidate));
             case NEAREST_UNDEAD -> nearest(mob, definition,
-                    candidate -> candidate.getMobType() == MobType.UNDEAD);
+                    candidate -> candidate.getType().is(EntityTypeTags.UNDEAD));
             case NEAREST_ARTHROPOD -> nearest(mob, definition,
-                    candidate -> candidate.getMobType() == MobType.ARTHROPOD);
+                    candidate -> candidate.getType().is(EntityTypeTags.ARTHROPOD));
             case NEAREST_ANIMAL -> nearest(mob, definition, candidate -> candidate instanceof Animal);
             case NEAREST_MONSTER -> nearest(mob, definition, candidate -> candidate instanceof Enemy);
             case NEAREST_PLAYER -> nearest(mob, definition, candidate -> isTargetablePlayer(candidate));

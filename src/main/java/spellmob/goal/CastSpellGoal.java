@@ -8,7 +8,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import spellmob.capability.CancelReason;
 import spellmob.capability.ISpellCaster;
-import spellmob.capability.SpellCasterCapability;
+import spellmob.capability.SpellCasterAttachments;
 import spellmob.data.SpellCastDefinition;
 import spellmob.util.TargetResolver;
 
@@ -125,6 +125,6 @@ public final class CastSpellGoal extends Goal {
     }
 
     private @Nullable ISpellCaster caster() {
-        return this.mob.getCapability(SpellCasterCapability.capability()).orElse(null);
+        return SpellCasterAttachments.get(this.mob);
     }
 }

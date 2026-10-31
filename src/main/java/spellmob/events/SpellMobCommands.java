@@ -15,11 +15,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import spellmob.SpellMob;
-import spellmob.capability.SpellCasterCapability;
+import spellmob.capability.ISpellCaster;
+import spellmob.capability.SpellCasterAttachments;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterData;
 import spellmob.data.SpellCasterRegistry;
@@ -35,7 +37,7 @@ import spellmob.goal.CastGoalSync;
  * {@code SpellCaster#tick()}; tags and {@code /reload} driven edits can be applied with
  * {@code /spellmob resync}.</p>
  */
-@Mod.EventBusSubscriber(modid = SpellMob.MOD_ID)
+@EventBusSubscriber(modid = SpellMob.MOD_ID)
 public final class SpellMobCommands {
 
     private SpellMobCommands() {
@@ -108,9 +110,8 @@ public final class SpellMobCommands {
             return 1;
         }
         for (SpellCastDefinition definition : data.goals()) {
-            int remaining = mob.getCapability(SpellCasterCapability.capability())
-                    .map(caster -> caster.cooldownTicks(definition))
-                    .orElse(0);
+            ISpellCaster caster = SpellCasterAttachments.get(mob);
+            int remaining = caster == null ? 0 : caster.cooldownTicks(definition);
             source.sendSuccess(() -> Component.literal("  - " + definition.spellId()
                     + " lv" + definition.level()
                     + " cd=" + remaining + "t"
@@ -121,14 +122,15 @@ public final class SpellMobCommands {
                             ? " chance=" + String.format(Locale.ROOT, "%.2f", definition.chance()) : "")
                     + (definition.interruptOnDamage() ? " interruptOnDamage" : "")), false);
         }
-        mob.getCapability(SpellCasterCapability.capability()).ifPresent(caster -> {
+        ISpellCaster caster = SpellCasterAttachments.get(mob);
+        if (caster != null) {
             SpellCastDefinition casting = caster.castingDefinition();
             if (casting != null) {
                 source.sendSuccess(() -> Component.literal("  casting " + casting.spellId()
                         + " lv" + casting.level() + " (" + caster.castTicksRemaining() + "t left)")
                         .withStyle(ChatFormatting.AQUA), false);
             }
-        });
+        }
         return 1;
     }
 

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * Server side configuration.
@@ -15,27 +15,27 @@ import net.minecraftforge.common.ForgeConfigSpec;
  */
 public final class SpellMobConfig {
 
-    private static final ForgeConfigSpec.BooleanValue ENABLED;
-    private static final ForgeConfigSpec.BooleanValue DEBUG_LOGGING;
-    private static final ForgeConfigSpec.BooleanValue CAST_SOUNDS;
-    private static final ForgeConfigSpec.DoubleValue COOLDOWN_MULTIPLIER;
-    private static final ForgeConfigSpec.DoubleValue MAX_RANGE;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENTITY_BLACKLIST;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> DIMENSION_BLACKLIST;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> PROTECTED_TAGS;
-    private static final ForgeConfigSpec.BooleanValue ALLOW_OPS_RENAME;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> EXTRA_RULES;
-    private static final ForgeConfigSpec.BooleanValue PRESENTATION_ENABLED;
-    private static final ForgeConfigSpec.IntValue PRESENTATION_DENSITY;
-    private static final ForgeConfigSpec.DoubleValue PRESENTATION_DISTANCE;
-    private static final ForgeConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
-    private static final ForgeConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
+    private static final ModConfigSpec.BooleanValue ENABLED;
+    private static final ModConfigSpec.BooleanValue DEBUG_LOGGING;
+    private static final ModConfigSpec.BooleanValue CAST_SOUNDS;
+    private static final ModConfigSpec.DoubleValue COOLDOWN_MULTIPLIER;
+    private static final ModConfigSpec.DoubleValue MAX_RANGE;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> ENTITY_BLACKLIST;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> DIMENSION_BLACKLIST;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> PROTECTED_TAGS;
+    private static final ModConfigSpec.BooleanValue ALLOW_OPS_RENAME;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> EXTRA_RULES;
+    private static final ModConfigSpec.BooleanValue PRESENTATION_ENABLED;
+    private static final ModConfigSpec.IntValue PRESENTATION_DENSITY;
+    private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
+    private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
+    private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.comment("Master switch for the whole mod.",
                         "（整个模组的总开关）").push("general");
