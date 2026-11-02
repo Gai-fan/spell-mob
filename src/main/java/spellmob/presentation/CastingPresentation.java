@@ -351,12 +351,15 @@ public final class CastingPresentation {
         right = right.normalize();
         Vec3 up = right.cross(forward).normalize();
 
-        double radius = Math.max(0.75D, Math.min(1.25D, 0.7D + mob.getBbWidth() * 0.3D));
-        Vec3 center = mob.getEyePosition().add(forward.scale(1.15D + radius * 0.45D));
+        double radius = Math.max(0.75D, Math.min(1.25D, 0.7D + mob.getBbWidth() * 0.3D))
+                * SpellMobConfig.sigilScale();
+        Vec3 center = mob.getEyePosition().add(forward.scale(SpellMobConfig.sigilDistance() + radius * 0.45D));
         DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.9F);
         DustParticleOptions vertex = new DustParticleOptions(new Vector3f(color), 1.8F);
 
-        int ringPoints = 12;
+        int detail = SpellMobConfig.sigilDetail();
+        int ringPoints = detail <= 1 ? 8 : detail == 2 ? 12 : 16;
+        int edgeSteps = detail <= 1 ? 3 : detail == 2 ? 4 : 6;
         for (int index = 0; index < ringPoints; index++) {
             double angle = phase + Math.PI * 2.0D * index / ringPoints;
             sendAt(level, line, center, right, up, angle, radius * 1.14D);
@@ -369,10 +372,10 @@ public final class CastingPresentation {
                 double to = offset + Math.PI * 2.0D * (edge + 1) / 3.0D;
                 Vec3 start = point(center, right, up, from, radius);
                 Vec3 end = point(center, right, up, to, radius);
-                for (int step = 0; step <= 3; step++) {
-                    double t = step / 3.0D;
+                for (int step = 0; step < edgeSteps; step++) {
+                    double t = step / (double) (edgeSteps - 1);
                     Vec3 at = start.add(end.subtract(start).scale(t));
-                    send(level, step == 0 || step == 3 ? vertex : line, at.x, at.y, at.z);
+                    send(level, step == 0 || step == edgeSteps - 1 ? vertex : line, at.x, at.y, at.z);
                 }
             }
         }

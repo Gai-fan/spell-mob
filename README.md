@@ -338,6 +338,9 @@
 | `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵 |
 | `presentation.bossExtras` | `true` | Boss 法阵是否加上符环、光柱与脉冲环 |
 | `presentation.frontSigil` | `true` | 是否在施法者正前方竖着画学派颜色的六芒星 |
+| `presentation.sigilDetail` | `2` | 六芒星每轮点数：1 / 2 / 3 = 26 / 36 / 52 个 |
+| `presentation.sigilScale` | `1.0` | 六芒星尺寸倍率 |
+| `presentation.sigilDistance` | `1.15` | 六芒星悬浮在眼前多少格 |
 | `species.extraRules` | `[]` | 写在配置里的物种级规则，一行一条 JSON |
 
 ### 物种规则写进配置（extraRules）
