@@ -115,8 +115,8 @@ public final class SpellMobConfig {
         BOSS_EXTRAS = builder.comment("Boss circles also get the floating rune halo, spark pillars and pulse rings.",
                         "（Boss 法阵额外加上悬浮符环、光柱与脉冲环）")
                 .define("bossExtras", true);
-        SIGIL = builder.comment("Draw a hexagram on the ground under the caster, in the school colour.",
-                        "（在施法者脚下画一个学派颜色的六芒星法阵）")
+        SIGIL = builder.comment("Draw a vertical hexagram in front of boss casters, in the school colour.",
+                        "（在 Boss 施法者正前方画一个竖直的六芒星法阵；普通施法者只有脚下圆环）")
                 .define("sigil", true);
         SIGIL_DETAIL = builder.comment("Line points per emission: 1 = 30, 2 = 48, 3 = 66. Higher is smoother.",
                         "（六芒星每次发射的线条点数：1 为 30 点，2 为 48 点，3 为 66 点；越高越平滑）")
@@ -241,7 +241,7 @@ public final class SpellMobConfig {
         return !ready() || BOSS_EXTRAS.get();
     }
 
-    /** @return whether a hexagram is drawn on the ground under the caster */
+    /** @return whether a hexagram is drawn in front of boss casters */
     public static boolean sigil() {
         return !ready() || SIGIL.get();
     }

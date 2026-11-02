@@ -79,8 +79,8 @@ public final class CastingPresentation {
             Vector3f color = colorOf(spell);
             emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
                 if (SpellMobConfig.bossExtras()) {
+                    emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
                     emitHalo(level, mob, 0.0F);
                     emitBlastwave(level, mob, color, 0.6F);
                 }
@@ -131,11 +131,11 @@ public final class CastingPresentation {
                     }
                 }
             }
-            if (boss) {
+            if (boss && SpellMobConfig.bossExtras()) {
                 if (ringTick) {
                     emitBossRing(level, mob, radius * 1.35D, ticks * 0.22F, 12);
                 }
-                if (bossTick && SpellMobConfig.bossExtras()) {
+                if (bossTick) {
                     emitHalo(level, mob, ticks * 0.12F);
                     emitPillars(level, mob, color, radius);
                     if (ticks % 20 == 0) {
@@ -354,7 +354,7 @@ public final class CastingPresentation {
         Vec3 up = right.cross(forward).normalize();
         double radius = Math.max(0.85D, Math.min(1.6D, 0.9D + mob.getBbWidth() * 0.35D))
                 * SpellMobConfig.sigilScale();
-        Vec3 center = new Vec3(mob.getX(), mob.getY() + mob.getBbHeight() * 0.55D + 0.4D, mob.getZ())
+        Vec3 center = new Vec3(mob.getX(), mob.getY() + radius + 0.2D, mob.getZ())
                 .add(forward.scale(mob.getBbWidth() * 0.5D + 1.35D));
         int detail = SpellMobConfig.sigilDetail();
         int edgePoints = detail <= 1 ? 5 : detail == 2 ? 8 : 11;
