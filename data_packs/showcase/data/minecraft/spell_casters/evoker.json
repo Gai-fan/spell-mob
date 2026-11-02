@@ -18,7 +18,7 @@
       "priority": 2,
       "range": 8,
       "castTime": 30,
-      "target": "SELF"
+      "target": "ATTACK_TARGET"
     }
   ],
   "variants": [
@@ -54,6 +54,14 @@
   "onDeath": {
     "spell": "irons_spellbooks:summon_vex",
     "level": 1,
-    "target": "SELF"
+    "target": {
+      "type": "POSITION",
+      "positionMode": "RELATIVE",
+      "relativeOffset": [
+        0,
+        0,
+        0
+      ]
+    }
   }
 }

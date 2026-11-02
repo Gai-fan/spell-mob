@@ -1,0 +1,221 @@
+{
+  "_comment": "爆破大师·雷帽：红帽工兵分支首领。火系爆发 + 召唤恼鬼；半血后进入引导与轰炸阶段，死亡时以火球炸开。",
+  "variants": [
+    {
+      "select": {
+        "name": "雷帽工兵·爆破大师",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ],
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fire_breath",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 40,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:blaze_storm",
+          "level": 2,
+          "cooldown": 260,
+          "priority": 2,
+          "range": 14,
+          "target": "ATTACK_TARGET",
+          "castTime": 40
+        },
+        {
+          "spell": "irons_spellbooks:raise_hell",
+          "level": 3,
+          "cooldown": 300,
+          "priority": 1,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 40
+        },
+        {
+          "spell": "irons_spellbooks:flaming_barrage",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:heat_surge",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 2,
+          "cooldown": 90,
+          "priority": 1,
+          "range": 22,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:wall_of_fire",
+        "level": 1,
+        "cooldown": 240,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            2
+          ]
+        }
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:fireball",
+        "level": 3,
+        "cooldown": 0,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE",
+          "range": 6.0
+        }
+      },
+      "onKill": {
+        "spell": "irons_spellbooks:fire_arrow",
+        "level": 2,
+        "cooldown": 160,
+        "priority": 0,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      }
+    },
+    {
+      "select": {
+        "name": "雷帽工兵·爆破大师",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 3,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:magma_bomb",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 2,
+          "range": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:firecracker",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 10
+        },
+        {
+          "spell": "irons_spellbooks:lob_creeper",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 3,
+          "range": 18,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:scorch",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 3,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:summon_vex",
+          "level": 1,
+          "cooldown": 320,
+          "priority": 4,
+          "range": 20,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:wall_of_fire",
+        "level": 1,
+        "cooldown": 240,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            2
+          ]
+        }
+      },
+      "onTarget": {
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 150,
+        "priority": 0,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "drops": [
+        {
+          "item": "minecraft:emerald",
+          "minCount": 3,
+          "maxCount": 6,
+          "looting": true
+        },
+        {
+          "item": "minecraft:blaze_powder",
+          "minCount": 2,
+          "maxCount": 4
+        },
+        {
+          "item": "minecraft:enchanted_golden_apple",
+          "chance": 0.15
+        }
+      ]
+    }
+  ]
+}

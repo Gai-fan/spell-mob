@@ -1,0 +1,204 @@
+{
+  "_comment": "噬页者·万卷：死亡之书的异变体。末影与邪术混合，半血后开启黑洞与流星；死亡时残留邪术冲击。",
+  "variants": [
+    {
+      "select": {
+        "name": "噬页者·万卷",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ],
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:black_hole",
+          "level": 2,
+          "cooldown": 300,
+          "priority": 1,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 40
+        },
+        {
+          "spell": "irons_spellbooks:starfall",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 2,
+          "range": 20,
+          "target": "ATTACK_TARGET",
+          "castTime": 60,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:dragon_breath",
+          "level": 1,
+          "cooldown": 260,
+          "priority": 3,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 60
+        },
+        {
+          "spell": "irons_spellbooks:gravity_fissure",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 18,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:summon_swords",
+          "level": 2,
+          "cooldown": 280,
+          "priority": 3,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 30
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:teleport",
+        "level": 1,
+        "cooldown": 200,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE",
+          "range": 8.0
+        }
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:eldritch_blast",
+        "level": 2,
+        "cooldown": 0,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE",
+          "range": 5.0
+        }
+      }
+    },
+    {
+      "select": {
+        "name": "噬页者·万卷",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 3,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:magic_arrow",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:eldritch_blast",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 16,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:sonic_boom",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 3,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:telekinesis",
+          "level": 1,
+          "cooldown": 260,
+          "priority": 4,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 80
+        },
+        {
+          "spell": "irons_spellbooks:abyssal_shroud",
+          "level": 1,
+          "cooldown": 300,
+          "priority": 5,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:planar_sight",
+          "level": 1,
+          "cooldown": 320,
+          "priority": 6,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:teleport",
+        "level": 1,
+        "cooldown": 200,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE",
+          "range": 8.0
+        }
+      },
+      "onTarget": {
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 150,
+        "priority": 0,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "drops": [
+        {
+          "item": "minecraft:ender_pearl",
+          "minCount": 2,
+          "maxCount": 5
+        },
+        {
+          "item": "minecraft:book",
+          "minCount": 3,
+          "maxCount": 6
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "chance": 0.2,
+          "minCount": 2,
+          "maxCount": 4
+        }
+      ]
+    }
+  ]
+}

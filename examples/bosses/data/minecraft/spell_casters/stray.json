@@ -3,7 +3,14 @@
   "variants": [
     {
       "_comment": "第三阶段（<25%）：狂暴。冰环连发，冰锥与冰墙交替压制。",
-      "select": { "name": "霜寂领主", "tags": ["spellmob_boss", "frost"], "healthBelow": 0.25 },
+      "select": {
+        "name": "霜寂领主",
+        "tags": [
+          "spellmob_boss",
+          "frost"
+        ],
+        "healthBelow": 0.25
+      },
       "override": true,
       "goals": [
         {
@@ -38,18 +45,36 @@
         "level": 3,
         "cooldown": 200,
         "range": 10.0,
-        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "EYES_LOOK"
+        }
       },
       "onDeath": {
         "spell": "irons_spellbooks:frostwave",
         "level": 3,
         "range": 8.0,
-        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "relativeOffset": [
+            0,
+            0,
+            0
+          ]
+        }
       }
     },
     {
       "_comment": "第二阶段（25%~60%）：远程压制 + 召唤冰熊。",
-      "select": { "name": "霜寂领主", "tags": ["spellmob_boss", "frost"], "healthBelow": 0.6 },
+      "select": {
+        "name": "霜寂领主",
+        "tags": [
+          "spellmob_boss",
+          "frost"
+        ],
+        "healthBelow": 0.6
+      },
       "override": true,
       "goals": [
         {
@@ -76,7 +101,7 @@
           "cooldown": 600,
           "priority": 2,
           "chance": 0.5,
-          "target": "SELF"
+          "target": "ATTACK_TARGET"
         }
       ],
       "onHurt": {
@@ -84,18 +109,35 @@
         "level": 3,
         "cooldown": 200,
         "range": 10.0,
-        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "EYES_LOOK"
+        }
       },
       "onDeath": {
         "spell": "irons_spellbooks:frostwave",
         "level": 3,
         "range": 8.0,
-        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "relativeOffset": [
+            0,
+            0,
+            0
+          ]
+        }
       }
     },
     {
       "_comment": "第一阶段（>60%）：只用远程冰系法术，留出学习时间。",
-      "select": { "name": "霜寂领主", "tags": ["spellmob_boss", "frost"] },
+      "select": {
+        "name": "霜寂领主",
+        "tags": [
+          "spellmob_boss",
+          "frost"
+        ]
+      },
       "override": true,
       "goals": [
         {
@@ -130,13 +172,24 @@
         "level": 3,
         "cooldown": 200,
         "range": 10.0,
-        "target": { "type": "POSITION", "positionMode": "EYES_LOOK" }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "EYES_LOOK"
+        }
       },
       "onDeath": {
         "spell": "irons_spellbooks:frostwave",
         "level": 3,
         "range": 8.0,
-        "target": { "type": "POSITION", "positionMode": "RELATIVE", "relativeOffset": [0, 0, 0] }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "relativeOffset": [
+            0,
+            0,
+            0
+          ]
+        }
       }
     }
   ]

@@ -25,7 +25,7 @@
       "cooldown": 300,
       "priority": 2,
       "range": 8,
-      "target": "SELF",
+      "target": "ATTACK_TARGET",
       "castTime": 20
     },
     {
@@ -71,7 +71,7 @@
           "cooldown": 400,
           "priority": 2,
           "range": 8,
-          "target": "SELF",
+          "target": "ATTACK_TARGET",
           "castTime": 30
         },
         {

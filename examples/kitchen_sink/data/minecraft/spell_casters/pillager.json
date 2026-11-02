@@ -4,7 +4,10 @@
     {
       "_comment": "阶段变体放在最前：血量低于 50% 且带 storm 标签时切换到爆发组，覆盖后面的常规配置。",
       "select": {
-        "tags": ["spellmob_demo", "storm"],
+        "tags": [
+          "spellmob_demo",
+          "storm"
+        ],
         "healthBelow": 0.5
       },
       "override": true,
@@ -48,7 +51,9 @@
       "_comment": "常规组：每一条对应一种法术类型，优先级与冷却按用途区分。",
       "select": {
         "name": "风暴术士",
-        "tags": ["spellmob_demo"]
+        "tags": [
+          "spellmob_demo"
+        ]
       },
       "override": true,
       "goals": [
@@ -156,7 +161,7 @@
           "cooldown": 450,
           "priority": 3,
           "castTime": 30,
-          "target": "SELF"
+          "target": "ATTACK_TARGET"
         },
         {
           "_comment": "连锁伤害：与穿墙法术共用冷却组。",

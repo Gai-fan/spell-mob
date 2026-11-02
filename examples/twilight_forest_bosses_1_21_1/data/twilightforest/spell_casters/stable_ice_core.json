@@ -1,0 +1,202 @@
+{
+  "_comment": "霜核执政官：稳定冰核的异变体。冰系控场 + 雷电；半血后引导冰锥与暴风雪，死亡时引爆冰墓。",
+  "variants": [
+    {
+      "select": {
+        "name": "霜核·执政官",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ],
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:blizzard",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 1,
+          "range": 18,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 100,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:thunderstorm",
+          "level": 2,
+          "cooldown": 260,
+          "priority": 2,
+          "range": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:frostbite",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 16,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 3,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:frost_step",
+        "level": 1,
+        "cooldown": 180,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            -4
+          ]
+        }
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:ice_tomb",
+        "level": 2,
+        "cooldown": 0,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE",
+          "range": 6.0
+        }
+      }
+    },
+    {
+      "select": {
+        "name": "霜核·执政官",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 20,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        },
+        {
+          "spell": "irons_spellbooks:ray_of_frost",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:frostwave",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 3,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ice_block",
+          "level": 1,
+          "cooldown": 240,
+          "priority": 3,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:summon_polar_bear",
+          "level": 1,
+          "cooldown": 420,
+          "priority": 4,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:frost_step",
+        "level": 1,
+        "cooldown": 180,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            -4
+          ]
+        }
+      },
+      "onTarget": {
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 160,
+        "priority": 0,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "drops": [
+        {
+          "item": "minecraft:blue_ice",
+          "minCount": 4,
+          "maxCount": 8
+        },
+        {
+          "item": "minecraft:packed_ice",
+          "minCount": 8,
+          "maxCount": 16
+        },
+        {
+          "item": "minecraft:diamond",
+          "chance": 0.12
+        }
+      ]
+    }
+  ]
+}

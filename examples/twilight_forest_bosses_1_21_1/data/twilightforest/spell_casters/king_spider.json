@@ -1,0 +1,191 @@
+{
+  "_comment": "蛛巢女王：巨型蜘蛛首领。自然系毒与束缚，半血后引导毒息并引发地震；死亡时留下亡者。",
+  "variants": [
+    {
+      "select": {
+        "name": "蛛巢·女王",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ],
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:poison_breath",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 2,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 80,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:earthquake",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 2,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:stomp",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 2,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:blight",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:gluttony",
+          "level": 2,
+          "cooldown": 320,
+          "priority": 3,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onDeath": {
+        "spell": "irons_spellbooks:raise_dead",
+        "level": 2,
+        "cooldown": 0,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RANDOM_IN_RANGE",
+          "range": 5.0
+        }
+      },
+      "onKill": {
+        "spell": "irons_spellbooks:heal",
+        "level": 1,
+        "cooldown": 240,
+        "priority": 0,
+        "range": 0,
+        "target": "SELF"
+      }
+    },
+    {
+      "select": {
+        "name": "蛛巢·女王",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:poison_splash",
+          "level": 3,
+          "cooldown": 90,
+          "priority": 1,
+          "range": 18,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:poison_arrow",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:root",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 2,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:acid_orb",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 20,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:spider_aspect",
+          "level": 1,
+          "cooldown": 300,
+          "priority": 4,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:firefly_swarm",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 3,
+          "range": 16,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:blight",
+        "level": 1,
+        "cooldown": 220,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            2
+          ]
+        }
+      },
+      "onTarget": {
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 160,
+        "priority": 0,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "drops": [
+        {
+          "item": "minecraft:spider_eye",
+          "minCount": 4,
+          "maxCount": 8
+        },
+        {
+          "item": "minecraft:string",
+          "minCount": 8,
+          "maxCount": 16
+        },
+        {
+          "item": "minecraft:golden_apple",
+          "chance": 0.12
+        }
+      ]
+    }
+  ]
+}

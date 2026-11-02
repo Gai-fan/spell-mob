@@ -1,0 +1,188 @@
+{
+  "_comment": "哀嚎之影：幽魂异变体。鲜血系消耗与瞬移；半血后引导虹吸，击杀回血，死亡时召唤亡者。",
+  "variants": [
+    {
+      "select": {
+        "name": "哀嚎·血影",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ],
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:ray_of_siphoning",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 2,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 80,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:sacrifice",
+          "level": 2,
+          "cooldown": 300,
+          "priority": 3,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:shadow_slash",
+          "level": 2,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:echoing_strikes",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 2,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:blood_step",
+          "level": 1,
+          "cooldown": 160,
+          "priority": 3,
+          "range": 16,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onKill": {
+        "spell": "irons_spellbooks:heal",
+        "level": 2,
+        "cooldown": 260,
+        "priority": 0,
+        "range": 0,
+        "target": "SELF"
+      },
+      "onDeath": {
+        "spell": "irons_spellbooks:raise_dead",
+        "level": 2,
+        "cooldown": 0,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            2
+          ]
+        }
+      }
+    },
+    {
+      "select": {
+        "name": "哀嚎·血影",
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:blood_needles",
+          "level": 3,
+          "cooldown": 90,
+          "priority": 1,
+          "range": 22,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:blood_slash",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 10,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:wither_skull",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 18,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:devour",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 3,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:heartstop",
+          "level": 1,
+          "cooldown": 420,
+          "priority": 5,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "onHurt": {
+        "spell": "irons_spellbooks:blood_step",
+        "level": 1,
+        "cooldown": 200,
+        "priority": 0,
+        "range": 0,
+        "target": {
+          "type": "POSITION",
+          "positionMode": "RELATIVE",
+          "range": 8.0,
+          "relativeOffset": [
+            0,
+            0,
+            4
+          ]
+        }
+      },
+      "onTarget": {
+        "spell": "irons_spellbooks:slow",
+        "level": 1,
+        "cooldown": 160,
+        "priority": 0,
+        "range": 20,
+        "target": "ATTACK_TARGET"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_boss",
+          "tf_boss"
+        ]
+      },
+      "drops": [
+        {
+          "item": "minecraft:redstone",
+          "minCount": 4,
+          "maxCount": 9
+        },
+        {
+          "item": "minecraft:ghast_tear",
+          "minCount": 1,
+          "maxCount": 2
+        },
+        {
+          "item": "minecraft:netherite_scrap",
+          "chance": 0.15
+        }
+      ]
+    }
+  ]
+}
