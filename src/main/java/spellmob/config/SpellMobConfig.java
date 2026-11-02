@@ -28,6 +28,8 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.BooleanValue PRESENTATION_ENABLED;
     private static final ModConfigSpec.IntValue PRESENTATION_DENSITY;
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
+    private static final ModConfigSpec.BooleanValue BOSS_EXTRAS;
     private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
@@ -104,6 +106,12 @@ public final class SpellMobConfig {
         INTERRUPT_FEEDBACK = builder.comment("Smoke puff and extinguish sound when a cast is interrupted.",
                         "（施法被打断时冒烟并播放熄灭音效）")
                 .define("interruptFeedback", true);
+        BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss circle.",
+                        "（带有任一这些计分板标签的生物使用更华丽的 Boss 法阵）")
+                .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
+        BOSS_EXTRAS = builder.comment("Boss circles also get the floating rune halo, spark pillars and pulse rings.",
+                        "（Boss 法阵额外加上悬浮符环、光柱与脉冲环）")
+                .define("bossExtras", true);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -194,6 +202,31 @@ public final class SpellMobConfig {
     /** @return whether an interrupted cast shows a smoke puff and a sound */
     public static boolean interruptFeedback() {
         return !ready() || INTERRUPT_FEEDBACK.get();
+    }
+
+    /**
+     * @param entity the casting entity
+     * @return true when the entity carries one of the configured boss tags
+     */
+    public static boolean isBossCaster(Entity entity) {
+        if (!ready() || entity == null) {
+            return false;
+        }
+        List<? extends String> tags = BOSS_TAGS.get();
+        if (tags.isEmpty()) {
+            return false;
+        }
+        for (String tag : tags) {
+            if (entity.getTags().contains(tag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
+    public static boolean bossExtras() {
+        return !ready() || BOSS_EXTRAS.get();
     }
 
     /**
