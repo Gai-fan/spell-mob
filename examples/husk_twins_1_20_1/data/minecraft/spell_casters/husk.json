@@ -250,7 +250,7 @@
           }
         },
         {
-          "spell": "irons_spellbooks:black_hole",
+          "spell": "irons_spellbooks:telekinesis",
           "level": 1,
           "cooldown": 360,
           "priority": 2,
@@ -259,7 +259,7 @@
             "type": "POSITION",
             "positionMode": "TARGET_ENTITY"
           },
-          "castTime": 30
+          "castTime": 80
         },
         {
           "spell": "irons_spellbooks:poison_breath",
@@ -340,7 +340,7 @@
         "target": "ATTACK_TARGET"
       },
       "onDeath": {
-        "spell": "irons_spellbooks:black_hole",
+        "spell": "irons_spellbooks:raise_hell",
         "level": 1,
         "cooldown": 0,
         "priority": 1,
