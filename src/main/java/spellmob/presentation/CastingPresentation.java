@@ -5,7 +5,6 @@ import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
 import io.redspace.ironsspellbooks.particle.SparkParticleOptions;
 import io.redspace.ironsspellbooks.registries.ParticleRegistry;
-import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -78,6 +77,7 @@ public final class CastingPresentation {
                 return;
             }
             Vector3f color = colorOf(spell);
+            emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
             if (SpellMobConfig.isBossCaster(mob)) {
                 emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
                 if (SpellMobConfig.bossExtras()) {
@@ -85,10 +85,9 @@ public final class CastingPresentation {
                     emitBlastwave(level, mob, color, 0.6F);
                 }
             } else {
-                emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
                 emitAura(level, mob);
             }
-            if (SpellMobConfig.sigil()) {
+            if (SpellMobConfig.sigil() && SpellMobConfig.isBossCaster(mob)) {
                 emitFrontSigil(level, mob, color, 0.0F);
             }
         } catch (RuntimeException exception) {
@@ -123,6 +122,15 @@ public final class CastingPresentation {
             float progress = totalTicks <= 0 ? 1.0F : Math.min(1.0F, (float) ticks / (float) totalTicks);
             Vector3f color = colorOf(spell);
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
+            if (ringTick) {
+                emitRing(level, mob, color, radius, ticks * 0.35F);
+                if (!boss) {
+                    emitAura(level, mob);
+                    if (progress >= 0.7F) {
+                        emitSpark(level, mob, radius);
+                    }
+                }
+            }
             if (boss) {
                 if (ringTick) {
                     emitBossRing(level, mob, radius * 1.35D, ticks * 0.22F, 12);
@@ -134,14 +142,8 @@ public final class CastingPresentation {
                         emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
                     }
                 }
-            } else {
-                emitRing(level, mob, color, radius, ticks * 0.35F);
-                emitAura(level, mob);
-                if (progress >= 0.7F) {
-                    emitSpark(level, mob, radius);
-                }
             }
-            if (SpellMobConfig.sigil() && ticks % SIGIL_INTERVAL_TICKS == 0) {
+            if (SpellMobConfig.sigil() && boss && ticks % SIGIL_INTERVAL_TICKS == 0) {
                 emitFrontSigil(level, mob, color, ticks * 0.05F);
             }
         } catch (RuntimeException exception) {
@@ -211,11 +213,11 @@ public final class CastingPresentation {
     }
 
     private static void emitRing(ServerLevel level, Mob mob, Vector3f color, double radius, float phase) {
-        int points = points() * 2;
+        int points = points();
         if (points <= 0) {
             return;
         }
-        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 0.6F);
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.06D;
         double centerZ = mob.getZ();
@@ -326,10 +328,9 @@ public final class CastingPresentation {
     /**
      * Vertical hexagram floating in front of the caster, facing the direction it is looking.
      *
-     * <p>The figure is drawn in the plane spanned by the caster's look direction, so it stays
-     * readable from the side instead of collapsing into a line. Edges use the vanilla
-     * {@code entity_effect} particle tinted with the school colour, and the six vertices get a
-     * bright {@code end_rod} dot so the shape reads clearly at night.</p>
+     * <p>Only boss casters get this figure. The two equilateral triangles are drawn with dust and
+     * the six vertices add a spark on top, so the shape reads as a glowing sigil rather than a
+     * ring of smoke.</p>
      *
      * @param level the server level
      * @param mob   the caster
@@ -357,8 +358,9 @@ public final class CastingPresentation {
                 .add(forward.scale(mob.getBbWidth() * 0.5D + 1.35D));
         int detail = SpellMobConfig.sigilDetail();
         int edgePoints = detail <= 1 ? 5 : detail == 2 ? 8 : 11;
-        int rgb = (toByte(color.x()) << 16) | (toByte(color.y()) << 8) | toByte(color.z());
-        ParticleOptions line = ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, rgb);
+        DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.6F);
+        DustParticleOptions node = new DustParticleOptions(new Vector3f(color), 1.2F);
+        SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
         for (int triangle = 0; triangle < 2; triangle++) {
             double offset = phase + triangle * Math.PI / 3.0D;
             for (int edge = 0; edge < 3; edge++) {
@@ -375,12 +377,9 @@ public final class CastingPresentation {
         for (int vertex = 0; vertex < 6; vertex++) {
             double angle = phase + Math.PI * 2.0D * vertex / 6.0D;
             Vec3 point = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
-            send(level, ParticleTypes.END_ROD, point.x, point.y, point.z);
+            send(level, node, point.x, point.y, point.z);
+            send(level, spark, point.x, point.y, point.z);
         }
-    }
-
-    private static int toByte(float value) {
-        return Math.max(0, Math.min(255, Math.round(value * 255.0F)));
     }
 
     /**
