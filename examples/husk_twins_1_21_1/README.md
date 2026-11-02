@@ -12,7 +12,7 @@
 | 瞬发弹体 | fireball | firebolt、magic_missile |
 | 吟唱 | lightning_lance | thunderstorm |
 | 引导（连续） | cone_of_cold | poison_breath |
-| 范围 | ice_spikes | magma_bomb、black_hole |
+| 范围 | ice_spikes | magma_bomb、telekinesis |
 | 控制 | root | slow |
 | 位移 | teleport（随机落点） | —（受伤时向身后闪 4 格） |
 | 召唤 | summon_vex | raise_dead |
