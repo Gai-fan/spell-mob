@@ -1,0 +1,45 @@
+{
+  "_comment": "牛头人：冲锋与践踏贴近，受伤时硬化，锁定目标时削弱。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:charge",
+      "level": 2,
+      "cooldown": 140,
+      "priority": 1,
+      "range": 10,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:stomp",
+      "level": 3,
+      "cooldown": 180,
+      "priority": 2,
+      "range": 6,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:fang_strike",
+      "level": 2,
+      "cooldown": 160,
+      "priority": 2,
+      "range": 8,
+      "target": "ATTACK_TARGET"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:fortify",
+    "level": 2,
+    "cooldown": 240,
+    "priority": 1,
+    "range": 8,
+    "target": "SELF"
+  },
+  "onTarget": {
+    "spell": "irons_spellbooks:slow",
+    "level": 2,
+    "cooldown": 200,
+    "priority": 1,
+    "range": 14,
+    "target": "ATTACK_TARGET"
+  }
+}

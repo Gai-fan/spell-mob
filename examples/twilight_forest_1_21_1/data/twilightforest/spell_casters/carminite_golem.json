@@ -1,0 +1,39 @@
+{
+  "_comment": "卡米奈特傀儡：焦灼与岩浆弹，受伤开盾，低血给自己加护。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:scorch",
+      "level": 3,
+      "cooldown": 160,
+      "priority": 1,
+      "range": 12,
+      "target": "ATTACK_TARGET",
+      "castTime": 10
+    },
+    {
+      "spell": "irons_spellbooks:magma_bomb",
+      "level": 3,
+      "cooldown": 180,
+      "priority": 2,
+      "range": 14,
+      "target": "ATTACK_TARGET",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:fortify",
+      "level": 2,
+      "cooldown": 300,
+      "priority": 3,
+      "range": 8,
+      "target": "SELF"
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:shield",
+    "level": 2,
+    "cooldown": 260,
+    "priority": 1,
+    "range": 8,
+    "target": "SELF"
+  }
+}

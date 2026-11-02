@@ -1,0 +1,70 @@
+{
+  "_comment": "九头蛇：远程火焰压制；残血进入引导火息与炼狱。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magma_bomb",
+      "level": 3,
+      "cooldown": 120,
+      "priority": 1,
+      "range": 16,
+      "target": "ATTACK_TARGET",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:fireball",
+      "level": 4,
+      "cooldown": 100,
+      "priority": 1,
+      "range": 20,
+      "target": "ATTACK_TARGET",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:scorch",
+      "level": 3,
+      "cooldown": 200,
+      "priority": 2,
+      "range": 12,
+      "target": "ATTACK_TARGET",
+      "castTime": 10
+    }
+  ],
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.35
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fire_breath",
+          "level": 3,
+          "cooldown": 220,
+          "priority": 1,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 60,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:raise_hell",
+          "level": 4,
+          "cooldown": 400,
+          "priority": 2,
+          "range": 16,
+          "target": "ATTACK_TARGET",
+          "castTime": 40
+        },
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 4,
+          "cooldown": 90,
+          "priority": 1,
+          "range": 20,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        }
+      ]
+    }
+  ]
+}

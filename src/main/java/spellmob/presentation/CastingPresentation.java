@@ -13,7 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import spellmob.capability.CancelReason;
@@ -87,8 +86,8 @@ public final class CastingPresentation {
                 emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
                 emitAura(level, mob);
             }
-            if (SpellMobConfig.frontSigil()) {
-                emitFrontSigil(level, mob, color, 0.0F);
+            if (SpellMobConfig.sigil()) {
+                emitGroundSigil(level, mob, color, 0.0F);
             }
         } catch (RuntimeException exception) {
             Logs.debug("Casting presentation failed on start: {}", exception.getMessage());
@@ -140,8 +139,8 @@ public final class CastingPresentation {
                     emitSpark(level, mob, radius);
                 }
             }
-            if (SpellMobConfig.frontSigil() && ticks % SIGIL_INTERVAL_TICKS == 0) {
-                emitFrontSigil(level, mob, color, ticks * 0.05F);
+            if (SpellMobConfig.sigil() && ticks % SIGIL_INTERVAL_TICKS == 0) {
+                emitGroundSigil(level, mob, color, ticks * 0.05F);
             }
         } catch (RuntimeException exception) {
             Logs.debug("Casting presentation failed while ticking: {}", exception.getMessage());
@@ -210,11 +209,11 @@ public final class CastingPresentation {
     }
 
     private static void emitRing(ServerLevel level, Mob mob, Vector3f color, double radius, float phase) {
-        int points = points();
+        int points = points() * 2;
         if (points <= 0) {
             return;
         }
-        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 0.6F);
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.06D;
         double centerZ = mob.getZ();
@@ -323,72 +322,51 @@ public final class CastingPresentation {
     }
 
     /**
-     * Draws a vertical hexagram in front of the caster, facing the direction the mob is looking.
+     * Draws a flat hexagram on the ground under the caster.
      *
-     * <p>The plane is built from the mob's look vector: {@code right = forward x up} and
-     * {@code up = right x forward}, so the star faces the target instead of the world axes. A
-     * hexagram is two equilateral triangles rotated by 60 degrees, which is cheap to draw with
-     * dust particles and works on every supported Iron's Spellbooks version.</p>
+     * <p>It lies in the XZ plane like a summoning circle, so it reads from every angle: a vertical
+     * star drawn in front of the caster turns edge-on and disappears as soon as the viewer stands
+     * to the side. Two overlapping equilateral triangles form the star, six sparks mark the
+     * points, and the whole figure turns slowly with the cast progress.</p>
      *
      * @param level the server level
      * @param mob   the caster
      * @param color the school colour
      * @param phase rotation offset in radians
      */
-    private static void emitFrontSigil(ServerLevel level, Mob mob, Vector3f color, float phase) {
-        Vec3 forward = mob.getLookAngle();
-        if (forward.lengthSqr() < 1.0E-6D) {
-            return;
-        }
-        forward = forward.normalize();
-        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
-        if (right.lengthSqr() < 1.0E-6D) {
-            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
-        }
-        if (right.lengthSqr() < 1.0E-6D) {
-            return;
-        }
-        right = right.normalize();
-        Vec3 up = right.cross(forward).normalize();
-
-        double radius = Math.max(0.75D, Math.min(1.25D, 0.7D + mob.getBbWidth() * 0.3D))
+    private static void emitGroundSigil(ServerLevel level, Mob mob, Vector3f color, float phase) {
+        double radius = Math.max(1.2D, Math.min(2.6D, 1.3D + mob.getBbWidth() * 0.5D))
                 * SpellMobConfig.sigilScale();
-        Vec3 center = mob.getEyePosition().add(forward.scale(SpellMobConfig.sigilDistance() + radius * 0.45D));
-        DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.9F);
-        DustParticleOptions vertex = new DustParticleOptions(new Vector3f(color), 1.8F);
-
+        double centerX = mob.getX();
+        double centerY = mob.getY() + 0.06D;
+        double centerZ = mob.getZ();
         int detail = SpellMobConfig.sigilDetail();
-        int ringPoints = detail <= 1 ? 8 : detail == 2 ? 12 : 16;
-        int edgeSteps = detail <= 1 ? 3 : detail == 2 ? 4 : 6;
-        for (int index = 0; index < ringPoints; index++) {
-            double angle = phase + Math.PI * 2.0D * index / ringPoints;
-            sendAt(level, line, center, right, up, angle, radius * 1.14D);
-        }
-
+        int edgePoints = detail <= 1 ? 5 : detail == 2 ? 8 : 11;
+        DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.55F);
+        DustParticleOptions node = new DustParticleOptions(new Vector3f(color), 1.0F);
+        SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
         for (int triangle = 0; triangle < 2; triangle++) {
-            double offset = triangle * Math.PI / 3.0D - Math.PI / 2.0D;
+            double offset = phase + triangle * Math.PI / 3.0D;
             for (int edge = 0; edge < 3; edge++) {
                 double from = offset + Math.PI * 2.0D * edge / 3.0D;
-                double to = offset + Math.PI * 2.0D * (edge + 1) / 3.0D;
-                Vec3 start = point(center, right, up, from, radius);
-                Vec3 end = point(center, right, up, to, radius);
-                for (int step = 0; step < edgeSteps; step++) {
-                    double t = step / (double) (edgeSteps - 1);
-                    Vec3 at = start.add(end.subtract(start).scale(t));
-                    send(level, step == 0 || step == edgeSteps - 1 ? vertex : line, at.x, at.y, at.z);
+                double to = from + Math.PI * 2.0D / 3.0D;
+                double fromX = centerX + Math.cos(from) * radius;
+                double fromZ = centerZ + Math.sin(from) * radius;
+                double toX = centerX + Math.cos(to) * radius;
+                double toZ = centerZ + Math.sin(to) * radius;
+                for (int step = 0; step < edgePoints; step++) {
+                    double t = step / (double) (edgePoints - 1);
+                    send(level, line, fromX + (toX - fromX) * t, centerY, fromZ + (toZ - fromZ) * t);
                 }
             }
         }
-    }
-
-    private static Vec3 point(Vec3 center, Vec3 right, Vec3 up, double angle, double radius) {
-        return center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
-    }
-
-    private static void sendAt(ServerLevel level, ParticleOptions particle, Vec3 center, Vec3 right, Vec3 up,
-            double angle, double radius) {
-        Vec3 at = point(center, right, up, angle, radius);
-        send(level, particle, at.x, at.y, at.z);
+        for (int index = 0; index < 6; index++) {
+            double angle = phase + Math.PI * 2.0D * index / 6.0D;
+            double x = centerX + Math.cos(angle) * radius;
+            double z = centerZ + Math.sin(angle) * radius;
+            send(level, node, x, centerY + 0.02D, z);
+            send(level, spark, x, centerY + 0.08D, z);
+        }
     }
 
     /**

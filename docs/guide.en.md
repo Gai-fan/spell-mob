@@ -270,10 +270,9 @@ The config lives at `config/spellmob-common.toml` (COMMON type — one file for 
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
 | | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the richer boss circle. |
 | | `bossExtras` | `true` | Adds the floating halo, spark pillars and pulse rings to boss circles. |
-| | `frontSigil` | `true` | Draws a vertical school-coloured hexagram in front of the caster. |
-| | `sigilDetail` | `2` | Points per emission: 1 / 2 / 3 = 26 / 36 / 52, higher is smoother. |
+| | `sigil` | `true` | Draws a school-coloured hexagram on the ground under the caster. |
+| | `sigilDetail` | `2` | Line points per emission: 1 / 2 / 3 = 30 / 48 / 66, higher is smoother. |
 | | `sigilScale` | `1.0` | Size multiplier of the hexagram. |
-| | `sigilDistance` | `1.15` | Blocks in front of the eyes where it floats. |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).

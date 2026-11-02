@@ -1,0 +1,83 @@
+{
+  "_comment": "娜迦：近身毒牙与缠根，半血开始引导毒息。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:fang_strike",
+      "level": 3,
+      "cooldown": 120,
+      "priority": 1,
+      "range": 8,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:poison_splash",
+      "level": 3,
+      "cooldown": 160,
+      "priority": 2,
+      "range": 10,
+      "target": "ATTACK_TARGET",
+      "castTime": 10
+    },
+    {
+      "spell": "irons_spellbooks:root",
+      "level": 2,
+      "cooldown": 200,
+      "priority": 3,
+      "range": 12,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:poison_breath",
+      "level": 2,
+      "cooldown": 240,
+      "priority": 4,
+      "range": 8,
+      "target": "ATTACK_TARGET",
+      "castTime": 60
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:heal",
+    "level": 2,
+    "cooldown": 300,
+    "priority": 1,
+    "range": 8,
+    "target": "SELF"
+  },
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:poison_breath",
+          "level": 3,
+          "cooldown": 200,
+          "priority": 1,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 60,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 4,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 8,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:root",
+          "level": 3,
+          "cooldown": 160,
+          "priority": 2,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

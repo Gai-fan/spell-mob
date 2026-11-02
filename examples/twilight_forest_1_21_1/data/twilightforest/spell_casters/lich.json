@@ -1,0 +1,121 @@
+{
+  "_comment": "巫妖：远程暗器 + 冰封控场；半血召出箭雨与亡者，受伤时给盾。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 4,
+      "cooldown": 80,
+      "priority": 1,
+      "range": 20,
+      "target": "ATTACK_TARGET",
+      "castTime": 10
+    },
+    {
+      "spell": "irons_spellbooks:ice_block",
+      "level": 3,
+      "cooldown": 120,
+      "priority": 1,
+      "range": 16,
+      "target": "ATTACK_TARGET",
+      "castTime": 10
+    },
+    {
+      "spell": "irons_spellbooks:summon_vex",
+      "level": 2,
+      "cooldown": 300,
+      "priority": 2,
+      "range": 8,
+      "target": "SELF",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:teleport",
+      "level": 2,
+      "cooldown": 160,
+      "priority": 3,
+      "range": 12,
+      "target": {
+        "type": "POSITION",
+        "positionMode": "EYES_LOOK",
+        "lineOfSight": false
+      }
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:shield",
+    "level": 2,
+    "cooldown": 260,
+    "priority": 1,
+    "range": 8,
+    "target": "SELF"
+  },
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:arrow_volley",
+          "level": 3,
+          "cooldown": 140,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "castTime": 30
+        },
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 2,
+          "cooldown": 400,
+          "priority": 2,
+          "range": 8,
+          "target": "SELF",
+          "castTime": 30
+        },
+        {
+          "spell": "irons_spellbooks:frostwave",
+          "level": 3,
+          "cooldown": 150,
+          "priority": 2,
+          "range": 12,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 4,
+          "cooldown": 70,
+          "priority": 1,
+          "range": 20,
+          "target": "ATTACK_TARGET",
+          "castTime": 10
+        }
+      ]
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "spellmob_boss"
+        ]
+      },
+      "drops": [
+        {
+          "item": "minecraft:ender_pearl",
+          "minCount": 2,
+          "maxCount": 5,
+          "chance": 1.0,
+          "looting": true
+        },
+        {
+          "item": "minecraft:amethyst_shard",
+          "minCount": 4,
+          "maxCount": 8,
+          "chance": 0.3
+        }
+      ]
+    }
+  ]
+}

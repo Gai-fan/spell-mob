@@ -1,0 +1,69 @@
+{
+  "_comment": "暮色恶魂：声波与魔法箭远程；半血召唤黑洞与连锁闪电。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:sonic_boom",
+      "level": 3,
+      "cooldown": 140,
+      "priority": 1,
+      "range": 24,
+      "target": "ATTACK_TARGET",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:magic_arrow",
+      "level": 4,
+      "cooldown": 90,
+      "priority": 1,
+      "range": 28,
+      "target": "ATTACK_TARGET",
+      "castTime": 10
+    },
+    {
+      "spell": "irons_spellbooks:gravity_fissure",
+      "level": 3,
+      "cooldown": 220,
+      "priority": 2,
+      "range": 18,
+      "target": "ATTACK_TARGET",
+      "castTime": 20
+    }
+  ],
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.5
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:black_hole",
+          "level": 3,
+          "cooldown": 360,
+          "priority": 1,
+          "range": 20,
+          "target": "ATTACK_TARGET",
+          "castTime": 40
+        },
+        {
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 4,
+          "cooldown": 160,
+          "priority": 2,
+          "range": 18,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        },
+        {
+          "spell": "irons_spellbooks:sonic_boom",
+          "level": 4,
+          "cooldown": 120,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "_comment": "冰雪女王：冰锥与霜波起手，半血转为引导冰锥与暴风雪；受击时短距闪现。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:ice_spikes",
+      "level": 3,
+      "cooldown": 120,
+      "priority": 1,
+      "range": 20,
+      "target": "ATTACK_TARGET",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:frostwave",
+      "level": 3,
+      "cooldown": 160,
+      "priority": 2,
+      "range": 14,
+      "target": "ATTACK_TARGET"
+    },
+    {
+      "spell": "irons_spellbooks:summon_polar_bear",
+      "level": 2,
+      "cooldown": 400,
+      "priority": 3,
+      "range": 8,
+      "target": "SELF",
+      "castTime": 20
+    },
+    {
+      "spell": "irons_spellbooks:blizzard",
+      "level": 3,
+      "cooldown": 300,
+      "priority": 2,
+      "range": 18,
+      "target": "ATTACK_TARGET",
+      "castTime": 40
+    }
+  ],
+  "onHurt": {
+    "spell": "irons_spellbooks:teleport",
+    "level": 2,
+    "cooldown": 240,
+    "priority": 1,
+    "range": 8,
+    "target": {
+      "type": "POSITION",
+      "positionMode": "RANDOM_IN_RANGE",
+      "lineOfSight": false
+    }
+  },
+  "variants": [
+    {
+      "select": {
+        "healthBelow": 0.6
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 3,
+          "cooldown": 160,
+          "priority": 1,
+          "range": 10,
+          "target": "ATTACK_TARGET",
+          "castTime": 60,
+          "interruptOnDamage": true
+        },
+        {
+          "spell": "irons_spellbooks:ice_spikes",
+          "level": 4,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 22,
+          "target": "ATTACK_TARGET",
+          "castTime": 20
+        },
+        {
+          "spell": "irons_spellbooks:blizzard",
+          "level": 4,
+          "cooldown": 260,
+          "priority": 2,
+          "range": 18,
+          "target": "ATTACK_TARGET",
+          "castTime": 40
+        },
+        {
+          "spell": "irons_spellbooks:frostwave",
+          "level": 4,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 14,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}
