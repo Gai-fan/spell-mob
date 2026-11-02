@@ -450,6 +450,9 @@ public final class SpellCaster implements ISpellCaster {
             magicData.resetCastingState();
             this.resolving = false;
         }
+        if (cast.totalTicks > 0) {
+            CastingPresentation.onCastFinish(mob, cast.spell, cast.totalTicks);
+        }
         if (SpellMobConfig.castSounds()) {
             try {
                 cast.spell.playSound(cast.spell.getCastFinishSound(), mob);

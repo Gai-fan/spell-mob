@@ -268,6 +268,12 @@ saves/<世界>/datapacks/我的法术/
 | | `density` | `1` | `0` = 不画，`1/2/3` = 8/12/16 个点。 |
 | | `distance` | `24` | 粒子可见距离（4–64）。 |
 | | `interruptFeedback` | `true` | 被打断时的烟与"熄灭"音效。 |
+| | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵。 |
+| | `bossExtras` | `true` | Boss 法阵是否加上悬浮符环、光柱与脉冲环。 |
+| | `frontSigil` | `true` | 是否在施法者正前方竖着画一个学派颜色的六芒星。 |
+| | `sigilDetail` | `2` | 六芒星每轮点数：1 / 2 / 3 = 26 / 36 / 52 个。 |
+| | `sigilScale` | `1.0` | 六芒星尺寸倍率。 |
+| | `sigilDistance` | `1.15` | 六芒星悬浮在眼前多少格。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。

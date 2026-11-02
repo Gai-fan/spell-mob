@@ -29,6 +29,12 @@ public final class SpellMobConfig {
     private static final ForgeConfigSpec.IntValue PRESENTATION_DENSITY;
     private static final ForgeConfigSpec.DoubleValue PRESENTATION_DISTANCE;
     private static final ForgeConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
+    private static final ForgeConfigSpec.BooleanValue BOSS_EXTRAS;
+    private static final ForgeConfigSpec.BooleanValue FRONT_SIGIL;
+    private static final ForgeConfigSpec.IntValue SIGIL_DETAIL;
+    private static final ForgeConfigSpec.DoubleValue SIGIL_SCALE;
+    private static final ForgeConfigSpec.DoubleValue SIGIL_DISTANCE;
     private static final ForgeConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
 
@@ -104,6 +110,24 @@ public final class SpellMobConfig {
         INTERRUPT_FEEDBACK = builder.comment("Smoke puff and extinguish sound when a cast is interrupted.",
                         "（施法被打断时冒烟并播放熄灭音效）")
                 .define("interruptFeedback", true);
+        BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss circle.",
+                        "（带有任一这些计分板标签的生物使用更华丽的 Boss 法阵）")
+                .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
+        BOSS_EXTRAS = builder.comment("Boss circles also get the floating rune halo, spark pillars and pulse rings.",
+                        "（Boss 法阵额外加上悬浮符环、光柱与脉冲环）")
+                .define("bossExtras", true);
+        FRONT_SIGIL = builder.comment("Draw a vertical hexagram in front of the caster, in the school colour.",
+                        "（在施法者正前方竖着画一个学派颜色的六芒星法阵）")
+                .define("frontSigil", true);
+        SIGIL_DETAIL = builder.comment("Dust points per emission: 1 = 26, 2 = 36, 3 = 52. Higher is smoother.",
+                        "（六芒星每次发射的点数：1 为 26 点，2 为 36 点，3 为 52 点；越高越平滑）")
+                .defineInRange("sigilDetail", 2, 1, 3);
+        SIGIL_SCALE = builder.comment("Size multiplier of the vertical hexagram.",
+                        "（竖立法阵的尺寸倍率）")
+                .defineInRange("sigilScale", 1.0D, 0.4D, 2.0D);
+        SIGIL_DISTANCE = builder.comment("Blocks in front of the caster's eyes where the hexagram floats.",
+                        "（法阵悬浮在施法者眼前多少格处）")
+                .defineInRange("sigilDistance", 1.15D, 0.4D, 3.0D);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -194,6 +218,51 @@ public final class SpellMobConfig {
     /** @return whether an interrupted cast shows a smoke puff and a sound */
     public static boolean interruptFeedback() {
         return !ready() || INTERRUPT_FEEDBACK.get();
+    }
+
+    /**
+     * @param entity the casting entity
+     * @return true when the entity carries one of the configured boss tags
+     */
+    public static boolean isBossCaster(Entity entity) {
+        if (!ready() || entity == null) {
+            return false;
+        }
+        List<? extends String> tags = BOSS_TAGS.get();
+        if (tags.isEmpty()) {
+            return false;
+        }
+        for (String tag : tags) {
+            if (entity.getTags().contains(tag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
+    public static boolean bossExtras() {
+        return !ready() || BOSS_EXTRAS.get();
+    }
+
+    /** @return whether a vertical hexagram is drawn in front of the caster */
+    public static boolean frontSigil() {
+        return !ready() || FRONT_SIGIL.get();
+    }
+
+    /** @return hexagram detail preset: 1 to 3 select 26, 36 or 52 points per emission */
+    public static int sigilDetail() {
+        return ready() ? SIGIL_DETAIL.get() : 2;
+    }
+
+    /** @return size multiplier applied to the vertical hexagram */
+    public static double sigilScale() {
+        return ready() ? SIGIL_SCALE.get() : 1.0D;
+    }
+
+    /** @return blocks in front of the eyes where the hexagram floats */
+    public static double sigilDistance() {
+        return ready() ? SIGIL_DISTANCE.get() : 1.15D;
     }
 
     /**

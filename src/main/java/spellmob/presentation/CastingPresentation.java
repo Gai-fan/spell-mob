@@ -2,6 +2,9 @@ package spellmob.presentation;
 
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.SchoolType;
+import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
+import io.redspace.ironsspellbooks.particle.SparkParticleOptions;
+import io.redspace.ironsspellbooks.registries.ParticleRegistry;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -10,6 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import spellmob.capability.CancelReason;
@@ -34,6 +38,12 @@ public final class CastingPresentation {
 
     /** Ticks between two circle emissions; 3 ticks is smooth enough without flooding the client. */
     private static final int EMIT_INTERVAL_TICKS = 3;
+
+    /** Boss circles are denser, so they emit a little less often than the plain dust ring. */
+    private static final int BOSS_EMIT_INTERVAL_TICKS = 4;
+
+    /** Ticks between two emissions of the vertical hexagram in front of the caster. */
+    private static final int SIGIL_INTERVAL_TICKS = 6;
 
     /**
      * Fallback colour used when a spell has no school or the school has no usable colour.
@@ -67,8 +77,19 @@ public final class CastingPresentation {
                 return;
             }
             Vector3f color = colorOf(spell);
-            emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
-            emitAura(level, mob);
+            if (SpellMobConfig.isBossCaster(mob)) {
+                emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
+                if (SpellMobConfig.bossExtras()) {
+                    emitHalo(level, mob, 0.0F);
+                    emitBlastwave(level, mob, color, 0.6F);
+                }
+            } else {
+                emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
+                emitAura(level, mob);
+            }
+            if (SpellMobConfig.frontSigil()) {
+                emitFrontSigil(level, mob, color, 0.0F);
+            }
         } catch (RuntimeException exception) {
             Logs.debug("Casting presentation failed on start: {}", exception.getMessage());
         }
@@ -84,7 +105,13 @@ public final class CastingPresentation {
      * @param totalTicks total cast time in ticks
      */
     public static void onCastTick(Mob mob, AbstractSpell spell, int ticks, int totalTicks) {
-        if (!SpellMobConfig.presentationEnabled() || ticks % EMIT_INTERVAL_TICKS != 0) {
+        if (!SpellMobConfig.presentationEnabled()) {
+            return;
+        }
+        boolean boss = SpellMobConfig.isBossCaster(mob);
+        boolean ringTick = ticks % EMIT_INTERVAL_TICKS == 0;
+        boolean bossTick = boss && ticks % BOSS_EMIT_INTERVAL_TICKS == 0;
+        if (!ringTick && !bossTick) {
             return;
         }
         try {
@@ -95,13 +122,54 @@ public final class CastingPresentation {
             float progress = totalTicks <= 0 ? 1.0F : Math.min(1.0F, (float) ticks / (float) totalTicks);
             Vector3f color = colorOf(spell);
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
-            emitRing(level, mob, color, radius, ticks * 0.35F);
-            emitAura(level, mob);
-            if (progress >= 0.7F) {
-                emitSpark(level, mob, radius);
+            if (boss) {
+                if (ringTick) {
+                    emitBossRing(level, mob, radius * 1.35D, ticks * 0.22F, 12);
+                }
+                if (bossTick && SpellMobConfig.bossExtras()) {
+                    emitHalo(level, mob, ticks * 0.12F);
+                    emitPillars(level, mob, color, radius);
+                    if (ticks % 20 == 0) {
+                        emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
+                    }
+                }
+            } else {
+                emitRing(level, mob, color, radius, ticks * 0.35F);
+                emitAura(level, mob);
+                if (progress >= 0.7F) {
+                    emitSpark(level, mob, radius);
+                }
+            }
+            if (SpellMobConfig.frontSigil() && ticks % SIGIL_INTERVAL_TICKS == 0) {
+                emitFrontSigil(level, mob, color, ticks * 0.05F);
             }
         } catch (RuntimeException exception) {
             Logs.debug("Casting presentation failed while ticking: {}", exception.getMessage());
+        }
+    }
+
+    /**
+     * Closes a boss cast with a blast and a wide smoke ring at the caster.
+     *
+     * @param mob        the caster
+     * @param spell      the spell that finished, used for the school colour
+     * @param totalTicks the cast time in ticks; instant casts are ignored
+     */
+    public static void onCastFinish(Mob mob, AbstractSpell spell, int totalTicks) {
+        if (totalTicks <= 0 || !SpellMobConfig.presentationEnabled() || !SpellMobConfig.isBossCaster(mob)
+                || !SpellMobConfig.bossExtras()) {
+            return;
+        }
+        try {
+            ServerLevel level = levelOf(mob);
+            if (level == null) {
+                return;
+            }
+            Vector3f color = colorOf(spell);
+            emitBlastwave(level, mob, color, 1.8F);
+            emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
+        } catch (RuntimeException exception) {
+            Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
     }
 
@@ -131,6 +199,9 @@ public final class CastingPresentation {
                 if (player.distanceToSqr(x, y, z) <= limitSqr) {
                     level.sendParticles(player, ParticleTypes.LARGE_SMOKE, false, x, y, z, 6, 0.25D, 0.2D, 0.25D, 0.01D);
                 }
+            }
+            if (SpellMobConfig.isBossCaster(mob)) {
+                emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
             }
             level.playSound(null, x, y, z, SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.7F, 0.7F);
         } catch (RuntimeException exception) {
@@ -171,6 +242,153 @@ public final class CastingPresentation {
                 mob.getX() + Math.cos(angle) * radius,
                 mob.getY() + 0.15D,
                 mob.getZ() + Math.sin(angle) * radius);
+    }
+
+    /**
+     * Boss ring built from Iron's Spellbooks ring smoke, which is wider and softer than dust.
+     *
+     * @param level  the server level
+     * @param mob    the caster
+     * @param radius ring radius in blocks
+     * @param phase  rotation offset in radians
+     * @param points number of smoke puffs on the ring
+     */
+    private static void emitBossRing(ServerLevel level, Mob mob, double radius, float phase, int points) {
+        if (points <= 0) {
+            return;
+        }
+        ParticleOptions smoke = ParticleRegistry.RING_SMOKE_PARTICLE.get();
+        double centerX = mob.getX();
+        double centerY = mob.getY() + 0.05D;
+        double centerZ = mob.getZ();
+        for (int index = 0; index < points; index++) {
+            double angle = phase + Math.PI * 2.0D * index / points;
+            send(level, smoke, centerX + Math.cos(angle) * radius, centerY, centerZ + Math.sin(angle) * radius);
+        }
+    }
+
+    /**
+     * Slow counter rotating rune halo floating above the caster.
+     *
+     * @param level the server level
+     * @param mob   the caster
+     * @param phase rotation offset in radians
+     */
+    private static void emitHalo(ServerLevel level, Mob mob, float phase) {
+        ParticleOptions frame = ParticleRegistry.PORTAL_FRAME_PARTICLE.get();
+        double radius = Math.max(0.9D, mob.getBbWidth() * 1.1D);
+        double x = mob.getX();
+        double y = mob.getY() + mob.getBbHeight() + 0.35D + 0.12D * Math.sin(phase * 0.7D);
+        double z = mob.getZ();
+        for (int index = 0; index < 8; index++) {
+            double angle = -phase + Math.PI * 2.0D * index / 8.0D;
+            send(level, frame, x + Math.cos(angle) * radius, y, z + Math.sin(angle) * radius);
+        }
+    }
+
+    /**
+     * Five short spark pillars around the circle, tinted with the school colour.
+     *
+     * @param level  the server level
+     * @param mob    the caster
+     * @param color  the school colour
+     * @param radius the circle radius
+     */
+    private static void emitPillars(ServerLevel level, Mob mob, Vector3f color, double radius) {
+        SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
+        double x = mob.getX();
+        double y = mob.getY();
+        double z = mob.getZ();
+        for (int index = 0; index < 5; index++) {
+            double angle = Math.PI * 2.0D * index / 5.0D;
+            double px = x + Math.cos(angle) * radius * 1.05D;
+            double pz = z + Math.sin(angle) * radius * 1.05D;
+            for (int step = 0; step < 3; step++) {
+                send(level, spark, px, y + 0.15D + step * 0.35D, pz);
+            }
+        }
+    }
+
+    /**
+     * Expanding shockwave ring, used for the periodic pulse and the finishing blast.
+     *
+     * @param level the server level
+     * @param mob   the caster
+     * @param color the school colour
+     * @param scale the visual scale of the blast
+     */
+    private static void emitBlastwave(ServerLevel level, Mob mob, Vector3f color, float scale) {
+        send(level, new BlastwaveParticleOptions(new Vector3f(color), scale),
+                mob.getX(), mob.getY() + 0.1D, mob.getZ());
+    }
+
+    /**
+     * Draws a vertical hexagram in front of the caster, facing the direction the mob is looking.
+     *
+     * <p>The plane is built from the mob's look vector: {@code right = forward x up} and
+     * {@code up = right x forward}, so the star faces the target instead of the world axes. A
+     * hexagram is two equilateral triangles rotated by 60 degrees, which is cheap to draw with
+     * dust particles and works on every supported Iron's Spellbooks version.</p>
+     *
+     * @param level the server level
+     * @param mob   the caster
+     * @param color the school colour
+     * @param phase rotation offset in radians
+     */
+    private static void emitFrontSigil(ServerLevel level, Mob mob, Vector3f color, float phase) {
+        Vec3 forward = mob.getLookAngle();
+        if (forward.lengthSqr() < 1.0E-6D) {
+            return;
+        }
+        forward = forward.normalize();
+        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
+        if (right.lengthSqr() < 1.0E-6D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
+        }
+        if (right.lengthSqr() < 1.0E-6D) {
+            return;
+        }
+        right = right.normalize();
+        Vec3 up = right.cross(forward).normalize();
+
+        double radius = Math.max(0.75D, Math.min(1.25D, 0.7D + mob.getBbWidth() * 0.3D))
+                * SpellMobConfig.sigilScale();
+        Vec3 center = mob.getEyePosition().add(forward.scale(SpellMobConfig.sigilDistance() + radius * 0.45D));
+        DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.9F);
+        DustParticleOptions vertex = new DustParticleOptions(new Vector3f(color), 1.8F);
+
+        int detail = SpellMobConfig.sigilDetail();
+        int ringPoints = detail <= 1 ? 8 : detail == 2 ? 12 : 16;
+        int edgeSteps = detail <= 1 ? 3 : detail == 2 ? 4 : 6;
+        for (int index = 0; index < ringPoints; index++) {
+            double angle = phase + Math.PI * 2.0D * index / ringPoints;
+            sendAt(level, line, center, right, up, angle, radius * 1.14D);
+        }
+
+        for (int triangle = 0; triangle < 2; triangle++) {
+            double offset = triangle * Math.PI / 3.0D - Math.PI / 2.0D;
+            for (int edge = 0; edge < 3; edge++) {
+                double from = offset + Math.PI * 2.0D * edge / 3.0D;
+                double to = offset + Math.PI * 2.0D * (edge + 1) / 3.0D;
+                Vec3 start = point(center, right, up, from, radius);
+                Vec3 end = point(center, right, up, to, radius);
+                for (int step = 0; step < edgeSteps; step++) {
+                    double t = step / (double) (edgeSteps - 1);
+                    Vec3 at = start.add(end.subtract(start).scale(t));
+                    send(level, step == 0 || step == edgeSteps - 1 ? vertex : line, at.x, at.y, at.z);
+                }
+            }
+        }
+    }
+
+    private static Vec3 point(Vec3 center, Vec3 right, Vec3 up, double angle, double radius) {
+        return center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
+    }
+
+    private static void sendAt(ServerLevel level, ParticleOptions particle, Vec3 center, Vec3 right, Vec3 up,
+            double angle, double radius) {
+        Vec3 at = point(center, right, up, angle, radius);
+        send(level, particle, at.x, at.y, at.z);
     }
 
     /**
