@@ -30,9 +30,6 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
     private static final ModConfigSpec.BooleanValue BOSS_EXTRAS;
-    private static final ModConfigSpec.BooleanValue SIGIL;
-    private static final ModConfigSpec.IntValue SIGIL_DETAIL;
-    private static final ModConfigSpec.DoubleValue SIGIL_SCALE;
     private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
@@ -115,15 +112,6 @@ public final class SpellMobConfig {
         BOSS_EXTRAS = builder.comment("Boss circles also get the floating rune halo, spark pillars and pulse rings.",
                         "（Boss 法阵额外加上悬浮符环、光柱与脉冲环）")
                 .define("bossExtras", true);
-        SIGIL = builder.comment("Draw a vertical hexagram in front of boss casters, in the school colour.",
-                        "（在 Boss 施法者正前方画一个竖直的六芒星法阵；普通施法者只有脚下圆环）")
-                .define("sigil", true);
-        SIGIL_DETAIL = builder.comment("Line points per emission: 1 = 30, 2 = 48, 3 = 66. Higher is smoother.",
-                        "（六芒星每次发射的线条点数：1 为 30 点，2 为 48 点，3 为 66 点；越高越平滑）")
-                .defineInRange("sigilDetail", 2, 1, 3);
-        SIGIL_SCALE = builder.comment("Size multiplier of the hexagram.",
-                        "（六芒星的尺寸倍率）")
-                .defineInRange("sigilScale", 1.0D, 0.4D, 2.0D);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -239,21 +227,6 @@ public final class SpellMobConfig {
     /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
     public static boolean bossExtras() {
         return !ready() || BOSS_EXTRAS.get();
-    }
-
-    /** @return whether a hexagram is drawn in front of boss casters */
-    public static boolean sigil() {
-        return !ready() || SIGIL.get();
-    }
-
-    /** @return hexagram detail preset: 1 to 3 select 26, 36 or 52 points per emission */
-    public static int sigilDetail() {
-        return ready() ? SIGIL_DETAIL.get() : 2;
-    }
-
-    /** @return size multiplier applied to the vertical hexagram */
-    public static double sigilScale() {
-        return ready() ? SIGIL_SCALE.get() : 1.0D;
     }
 
     /**

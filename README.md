@@ -38,7 +38,7 @@
 3. 进游戏执行 `/reload`；
 4. 生成对应生物验证。
 
-安装后**模组本身不附带任何数据包**：只装模组，世界里所有生物的行为保持不变。想直接看效果，从仓库的 `examples/` 里挑一份装进世界——`classic/`（僵尸 A/B + 骷髅/狼/村民/尸壳的早期示例，后四个会作用于全部同类）、`bosses/`（六个名字+tag 双门控 Boss，只影响被命名的个体）、`channel_test/`（引导法术测试，作用于全部掠夺者/卫道士）、`twilight_forest_1_21_1/`（暮色森林五个 Boss 与三个精英）、`twilight_forest_bosses_1_21_1/`（以暮色普通生物为基地的五个首领）；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
+安装后**默认附带一份双尸壳示例**（`data/minecraft/spell_casters/husk.json`，源码见 `examples/husk_twins_1_21_1/`）：带 `husk_boss` + `spellmob_boss` 标签的是 Boss 版（12 种法术、竖立 Boss 法阵、引导免打断），带 `husk_elite` 标签的是精英版（另外 12 种法术）；野生尸壳没有这些标签，行为保持不变。想要更多示例，从仓库的 `examples/` 里挑——`classic/`、`bosses/`、`channel_test/`、`kitchen_sink/`、`twilight_forest_1_21_1/`、`twilight_forest_bosses_1_21_1/`；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
 
 ### Boss 数据包（`examples/bosses/`）
 
@@ -337,9 +337,6 @@
 | `presentation.interruptFeedback` | `true` | 被打断时是否冒烟 + 熄灭音效 |
 | `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵 |
 | `presentation.bossExtras` | `true` | Boss 法阵是否加上符环、光柱与脉冲环 |
-| `presentation.sigil` | `true` | 是否在 Boss 施法者正前方画学派颜色的竖直六芒星（普通施法者只有脚下圆环） |
-| `presentation.sigilDetail` | `2` | 六芒星每轮线条点数：1 / 2 / 3 = 30 / 48 / 66 个 |
-| `presentation.sigilScale` | `1.0` | 六芒星尺寸倍率 |
 | `species.extraRules` | `[]` | 写在配置里的物种级规则，一行一条 JSON |
 
 ### 物种规则写进配置（extraRules）

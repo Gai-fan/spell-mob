@@ -43,7 +43,6 @@ public final class CastingPresentation {
     private static final int BOSS_EMIT_INTERVAL_TICKS = 4;
 
     /** Ticks between two emissions of the vertical hexagram in front of the caster. */
-    private static final int SIGIL_INTERVAL_TICKS = 6;
 
     /**
      * Fallback colour used when a spell has no school or the school has no usable colour.
@@ -87,10 +86,7 @@ public final class CastingPresentation {
             } else {
                 emitAura(level, mob);
             }
-            if (SpellMobConfig.sigil() && SpellMobConfig.isBossCaster(mob)) {
-                emitFrontSigil(level, mob, color, 0.0F);
-            }
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on start: {}", exception.getMessage());
         }
     }
@@ -143,10 +139,7 @@ public final class CastingPresentation {
                     }
                 }
             }
-            if (SpellMobConfig.sigil() && boss && ticks % SIGIL_INTERVAL_TICKS == 0) {
-                emitFrontSigil(level, mob, color, ticks * 0.05F);
-            }
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed while ticking: {}", exception.getMessage());
         }
     }
@@ -171,7 +164,7 @@ public final class CastingPresentation {
             Vector3f color = colorOf(spell);
             emitBlastwave(level, mob, color, 1.8F);
             emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
     }
@@ -207,7 +200,7 @@ public final class CastingPresentation {
                 emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
             }
             level.playSound(null, x, y, z, SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.7F, 0.7F);
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on cancel: {}", exception.getMessage());
         }
     }
@@ -326,80 +319,6 @@ public final class CastingPresentation {
     }
 
     /**
-     * Vertical magic circle floating at the point the spell is fired from.
-     *
-     * <p>Same figure as the horizontal circle of the Teleportation Crystal mod (outer ring, inner
-     * ring, two interleaved triangles and six nodes), but built in the plane that faces the
-     * caster's look direction, so the projectiles it launches appear to fly out of the circle.</p>
-     *
-     * @param level the server level
-     * @param mob   the caster
-     * @param color the school colour
-     * @param phase rotation offset in radians
-     */
-    private static void emitFrontSigil(ServerLevel level, Mob mob, Vector3f color, float phase) {
-        Vec3 forward = mob.getLookAngle();
-        if (forward.lengthSqr() < 1.0E-6D) {
-            return;
-        }
-        forward = forward.normalize();
-        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
-        if (right.lengthSqr() < 1.0E-6D) {
-            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
-        }
-        if (right.lengthSqr() < 1.0E-6D) {
-            return;
-        }
-        right = right.normalize();
-        Vec3 up = right.cross(forward).normalize();
-        double radius = Math.max(0.75D, Math.min(1.5D, 0.8D + mob.getBbWidth() * 0.35D))
-                * SpellMobConfig.sigilScale();
-        Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
-        int detail = SpellMobConfig.sigilDetail();
-        int outerSegments = detail <= 1 ? 24 : detail == 2 ? 32 : 40;
-        int innerSegments = detail <= 1 ? 12 : detail == 2 ? 18 : 24;
-        int edgePoints = detail <= 1 ? 5 : detail == 2 ? 8 : 11;
-        DustParticleOptions ring = new DustParticleOptions(new Vector3f(color), 0.45F);
-        DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.6F);
-        DustParticleOptions node = new DustParticleOptions(new Vector3f(color), 1.2F);
-        SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
-        for (int index = 0; index < outerSegments; index++) {
-            double angle = phase + Math.PI * 2.0D * index / outerSegments;
-            send(level, ring, center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius)));
-        }
-        double innerRadius = radius * 0.72D;
-        for (int index = 0; index < innerSegments; index++) {
-            double angle = -phase * 1.4D + Math.PI * 2.0D * index / innerSegments;
-            send(level, ring, center.add(right.scale(Math.cos(angle) * innerRadius)).add(up.scale(Math.sin(angle) * innerRadius)));
-        }
-        Vec3[] star = new Vec3[6];
-        for (int index = 0; index < 6; index++) {
-            double angle = phase + Math.PI * index / 3.0D;
-            star[index] = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
-        }
-        emitSigilEdge(level, line, star[0], star[2], edgePoints);
-        emitSigilEdge(level, line, star[2], star[4], edgePoints);
-        emitSigilEdge(level, line, star[4], star[0], edgePoints);
-        emitSigilEdge(level, line, star[1], star[3], edgePoints);
-        emitSigilEdge(level, line, star[3], star[5], edgePoints);
-        emitSigilEdge(level, line, star[5], star[1], edgePoints);
-        for (Vec3 vertex : star) {
-            send(level, node, vertex);
-            send(level, spark, vertex);
-        }
-    }
-
-    private static void emitSigilEdge(ServerLevel level, ParticleOptions particle, Vec3 from, Vec3 to, int points) {
-        for (int step = 0; step < points; step++) {
-            send(level, particle, from.lerp(to, step / (double) (points - 1)));
-        }
-    }
-
-    private static void send(ServerLevel level, ParticleOptions particle, Vec3 position) {
-        send(level, particle, position.x, position.y, position.z);
-    }
-
-    /**
      * Sends a single stationary particle to every player close enough to see it.
      *
      * <p>{@code count == 0} makes the client spawn exactly one particle at the given position with
@@ -443,7 +362,7 @@ public final class CastingPresentation {
                     return new Vector3f(color);
                 }
             }
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Could not read the school colour of {}: {}", spell.getSpellId(), exception.getMessage());
         }
         return new Vector3f(DEFAULT_RED, DEFAULT_GREEN, DEFAULT_BLUE);
