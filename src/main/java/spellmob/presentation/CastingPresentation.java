@@ -5,6 +5,7 @@ import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
 import io.redspace.ironsspellbooks.particle.SparkParticleOptions;
 import io.redspace.ironsspellbooks.registries.ParticleRegistry;
+import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -13,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
 import spellmob.capability.CancelReason;
@@ -87,7 +89,7 @@ public final class CastingPresentation {
                 emitAura(level, mob);
             }
             if (SpellMobConfig.sigil()) {
-                emitGroundSigil(level, mob, color, 0.0F);
+                emitFrontSigil(level, mob, color, 0.0F);
             }
         } catch (RuntimeException exception) {
             Logs.debug("Casting presentation failed on start: {}", exception.getMessage());
@@ -140,7 +142,7 @@ public final class CastingPresentation {
                 }
             }
             if (SpellMobConfig.sigil() && ticks % SIGIL_INTERVAL_TICKS == 0) {
-                emitGroundSigil(level, mob, color, ticks * 0.05F);
+                emitFrontSigil(level, mob, color, ticks * 0.05F);
             }
         } catch (RuntimeException exception) {
             Logs.debug("Casting presentation failed while ticking: {}", exception.getMessage());
@@ -322,51 +324,63 @@ public final class CastingPresentation {
     }
 
     /**
-     * Draws a flat hexagram on the ground under the caster.
+     * Vertical hexagram floating in front of the caster, facing the direction it is looking.
      *
-     * <p>It lies in the XZ plane like a summoning circle, so it reads from every angle: a vertical
-     * star drawn in front of the caster turns edge-on and disappears as soon as the viewer stands
-     * to the side. Two overlapping equilateral triangles form the star, six sparks mark the
-     * points, and the whole figure turns slowly with the cast progress.</p>
+     * <p>The figure is drawn in the plane spanned by the caster's look direction, so it stays
+     * readable from the side instead of collapsing into a line. Edges use the vanilla
+     * {@code entity_effect} particle tinted with the school colour, and the six vertices get a
+     * bright {@code end_rod} dot so the shape reads clearly at night.</p>
      *
      * @param level the server level
      * @param mob   the caster
      * @param color the school colour
      * @param phase rotation offset in radians
      */
-    private static void emitGroundSigil(ServerLevel level, Mob mob, Vector3f color, float phase) {
-        double radius = Math.max(1.2D, Math.min(2.6D, 1.3D + mob.getBbWidth() * 0.5D))
+    private static void emitFrontSigil(ServerLevel level, Mob mob, Vector3f color, float phase) {
+        Vec3 forward = mob.getLookAngle();
+        if (forward.lengthSqr() < 1.0E-6D) {
+            return;
+        }
+        forward = forward.normalize();
+        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
+        if (right.lengthSqr() < 1.0E-6D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
+        }
+        if (right.lengthSqr() < 1.0E-6D) {
+            return;
+        }
+        right = right.normalize();
+        Vec3 up = right.cross(forward).normalize();
+        double radius = Math.max(0.85D, Math.min(1.6D, 0.9D + mob.getBbWidth() * 0.35D))
                 * SpellMobConfig.sigilScale();
-        double centerX = mob.getX();
-        double centerY = mob.getY() + 0.06D;
-        double centerZ = mob.getZ();
+        Vec3 center = new Vec3(mob.getX(), mob.getY() + mob.getBbHeight() * 0.55D + 0.4D, mob.getZ())
+                .add(forward.scale(mob.getBbWidth() * 0.5D + 1.35D));
         int detail = SpellMobConfig.sigilDetail();
         int edgePoints = detail <= 1 ? 5 : detail == 2 ? 8 : 11;
-        DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.55F);
-        DustParticleOptions node = new DustParticleOptions(new Vector3f(color), 1.0F);
-        SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
+        int rgb = (toByte(color.x()) << 16) | (toByte(color.y()) << 8) | toByte(color.z());
+        ParticleOptions line = ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, rgb);
         for (int triangle = 0; triangle < 2; triangle++) {
             double offset = phase + triangle * Math.PI / 3.0D;
             for (int edge = 0; edge < 3; edge++) {
                 double from = offset + Math.PI * 2.0D * edge / 3.0D;
                 double to = from + Math.PI * 2.0D / 3.0D;
-                double fromX = centerX + Math.cos(from) * radius;
-                double fromZ = centerZ + Math.sin(from) * radius;
-                double toX = centerX + Math.cos(to) * radius;
-                double toZ = centerZ + Math.sin(to) * radius;
+                Vec3 start = center.add(right.scale(Math.cos(from) * radius)).add(up.scale(Math.sin(from) * radius));
+                Vec3 end = center.add(right.scale(Math.cos(to) * radius)).add(up.scale(Math.sin(to) * radius));
                 for (int step = 0; step < edgePoints; step++) {
-                    double t = step / (double) (edgePoints - 1);
-                    send(level, line, fromX + (toX - fromX) * t, centerY, fromZ + (toZ - fromZ) * t);
+                    Vec3 point = start.lerp(end, step / (double) (edgePoints - 1));
+                    send(level, line, point.x, point.y, point.z);
                 }
             }
         }
-        for (int index = 0; index < 6; index++) {
-            double angle = phase + Math.PI * 2.0D * index / 6.0D;
-            double x = centerX + Math.cos(angle) * radius;
-            double z = centerZ + Math.sin(angle) * radius;
-            send(level, node, x, centerY + 0.02D, z);
-            send(level, spark, x, centerY + 0.08D, z);
+        for (int vertex = 0; vertex < 6; vertex++) {
+            double angle = phase + Math.PI * 2.0D * vertex / 6.0D;
+            Vec3 point = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
+            send(level, ParticleTypes.END_ROD, point.x, point.y, point.z);
         }
+    }
+
+    private static int toByte(float value) {
+        return Math.max(0, Math.min(255, Math.round(value * 255.0F)));
     }
 
     /**
