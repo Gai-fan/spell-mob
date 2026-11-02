@@ -4,7 +4,6 @@ import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
 import io.redspace.ironsspellbooks.particle.SparkParticleOptions;
-import io.redspace.ironsspellbooks.registries.ParticleRegistry;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -90,7 +89,7 @@ public final class CastingPresentation {
             if (SpellMobConfig.frontSigil()) {
                 emitFrontSigil(level, mob, color, 0.0F);
             }
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on start: {}", exception.getMessage());
         }
     }
@@ -143,7 +142,7 @@ public final class CastingPresentation {
             if (SpellMobConfig.frontSigil() && ticks % SIGIL_INTERVAL_TICKS == 0) {
                 emitFrontSigil(level, mob, color, ticks * 0.05F);
             }
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed while ticking: {}", exception.getMessage());
         }
     }
@@ -168,7 +167,7 @@ public final class CastingPresentation {
             Vector3f color = colorOf(spell);
             emitBlastwave(level, mob, color, 1.8F);
             emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
     }
@@ -204,7 +203,7 @@ public final class CastingPresentation {
                 emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
             }
             level.playSound(null, x, y, z, SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.7F, 0.7F);
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on cancel: {}", exception.getMessage());
         }
     }
@@ -257,7 +256,7 @@ public final class CastingPresentation {
         if (points <= 0) {
             return;
         }
-        ParticleOptions smoke = ParticleRegistry.RING_SMOKE_PARTICLE.get();
+        ParticleOptions smoke = ParticleTypes.SMOKE;
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.05D;
         double centerZ = mob.getZ();
@@ -275,7 +274,7 @@ public final class CastingPresentation {
      * @param phase rotation offset in radians
      */
     private static void emitHalo(ServerLevel level, Mob mob, float phase) {
-        ParticleOptions frame = ParticleRegistry.PORTAL_FRAME_PARTICLE.get();
+        ParticleOptions frame = ParticleTypes.ENCHANT;
         double radius = Math.max(0.9D, mob.getBbWidth() * 1.1D);
         double x = mob.getX();
         double y = mob.getY() + mob.getBbHeight() + 0.35D + 0.12D * Math.sin(phase * 0.7D);
@@ -435,7 +434,7 @@ public final class CastingPresentation {
                     return new Vector3f(color);
                 }
             }
-        } catch (RuntimeException exception) {
+        } catch (Throwable exception) {
             Logs.debug("Could not read the school colour of {}: {}", spell.getSpellId(), exception.getMessage());
         }
         return new Vector3f(DEFAULT_RED, DEFAULT_GREEN, DEFAULT_BLUE);
