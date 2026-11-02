@@ -335,6 +335,9 @@
 | `presentation.density` | `1` | 环上的点数：0 关闭，1 / 2 / 3 = 8 / 12 / 16 个 |
 | `presentation.distance` | `24.0` | 只向这个距离内的玩家发粒子 |
 | `presentation.interruptFeedback` | `true` | 被打断时是否冒烟 + 熄灭音效 |
+| `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵 |
+| `presentation.bossExtras` | `true` | Boss 法阵是否加上符环、光柱与脉冲环 |
+| `presentation.frontSigil` | `true` | 是否在施法者正前方竖着画学派颜色的六芒星 |
 | `species.extraRules` | `[]` | 写在配置里的物种级规则，一行一条 JSON |
 
 ### 物种规则写进配置（extraRules）

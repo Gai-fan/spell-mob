@@ -30,6 +30,7 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
     private static final ModConfigSpec.BooleanValue BOSS_EXTRAS;
+    private static final ModConfigSpec.BooleanValue FRONT_SIGIL;
     private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
@@ -112,6 +113,9 @@ public final class SpellMobConfig {
         BOSS_EXTRAS = builder.comment("Boss circles also get the floating rune halo, spark pillars and pulse rings.",
                         "（Boss 法阵额外加上悬浮符环、光柱与脉冲环）")
                 .define("bossExtras", true);
+        FRONT_SIGIL = builder.comment("Draw a vertical hexagram in front of the caster, in the school colour.",
+                        "（在施法者正前方竖着画一个学派颜色的六芒星法阵）")
+                .define("frontSigil", true);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -227,6 +231,11 @@ public final class SpellMobConfig {
     /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
     public static boolean bossExtras() {
         return !ready() || BOSS_EXTRAS.get();
+    }
+
+    /** @return whether a vertical hexagram is drawn in front of the caster */
+    public static boolean frontSigil() {
+        return !ready() || FRONT_SIGIL.get();
     }
 
     /**

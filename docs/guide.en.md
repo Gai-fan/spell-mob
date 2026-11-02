@@ -268,6 +268,9 @@ The config lives at `config/spellmob-common.toml` (COMMON type — one file for 
 | | `density` | `1` | `0` = no circle, `1/2/3` = 8/12/16 dots. |
 | | `distance` | `24` | Particle view distance (4–64). |
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
+| | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the richer boss circle. |
+| | `bossExtras` | `true` | Adds the floating halo, spark pillars and pulse rings to boss circles. |
+| | `frontSigil` | `true` | Draws a vertical school-coloured hexagram in front of the caster. |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).
