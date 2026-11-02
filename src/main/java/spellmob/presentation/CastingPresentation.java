@@ -326,11 +326,11 @@ public final class CastingPresentation {
     }
 
     /**
-     * Vertical hexagram floating in front of the caster, facing the direction it is looking.
+     * Vertical magic circle floating at the point the spell is fired from.
      *
-     * <p>Only boss casters get this figure. The two equilateral triangles are drawn with dust and
-     * the six vertices add a spark on top, so the shape reads as a glowing sigil rather than a
-     * ring of smoke.</p>
+     * <p>Same figure as the horizontal circle of the Teleportation Crystal mod (outer ring, inner
+     * ring, two interleaved triangles and six nodes), but built in the plane that faces the
+     * caster's look direction, so the projectiles it launches appear to fly out of the circle.</p>
      *
      * @param level the server level
      * @param mob   the caster
@@ -352,34 +352,51 @@ public final class CastingPresentation {
         }
         right = right.normalize();
         Vec3 up = right.cross(forward).normalize();
-        double radius = Math.max(0.85D, Math.min(1.6D, 0.9D + mob.getBbWidth() * 0.35D))
+        double radius = Math.max(0.75D, Math.min(1.5D, 0.8D + mob.getBbWidth() * 0.35D))
                 * SpellMobConfig.sigilScale();
-        Vec3 center = new Vec3(mob.getX(), mob.getY() + radius + 0.2D, mob.getZ())
-                .add(forward.scale(mob.getBbWidth() * 0.5D + 1.35D));
+        Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
         int detail = SpellMobConfig.sigilDetail();
+        int outerSegments = detail <= 1 ? 24 : detail == 2 ? 32 : 40;
+        int innerSegments = detail <= 1 ? 12 : detail == 2 ? 18 : 24;
         int edgePoints = detail <= 1 ? 5 : detail == 2 ? 8 : 11;
+        DustParticleOptions ring = new DustParticleOptions(new Vector3f(color), 0.45F);
         DustParticleOptions line = new DustParticleOptions(new Vector3f(color), 0.6F);
         DustParticleOptions node = new DustParticleOptions(new Vector3f(color), 1.2F);
         SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
-        for (int triangle = 0; triangle < 2; triangle++) {
-            double offset = phase + triangle * Math.PI / 3.0D;
-            for (int edge = 0; edge < 3; edge++) {
-                double from = offset + Math.PI * 2.0D * edge / 3.0D;
-                double to = from + Math.PI * 2.0D / 3.0D;
-                Vec3 start = center.add(right.scale(Math.cos(from) * radius)).add(up.scale(Math.sin(from) * radius));
-                Vec3 end = center.add(right.scale(Math.cos(to) * radius)).add(up.scale(Math.sin(to) * radius));
-                for (int step = 0; step < edgePoints; step++) {
-                    Vec3 point = start.lerp(end, step / (double) (edgePoints - 1));
-                    send(level, line, point.x, point.y, point.z);
-                }
-            }
+        for (int index = 0; index < outerSegments; index++) {
+            double angle = phase + Math.PI * 2.0D * index / outerSegments;
+            send(level, ring, center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius)));
         }
-        for (int vertex = 0; vertex < 6; vertex++) {
-            double angle = phase + Math.PI * 2.0D * vertex / 6.0D;
-            Vec3 point = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
-            send(level, node, point.x, point.y, point.z);
-            send(level, spark, point.x, point.y, point.z);
+        double innerRadius = radius * 0.72D;
+        for (int index = 0; index < innerSegments; index++) {
+            double angle = -phase * 1.4D + Math.PI * 2.0D * index / innerSegments;
+            send(level, ring, center.add(right.scale(Math.cos(angle) * innerRadius)).add(up.scale(Math.sin(angle) * innerRadius)));
         }
+        Vec3[] star = new Vec3[6];
+        for (int index = 0; index < 6; index++) {
+            double angle = phase + Math.PI * index / 3.0D;
+            star[index] = center.add(right.scale(Math.cos(angle) * radius)).add(up.scale(Math.sin(angle) * radius));
+        }
+        emitSigilEdge(level, line, star[0], star[2], edgePoints);
+        emitSigilEdge(level, line, star[2], star[4], edgePoints);
+        emitSigilEdge(level, line, star[4], star[0], edgePoints);
+        emitSigilEdge(level, line, star[1], star[3], edgePoints);
+        emitSigilEdge(level, line, star[3], star[5], edgePoints);
+        emitSigilEdge(level, line, star[5], star[1], edgePoints);
+        for (Vec3 vertex : star) {
+            send(level, node, vertex);
+            send(level, spark, vertex);
+        }
+    }
+
+    private static void emitSigilEdge(ServerLevel level, ParticleOptions particle, Vec3 from, Vec3 to, int points) {
+        for (int step = 0; step < points; step++) {
+            send(level, particle, from.lerp(to, step / (double) (points - 1)));
+        }
+    }
+
+    private static void send(ServerLevel level, ParticleOptions particle, Vec3 position) {
+        send(level, particle, position.x, position.y, position.z);
     }
 
     /**
