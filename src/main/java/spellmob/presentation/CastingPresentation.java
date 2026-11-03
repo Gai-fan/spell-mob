@@ -31,7 +31,7 @@ import spellmob.util.Logs;
  * <p>The circle is built from individual dust particles because vanilla has no ring particle: a
  * single {@code sendParticles} call spreads its particles randomly inside a box, which would look
  * like a fuzzy square rather than a circle. One emission therefore costs one call per ring dot,
- * which is why the density is configurable and the interval is a few ticks rather than every
+ * which is why the point count is configurable and the interval is a few ticks rather than every
  * tick.</p>
  */
 public final class CastingPresentation {
@@ -336,16 +336,11 @@ public final class CastingPresentation {
 
     private static double ringRadius(Mob mob, float pulse) {
         double base = 0.5D + mob.getBbWidth() * 0.85D;
-        return base * (0.8D + 0.45D * pulse);
+        return base * SpellMobConfig.ringScale() * (0.8D + 0.45D * pulse);
     }
 
     private static int points() {
-        return switch (SpellMobConfig.presentationDensity()) {
-            case 1 -> 8;
-            case 2 -> 12;
-            case 3 -> 16;
-            default -> 0;
-        };
+        return Math.max(0, Math.min(128, SpellMobConfig.presentationPoints()));
     }
 
     private static double limitSqr() {

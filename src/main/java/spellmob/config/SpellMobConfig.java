@@ -26,7 +26,8 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.BooleanValue ALLOW_OPS_RENAME;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> EXTRA_RULES;
     private static final ModConfigSpec.BooleanValue PRESENTATION_ENABLED;
-    private static final ModConfigSpec.IntValue PRESENTATION_DENSITY;
+    private static final ModConfigSpec.IntValue PRESENTATION_POINTS;
+    private static final ModConfigSpec.DoubleValue RING_SCALE;
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
     private static final ModConfigSpec.BooleanValue BOSS_EXTRAS;
@@ -97,9 +98,12 @@ public final class SpellMobConfig {
         PRESENTATION_ENABLED = builder.comment("Draw the casting circle and show interrupt feedback.",
                         "（绘制施法法阵并显示中断反馈）")
                 .define("enabled", true);
-        PRESENTATION_DENSITY = builder.comment("Dots per circle ring: 0 = no circle, 1 = 8, 2 = 12, 3 = 16.",
-                        "（法阵每圈的点数：0 不画，1 为 8 点，2 为 12 点，3 为 16 点）")
-                .defineInRange("density", 1, 0, 3);
+        PRESENTATION_POINTS = builder.comment("Particles per casting circle ring, 0 disables the circle (0 - 128).",
+                        "（法阵每圈的点数，0 表示不画法阵，范围 0 - 128）")
+                .defineInRange("points", 8, 0, 128);
+        RING_SCALE = builder.comment("Multiplier applied to the casting circle radius.",
+                        "（施法法阵半径的倍率）")
+                .defineInRange("ringScale", 1.0D, 0.25D, 4.0D);
         PRESENTATION_DISTANCE = builder.comment("Only players within this many blocks receive the particles.",
                         "（只有这个距离内的玩家会收到粒子）")
                 .defineInRange("distance", 24.0D, 4.0D, 64.0D);
@@ -189,9 +193,14 @@ public final class SpellMobConfig {
         return !ready() || PRESENTATION_ENABLED.get();
     }
 
-    /** @return ring dot preset: 0 disables the circle, 1 to 3 select 8, 12 or 16 dots */
-    public static int presentationDensity() {
-        return ready() ? PRESENTATION_DENSITY.get() : 1;
+    /** @return number of particles drawn on the casting circle ring */
+    public static int presentationPoints() {
+        return ready() ? PRESENTATION_POINTS.get() : 8;
+    }
+
+    /** @return multiplier applied to the casting circle radius */
+    public static double ringScale() {
+        return ready() ? RING_SCALE.get() : 1.0D;
     }
 
     /** @return radius in blocks inside which players receive casting particles */
