@@ -3,36 +3,98 @@
   "dropRules": [
     {
       "_comment": "只有会施法的沙海祭司才掉：玩家击杀必掉 1 个金块 + 2~4 个绿宝石（吃抢夺），15% 概率追加附魔金苹果。",
-      "select": { "tags": ["spellmob_boss", "dune"] },
+      "select": {
+        "tags": [
+          "spellmob_boss",
+          "dune"
+        ]
+      },
       "drops": [
-        { "item": "minecraft:gold_block", "count": 1 },
-        { "item": "minecraft:emerald", "min": 2, "max": 4, "looting": true },
-        { "item": "minecraft:enchanted_golden_apple", "chance": 0.15 }
+        {
+          "item": "minecraft:gold_block",
+          "count": 1
+        },
+        {
+          "item": "minecraft:emerald",
+          "min": 2,
+          "max": 4,
+          "looting": true
+        },
+        {
+          "item": "minecraft:enchanted_golden_apple",
+          "chance": 0.15
+        }
       ]
     },
     {
       "_comment": "演示 lootTable：任意带 spellmob_boss 标签的尸壳，20% 概率掉一份沙漠神殿战利品（第一条命中后这条就不会执行）。",
-      "select": { "tags": ["spellmob_boss"] },
+      "select": {
+        "tags": [
+          "spellmob_boss"
+        ]
+      },
       "chance": 0.2,
-      "drops": [ { "lootTable": "minecraft:chests/desert_pyramid" } ]
+      "drops": [
+        {
+          "lootTable": "minecraft:chests/desert_pyramid"
+        }
+      ]
     }
   ],
   "variants": [
     {
       "_comment": "第二阶段（<45%）：烧尽。火息是引导型（castTime 80），配合干燥的沙地很应景；raise_dead 会在你脸上拉出亡灵。",
-      "select": { "name": "沙海祭司", "tags": ["spellmob_boss", "dune"], "healthBelow": 0.45 },
+      "select": {
+        "name": "沙海祭司",
+        "tags": [
+          "spellmob_boss",
+          "dune"
+        ],
+        "healthBelow": 0.45
+      },
       "override": true,
       "goals": [
-        { "spell": "irons_spellbooks:fire_breath", "level": 2, "cooldown": 220, "priority": 1, "range": 12.0, "castTime": 80, "target": "ATTACK_TARGET" },
-        { "spell": "irons_spellbooks:cone_of_cold", "level": 2, "cooldown": 180, "priority": 2, "range": 12.0, "target": "ATTACK_TARGET" },
-        { "spell": "irons_spellbooks:blight", "level": 2, "cooldown": 200, "priority": 3, "range": 16.0, "target": "NEAREST_HOSTILE" },
-        { "spell": "irons_spellbooks:raise_dead", "level": 2, "cooldown": 400, "priority": 4, "range": 8.0, "target": "SELF" }
+        {
+          "spell": "irons_spellbooks:fire_breath",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 1,
+          "range": 12.0,
+          "castTime": 80,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 2,
+          "range": 12.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:blight",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 3,
+          "range": 16.0,
+          "target": "NEAREST_HOSTILE"
+        },
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 2,
+          "cooldown": 400,
+          "priority": 4,
+          "range": 8.0,
+          "target": "ATTACK_TARGET"
+        }
       ],
       "onHurt": {
         "spell": "irons_spellbooks:heal",
         "level": 2,
         "cooldown": 240,
-        "conditions": { "healthBelow": 0.65 },
+        "conditions": {
+          "healthBelow": 0.65
+        },
         "target": "SELF"
       },
       "onDeath": {
@@ -45,24 +107,107 @@
     },
     {
       "_comment": "第一阶段（≥45%）：法术机关枪。所有触发器都在这一段里演示。",
-      "select": { "name": "沙海祭司", "tags": ["spellmob_boss", "dune"] },
+      "select": {
+        "name": "沙海祭司",
+        "tags": [
+          "spellmob_boss",
+          "dune"
+        ]
+      },
       "override": true,
       "goals": [
-        { "spell": "irons_spellbooks:fireball", "level": 3, "cooldown": 100, "priority": 1, "range": 24.0, "target": "ATTACK_TARGET" },
-        { "spell": "irons_spellbooks:fang_strike", "level": 3, "cooldown": 140, "priority": 2, "range": 10.0, "interruptOnDamage": true, "conditions": { "minTargetDistance": 3.0, "maxTargetDistance": 10.0 }, "target": "ATTACK_TARGET" },
-        { "spell": "irons_spellbooks:blood_needles", "level": 2, "cooldown": 120, "priority": 2, "range": 20.0, "target": { "type": "HOSTILE_TARGET", "sort": "LOWEST_HEALTH", "maxHealthPercent": 0.8 } },
-        { "spell": "irons_spellbooks:root", "level": 2, "cooldown": 180, "priority": 3, "range": 16.0, "target": "NEAREST_PLAYER" },
-        { "spell": "irons_spellbooks:poison_splash", "level": 2, "cooldown": 160, "priority": 3, "range": 12.0, "chance": 0.5, "target": { "type": "NEAREST_HOSTILE", "sort": "RANDOM" } },
-        { "spell": "irons_spellbooks:arrow_volley", "level": 2, "cooldown": 220, "priority": 5, "range": 30.0, "target": { "type": "NEAREST_HOSTILE", "sort": "FARTHEST" } },
-        { "spell": "irons_spellbooks:fang_swirl", "level": 2, "cooldown": 200, "priority": 4, "range": 14.0, "target": { "type": "POSITION", "positionMode": "TARGET_ENTITY" } },
-        { "spell": "irons_spellbooks:wither_skull", "level": 2, "cooldown": 240, "priority": 4, "range": 24.0, "target": "LAST_DAMAGE_SOURCE" }
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 3,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 3,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 10.0,
+          "interruptOnDamage": true,
+          "conditions": {
+            "minTargetDistance": 3.0,
+            "maxTargetDistance": 10.0
+          },
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:blood_needles",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 20.0,
+          "target": {
+            "type": "HOSTILE_TARGET",
+            "sort": "LOWEST_HEALTH",
+            "maxHealthPercent": 0.8
+          }
+        },
+        {
+          "spell": "irons_spellbooks:root",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 3,
+          "range": 16.0,
+          "target": "NEAREST_PLAYER"
+        },
+        {
+          "spell": "irons_spellbooks:poison_splash",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 3,
+          "range": 12.0,
+          "chance": 0.5,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "sort": "RANDOM"
+          }
+        },
+        {
+          "spell": "irons_spellbooks:arrow_volley",
+          "level": 2,
+          "cooldown": 220,
+          "priority": 5,
+          "range": 30.0,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "sort": "FARTHEST"
+          }
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 4,
+          "range": 14.0,
+          "target": {
+            "type": "POSITION",
+            "positionMode": "TARGET_ENTITY"
+          }
+        },
+        {
+          "spell": "irons_spellbooks:wither_skull",
+          "level": 2,
+          "cooldown": 240,
+          "priority": 4,
+          "range": 24.0,
+          "target": "LAST_DAMAGE_SOURCE"
+        }
       ],
       "onHurt": {
         "_comment": "低血量时挨打会自愈（conditions.healthBelow 只判断施法者自己）。",
         "spell": "irons_spellbooks:heal",
         "level": 2,
         "cooldown": 260,
-        "conditions": { "healthBelow": 0.6 },
+        "conditions": {
+          "healthBelow": 0.6
+        },
         "target": "SELF"
       },
       "onTarget": {
@@ -79,26 +224,78 @@
         "level": 2,
         "cooldown": 240,
         "range": 10.0,
-        "target": { "type": "POSITION", "positionMode": "TARGET_ENTITY" }
+        "target": {
+          "type": "POSITION",
+          "positionMode": "TARGET_ENTITY"
+        }
       }
     },
     {
       "_comment": "测试变体（select.tags + healthAbove）：带 dune_elite 标签且血量高于 85% 时，开局先给自己上神圣壁垒（conditions.healthAbove 与 select 叠加演示）。",
-      "select": { "tags": ["dune_elite"], "healthAbove": 0.85 },
+      "select": {
+        "tags": [
+          "dune_elite"
+        ],
+        "healthAbove": 0.85
+      },
       "override": true,
       "goals": [
-        { "spell": "irons_spellbooks:fortify", "level": 2, "cooldown": 400, "priority": 0, "range": 8.0, "conditions": { "healthAbove": 0.85 }, "target": "SELF" },
-        { "spell": "irons_spellbooks:fireball", "level": 3, "cooldown": 100, "priority": 1, "range": 24.0, "target": "ATTACK_TARGET" }
+        {
+          "spell": "irons_spellbooks:fortify",
+          "level": 2,
+          "cooldown": 400,
+          "priority": 0,
+          "range": 8.0,
+          "conditions": {
+            "healthAbove": 0.85
+          },
+          "target": "SELF"
+        },
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 3,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        }
       ]
     },
     {
       "_comment": "测试变体（select.tags + healthBelow + healthAbove 同时用）：带 dune_elite 标签、血量严格落在 25%~60% 之间时，进入中段狂暴。同时写两个阈值时必须 healthBelow > healthAbove。",
-      "select": { "tags": ["dune_elite"], "healthBelow": 0.6, "healthAbove": 0.25 },
+      "select": {
+        "tags": [
+          "dune_elite"
+        ],
+        "healthBelow": 0.6,
+        "healthAbove": 0.25
+      },
       "override": true,
       "goals": [
-        { "spell": "irons_spellbooks:blight", "level": 2, "cooldown": 180, "priority": 1, "range": 16.0, "target": "ATTACK_TARGET" },
-        { "spell": "irons_spellbooks:fang_strike", "level": 3, "cooldown": 140, "priority": 2, "range": 10.0, "target": "ATTACK_TARGET" },
-        { "spell": "irons_spellbooks:heal", "level": 2, "cooldown": 200, "priority": 3, "range": 8.0, "target": "SELF" }
+        {
+          "spell": "irons_spellbooks:blight",
+          "level": 2,
+          "cooldown": 180,
+          "priority": 1,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 3,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 10.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:heal",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 3,
+          "range": 8.0,
+          "target": "SELF"
+        }
       ]
     }
   ]

@@ -7,6 +7,15 @@
 
 ---
 
+## [2.0.4] — 未发布
+
+### 变更
+
+- 召唤类法术（`summon_vex`、`summon_swords`、`summon_polar_bear`、`summon_horse`、`raise_dead`、`raise_hell`）统一改为 `ATTACK_TARGET`：**没有攻击目标时不会召唤**，避免怪物挂机时凭空叫小弟。
+- 修正 1.20.1 版内置数据里几个 1.21.1 才有的法术 id（`raise_hell` → `raise_dead`、`fang_swirl` → `fang_strike`、`gravity_fissure` → `black_hole`）。
+
+---
+
 ## [2.0.3] — 2026-11-03
 
 ### 新增

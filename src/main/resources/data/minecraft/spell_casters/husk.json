@@ -340,7 +340,7 @@
         "target": "ATTACK_TARGET"
       },
       "onDeath": {
-        "spell": "irons_spellbooks:raise_hell",
+        "spell": "irons_spellbooks:raise_dead",
         "level": 1,
         "cooldown": 0,
         "priority": 1,

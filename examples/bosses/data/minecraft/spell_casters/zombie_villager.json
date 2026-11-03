@@ -3,7 +3,14 @@
   "variants": [
     {
       "_comment": "第二阶段（<50%）：血针连射 + 加速，召唤频率提高。raise_dead 可被打断。",
-      "select": { "name": "血誓祭司", "tags": ["spellmob_boss", "blood"], "healthBelow": 0.5 },
+      "select": {
+        "name": "血誓祭司",
+        "tags": [
+          "spellmob_boss",
+          "blood"
+        ],
+        "healthBelow": 0.5
+      },
       "override": true,
       "goals": [
         {
@@ -14,7 +21,7 @@
           "range": 16.0,
           "interruptOnDamage": true,
           "checkInterval": 5,
-          "target": "SELF"
+          "target": "ATTACK_TARGET"
         },
         {
           "spell": "irons_spellbooks:blood_needles",
@@ -38,18 +45,24 @@
         "spell": "irons_spellbooks:raise_dead",
         "level": 1,
         "cooldown": 300,
-        "target": "SELF"
+        "target": "ATTACK_TARGET"
       },
       "onDeath": {
         "_comment": "临终再召唤最后一波。",
         "spell": "irons_spellbooks:raise_dead",
         "level": 3,
-        "target": "SELF"
+        "target": "ATTACK_TARGET"
       }
     },
     {
       "_comment": "第一阶段（>50%）：单发血针 + 低频召唤。",
-      "select": { "name": "血誓祭司", "tags": ["spellmob_boss", "blood"] },
+      "select": {
+        "name": "血誓祭司",
+        "tags": [
+          "spellmob_boss",
+          "blood"
+        ]
+      },
       "override": true,
       "goals": [
         {
@@ -67,7 +80,7 @@
           "priority": 2,
           "range": 16.0,
           "interruptOnDamage": true,
-          "target": "SELF"
+          "target": "ATTACK_TARGET"
         },
         {
           "_comment": "引导型（CONTINUOUS）：虹吸射线。血系持续伤害，引导期间每 10 tick 结算一次；带 spellmob_boss 标签所以不会被打断。",
@@ -83,12 +96,12 @@
         "spell": "irons_spellbooks:raise_dead",
         "level": 1,
         "cooldown": 300,
-        "target": "SELF"
+        "target": "ATTACK_TARGET"
       },
       "onDeath": {
         "spell": "irons_spellbooks:raise_dead",
         "level": 3,
-        "target": "SELF"
+        "target": "ATTACK_TARGET"
       }
     }
   ]
