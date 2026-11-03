@@ -80,7 +80,7 @@ public final class CastingPresentation {
             }
             Vector3f color = colorOf(spell);
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
+                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
                 if (SpellMobConfig.bossExtras()) {
                     emitHalo(level, mob, 0.0F);
                     emitBlastwave(level, mob, color, 0.6F);
@@ -123,7 +123,7 @@ public final class CastingPresentation {
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
             if (boss) {
                 if (ringTick) {
-                    emitBossRing(level, mob, radius * 1.35D, ticks * 0.22F, 12);
+                    emitBossRing(level, mob, color, radius * 1.35D, ticks * 0.22F, 12);
                 }
                 if (bossTick && SpellMobConfig.bossExtras()) {
                     emitHalo(level, mob, ticks * 0.12F);
@@ -163,7 +163,7 @@ public final class CastingPresentation {
             }
             Vector3f color = colorOf(spell);
             emitBlastwave(level, mob, color, 1.8F);
-            emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
+            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -197,7 +197,7 @@ public final class CastingPresentation {
                 }
             }
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
+                emitBossSmokeRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
             }
             level.playSound(null, x, y, z, SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.7F, 0.7F);
         } catch (Throwable exception) {
@@ -249,7 +249,28 @@ public final class CastingPresentation {
      * @param phase  rotation offset in radians
      * @param points number of smoke puffs on the ring
      */
-    private static void emitBossRing(ServerLevel level, Mob mob, double radius, float phase, int points) {
+    private static void emitBossRing(ServerLevel level, Mob mob, Vector3f color, double radius, float phase, int points) {
+        if (points <= 0) {
+            return;
+        }
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
+        ParticleOptions smoke = ParticleTypes.SMOKE;
+        boolean extras = SpellMobConfig.bossExtras();
+        double centerX = mob.getX();
+        double centerY = mob.getY() + 0.05D;
+        double centerZ = mob.getZ();
+        for (int index = 0; index < points; index++) {
+            double angle = phase + Math.PI * 2.0D * index / points;
+            double cos = Math.cos(angle);
+            double sin = Math.sin(angle);
+            send(level, dust, centerX + cos * radius, centerY, centerZ + sin * radius);
+            if (extras) {
+                send(level, smoke, centerX + cos * radius * 1.18D, centerY, centerZ + sin * radius * 1.18D);
+            }
+        }
+    }
+
+    private static void emitBossSmokeRing(ServerLevel level, Mob mob, double radius, float phase, int points) {
         if (points <= 0) {
             return;
         }
