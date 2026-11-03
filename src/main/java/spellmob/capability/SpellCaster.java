@@ -58,7 +58,8 @@ public final class SpellCaster implements ISpellCaster {
 
     private final Mob mob;
     private final ResourceLocation entityId;
-    private final MagicData magicData = new MagicData(true);
+    @Nullable
+    private MagicData magicData;
     private final Map<String, Integer> cooldowns = new HashMap<>();
 
     @Nullable
@@ -97,10 +98,6 @@ public final class SpellCaster implements ISpellCaster {
 
     SpellCaster(Mob mob) {
         this.mob = mob;
-        // MagicData is not usable without its synced state: MagicData#initiateCast() writes the
-        // casting marker into syncedSpellData and throws a NullPointerException when it is null.
-        // Iron's Spellbooks initialises its own casting mobs the same way.
-        this.magicData.setSyncedData(new SyncedSpellData(mob));
         ResourceLocation id = ForgeRegistries.ENTITY_TYPES.getKey(mob.getType());
         this.entityId = id == null ? new ResourceLocation("minecraft", "unknown") : id;
         this.lastName = mob.getCustomName();
@@ -136,7 +133,7 @@ public final class SpellCaster implements ISpellCaster {
         // Iron's Spellbooks advances this clock itself for its own casting mobs. Spells that read
         // MagicData#getCastDurationRemaining (starfall schedules its meteors from it) otherwise see a
         // frozen value and never fire.
-        magicData.handleCastDuration();
+        magicData().handleCastDuration();
         // Re-aim before the completion branch below. onCast resolves on this very tick, and spells
         // such as lightning_lance launch a straight projectile along getLookAngle(); if the caster
         // moved since the previous tick the shot would be a tick stale and fly wide at long range.
@@ -158,12 +155,32 @@ public final class SpellCaster implements ISpellCaster {
         }
         CastingPresentation.onCastTick(mob, cast.spell, cast.ticks, cast.totalTicks);
         try {
-            cast.spell.onServerCastTick(level(), cast.level, mob, magicData);
+            cast.spell.onServerCastTick(level(), cast.level, mob, magicData());
             repeatChannelOnCast(cast, remaining);
         } catch (Throwable throwable) {
             Logs.error("Spell " + cast.spell.getSpellId() + " threw while ticking its cast", throwable);
             cancel(CancelReason.INTERNAL_ERROR);
         }
+    }
+
+    /**
+     * Returns the magic state of this caster, creating it on first use.
+     *
+     * <p>Iron's Spellbooks cannot cast without a synced state: {@code initiateCast} writes the
+     * casting marker into it and throws when it is missing, which is why Iron's own casting mobs
+     * build one in their constructor. Here the object is created only when this mob actually starts
+     * a cast, so configured but idle mobs do not carry it around, and nothing entity dependent runs
+     * during {@code Entity#<init>}.</p>
+     *
+     * @return the magic state of this caster
+     */
+    private MagicData magicData() {
+        if (this.magicData == null) {
+            MagicData data = new MagicData(true);
+            data.setSyncedData(new SyncedSpellData(this.mob));
+            this.magicData = data;
+        }
+        return this.magicData;
     }
 
     private void tickCooldowns() {
@@ -368,7 +385,7 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         try {
-            if (!spell.checkPreCastConditions(level, definition.level(), mob, magicData)) {
+            if (!spell.checkPreCastConditions(level, definition.level(), mob, magicData())) {
                 Logs.debug("{} failed pre-cast conditions for {}", mob, definition.spellId());
                 this.retryAtTick = mob.tickCount + FAILED_CAST_BACKOFF_TICKS;
                 return false;
@@ -395,12 +412,14 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         try {
-            magicData.initiateCast(spell, definition.level(), castTime, CastSource.MOB,
+            magicData().initiateCast(spell, definition.level(), castTime, CastSource.MOB,
                     SpellSelectionManager.MAINHAND);
-            spell.onServerPreCast(level, definition.level(), mob, magicData);
+            spell.onServerPreCast(level, definition.level(), mob, magicData());
         } catch (Throwable throwable) {
             Logs.error("Spell " + definition.spellId() + " threw while starting its cast", throwable);
-            magicData.resetCastingState();
+            if (this.magicData != null) {
+                this.magicData.resetCastingState();
+            }
             if (!channel) {
                 cooldowns.remove(key);
             }
@@ -435,19 +454,19 @@ public final class SpellCaster implements ISpellCaster {
         try {
             if (level != null && (!cast.channel || !cast.repeatedOnCast)) {
                 // A channel already resolved its final tick through repeatChannelOnCast.
-                cast.spell.onCast(level, cast.level, mob, CastSource.MOB, magicData);
+                cast.spell.onCast(level, cast.level, mob, CastSource.MOB, magicData());
             }
         } catch (Throwable throwable) {
             Logs.error("Spell " + cast.spell.getSpellId() + " threw in onCast", throwable);
         }
         try {
             if (level != null) {
-                cast.spell.onServerCastComplete(level, cast.level, mob, magicData, false);
+                cast.spell.onServerCastComplete(level, cast.level, mob, magicData(), false);
             }
         } catch (Throwable throwable) {
             Logs.error("Spell " + cast.spell.getSpellId() + " threw in onServerCastComplete", throwable);
         } finally {
-            magicData.resetCastingState();
+            magicData().resetCastingState();
             this.resolving = false;
         }
         if (cast.totalTicks > 0) {
@@ -477,7 +496,7 @@ public final class SpellCaster implements ISpellCaster {
             return;
         }
         cast.repeatedOnCast = true;
-        cast.spell.onCast(level(), cast.level, mob, CastSource.MOB, magicData);
+        cast.spell.onCast(level(), cast.level, mob, CastSource.MOB, magicData());
     }
 
     /**
@@ -503,12 +522,14 @@ public final class SpellCaster implements ISpellCaster {
         ServerLevel level = level();
         if (level != null && cast.ticks > 0) {
             try {
-                cast.spell.onServerCastComplete(level, cast.level, mob, magicData, true);
+                cast.spell.onServerCastComplete(level, cast.level, mob, magicData(), true);
             } catch (Throwable throwable) {
                 Logs.error("Spell " + cast.spell.getSpellId() + " threw while being cancelled", throwable);
             }
         }
-        magicData.resetCastingState();
+        if (this.magicData != null) {
+            this.magicData.resetCastingState();
+        }
         this.resolving = false;
         applyCooldown(cast);
         Logs.debug("{} stops casting {} ({})", mob, cast.spell.getSpellId(), reason.message());
@@ -534,7 +555,9 @@ public final class SpellCaster implements ISpellCaster {
     @Override
     public void clear() {
         cooldowns.clear();
-        magicData.resetCastingState();
+        if (this.magicData != null) {
+            this.magicData.resetCastingState();
+        }
         this.active = null;
         this.retryAtTick = 0;
         this.resolving = false;

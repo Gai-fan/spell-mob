@@ -59,7 +59,11 @@ public final class CasterEvents {
             return;
         }
         if (event.getEntity() instanceof Mob mob) {
-            CastGoalSync.sync(mob);
+            // A mob that enters the level starts with vanilla goals only, so a type without rules
+            // has none of ours to clean up: skip the goal list copy and the variant match entirely.
+            if (SpellCasterRegistry.get(mob.getType()) != null) {
+                CastGoalSync.sync(mob);
+            }
         }
     }
 

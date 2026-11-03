@@ -64,12 +64,31 @@ public final class SpellCasterCapability {
     /** Capability provider holding one {@link SpellCaster} per mob. */
     public static final class Provider implements ICapabilitySerializable<CompoundTag> {
 
-        private final SpellCaster caster;
+        private final Mob mob;
         private final LazyOptional<ISpellCaster> optional;
 
+        /**
+         * Created on the first capability lookup rather than during {@code Entity#<init>}.
+         *
+         * <p>The provider itself is attached to every mob, which costs one field, while the caster
+         * carries a cooldown map and (once it casts) the Iron's Spellbooks magic state. Deferring
+         * the creation keeps mobs that never cast cheap without losing the ability to start casting
+         * later, which is what a datapack reload relies on: the capability is already there, so a
+         * newly added rule works on mobs that were loaded before the reload.</p>
+         */
+        @Nullable
+        private SpellCaster caster;
+
         private Provider(Mob mob) {
-            this.caster = new SpellCaster(mob);
-            this.optional = LazyOptional.of(() -> this.caster);
+            this.mob = mob;
+            this.optional = LazyOptional.of(this::caster);
+        }
+
+        private SpellCaster caster() {
+            if (this.caster == null) {
+                this.caster = new SpellCaster(this.mob);
+            }
+            return this.caster;
         }
 
         @Override
@@ -82,12 +101,12 @@ public final class SpellCasterCapability {
 
         @Override
         public CompoundTag serializeNBT() {
-            return this.caster.save();
+            return this.caster == null ? new CompoundTag() : this.caster.save();
         }
 
         @Override
         public void deserializeNBT(CompoundTag tag) {
-            this.caster.load(tag);
+            this.caster().load(tag);
         }
 
         private void invalidate() {
