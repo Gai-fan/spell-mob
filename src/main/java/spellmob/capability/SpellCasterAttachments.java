@@ -59,6 +59,22 @@ public final class SpellCasterAttachments {
         return mob.getData(SPELL_CASTER.get());
     }
 
+    /**
+     * Returns the caster state of a mob if it already exists, without creating it.
+     *
+     * <p>Use this on paths that only read state (unloading, interruption, readiness checks): a hurt
+     * event on a mob that never cast anything must not allocate the attachment.</p>
+     *
+     * @param mob the mob
+     * @return the existing caster state, or {@code null}
+     */
+    public static @Nullable ISpellCaster peek(Mob mob) {
+        if (mob.level() == null || mob.level().isClientSide()) {
+            return null;
+        }
+        return mob.getExistingDataOrNull(SPELL_CASTER.get());
+    }
+
     /** Serializes the cooldown map with the entity. */
     private static final class Serializer implements IAttachmentSerializer<CompoundTag, SpellCaster> {
 

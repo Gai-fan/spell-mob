@@ -66,7 +66,7 @@ public final class CasterEvents {
             return;
         }
         if (event.getEntity() instanceof Mob mob) {
-            ISpellCaster caster = SpellCasterAttachments.get(mob);
+            ISpellCaster caster = SpellCasterAttachments.peek(mob);
             if (caster != null) {
                 caster.cancel(CancelReason.UNLOADED);
             }
@@ -106,6 +106,11 @@ public final class CasterEvents {
     @SubscribeEvent
     public static void onLivingTick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide()) {
+            return;
+        }
+        // Types without rules can never cast, so they never get a caster: this is what keeps a
+        // full world from paying for the attachment bookkeeping on every mob, every tick.
+        if (SpellCasterRegistry.get(mob.getType()) == null) {
             return;
         }
         ISpellCaster caster = SpellCasterAttachments.get(mob);
@@ -151,7 +156,7 @@ public final class CasterEvents {
         if (!(hurt instanceof Mob mob)) {
             return;
         }
-        ISpellCaster caster = SpellCasterAttachments.get(mob);
+        ISpellCaster caster = SpellCasterAttachments.peek(mob);
         if (caster == null) {
             return;
         }
@@ -284,11 +289,15 @@ public final class CasterEvents {
         if (definition == null) {
             return;
         }
-        ISpellCaster caster = SpellCasterAttachments.get(mob);
-        if (caster == null) {
+        // Stale goals can outlive a datapack reload, so re-check that this type still has rules.
+        if (SpellCasterRegistry.get(mob.getType()) == null) {
             return;
         }
-        if (!forced && !caster.isReady(definition)) {
+        ISpellCaster existing = SpellCasterAttachments.peek(mob);
+        // No attachment means no cooldown has ever been recorded, so the readiness check can be
+        // skipped; start() validates the rest and the attachment is created only after the target
+        // and the conditions have passed.
+        if (!forced && existing != null && !existing.isReady(definition)) {
             return;
         }
         TargetResolver.Resolved resolved = TargetResolver.resolve(mob, definition, preferred);
@@ -296,6 +305,10 @@ public final class CasterEvents {
             return;
         }
         if (!definition.conditions().test(mob, resolved.entity())) {
+            return;
+        }
+        ISpellCaster caster = SpellCasterAttachments.get(mob);
+        if (caster == null) {
             return;
         }
         if (forced) {
