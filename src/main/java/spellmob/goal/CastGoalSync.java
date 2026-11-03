@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import spellmob.capability.SpellCasterAttachments;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterData;
 import spellmob.data.SpellCasterRegistry;
@@ -63,12 +64,17 @@ public final class CastGoalSync {
         if (mob.level().isClientSide()) {
             return;
         }
+        SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
+        // No rules and no caster means this mob cannot carry any of our goals, so the list copy can
+        // be skipped. A caster is kept: it may still hold goals left behind by a removed rule.
+        if (rules == null && SpellCasterAttachments.peek(mob) == null) {
+            return;
+        }
         for (WrappedGoal wrapped : new ArrayList<>(mob.goalSelector.getAvailableGoals())) {
             if (wrapped.getGoal() instanceof CastSpellGoal goal && goal.mob() == mob) {
                 mob.goalSelector.removeGoal(goal);
             }
         }
-        SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
         SpellCasterData data = rules == null ? null : rules.resolve(mob);
         if (data == null || data.isEmpty()) {
             Logs.debug("{} has no casting spells", mob);

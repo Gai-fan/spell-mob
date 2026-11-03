@@ -99,7 +99,8 @@ public final class SpellMobConfig {
                         "（绘制施法法阵并显示中断反馈）")
                 .define("enabled", true);
         PRESENTATION_POINTS = builder.comment("Particles per casting circle ring, 0 disables the circle (0 - 128).",
-                        "（法阵每圈的点数，0 表示不画法阵，范围 0 - 128）")
+                        "Values below 6 are barely visible, 8 - 48 is the useful range.",
+                        "（法阵每圈的点数，0 表示不画法阵，范围 0 - 128；小于 6 基本看不见，常用 8 - 48）")
                 .defineInRange("points", 8, 0, 128);
         RING_SCALE = builder.comment("Multiplier applied to the casting circle radius.",
                         "（施法法阵半径的倍率）")
