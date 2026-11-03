@@ -38,7 +38,7 @@
 3. 进游戏执行 `/reload`；
 4. 生成对应生物验证。
 
-安装后**默认附带一份双尸壳示例**（`data/minecraft/spell_casters/husk.json`，源码见 `examples/husk_twins_1_20_1/`）：带 `husk_boss` + `spellmob_boss` 标签的是 Boss 版（12 种法术、竖立 Boss 法阵、引导免打断），带 `husk_elite` 标签的是精英版（另外 12 种法术）；野生尸壳没有这些标签，行为保持不变。想要更多示例，从仓库的 `examples/` 里挑——`classic/`、`bosses/`、`channel_test/`、`kitchen_sink/`、`wolf_tamed/`；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
+安装后**默认附带一份双尸壳示例**（`data/minecraft/spell_casters/husk.json`，源码见 `examples/husk_twins_1_20_1/`）：带 `husk_boss` + `spellmob_boss` 标签的是 Boss 版（12 种法术、竖立 Boss 法阵、引导免打断），带 `husk_elite` 标签的是精英版（另外 12 种法术）；野生尸壳没有这些标签，行为保持不变。此外 jar 内还内置了五名**只能召唤**的 Boss（`data/twilightforest/spell_casters/{naga,lich,alpha_yeti}.json` 与 `data/minecraft/spell_casters/{drowned,phantom}.json`）：娜迦（自然系）、巫妖（13 种）、雪怪首领（冰系）、溺尸 jack（雷系）与幻翼（8 种）。它们都靠 `spellmob_boss` + 各自专属标签识别，野生同类完全不受影响；召唤命令见 `docs/guide.zh.md`。想要更多示例，从仓库的 `examples/` 里挑——`classic/`、`bosses/`、`channel_test/`、`kitchen_sink/`、`wolf_tamed/`；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
 
 ### Boss 数据包（`examples/bosses/`）
 
