@@ -345,16 +345,7 @@
         "cooldown": 0,
         "priority": 1,
         "range": 8,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RELATIVE",
-          "relativeOffset": [
-            0,
-            0,
-            2
-          ],
-          "lineOfSight": false
-        }
+        "target": "ATTACK_TARGET"
       },
       "onKill": {
         "spell": "irons_spellbooks:fortify",
