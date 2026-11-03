@@ -312,7 +312,7 @@
 * 法阵大小按生物碰撞箱宽度缩放，大体型生物不会"踩在圈外"；
 * 被打断时（目标丢失、施法者死亡、法术回调抛异常）冒一团烟并播放熄灭音效；因卸载、重载或改名而中止的施法不会触发，避免在区块边界来回走时刷屏。
 
-代价是每个环点一次发包：原版没有"环形"粒子，一次 `sendParticles` 只会在方框里随机撒点，看起来是一团方雾而不是圆。想省带宽可以把 `presentation.density` 调成 0 关掉法阵，或把 `presentation.distance` 调小。
+代价是每个环点一次发包：原版没有"环形"粒子，一次 `sendParticles` 只会在方框里随机撒点，看起来是一团方雾而不是圆。想省带宽可以把 `presentation.points` 调成 0 关掉法阵，或把 `presentation.distance` 调小。
 
 ## 配置
 
@@ -332,7 +332,8 @@
 | `protection.allowOpsRename` | `true` | 是否允许权限等级 ≥2 的玩家改名受保护生物 |
 | `protection.channelImmuneTags` | `["spellmob_boss"]` | 带这些标签的生物，引导不会因受伤中断 |
 | `presentation.enabled` | `true` | 是否显示法阵与打断反馈 |
-| `presentation.density` | `1` | 环上的点数：0 关闭，1 / 2 / 3 = 8 / 12 / 16 个 |
+| `presentation.points` | `8` | 环上的点数，0 关闭；范围 0–128 |
+| `presentation.ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0 |
 | `presentation.distance` | `24.0` | 只向这个距离内的玩家发粒子 |
 | `presentation.interruptFeedback` | `true` | 被打断时是否冒烟 + 熄灭音效 |
 | `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵 |

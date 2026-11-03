@@ -265,7 +265,8 @@ saves/<世界>/datapacks/我的法术/
 | | `allowOpsRename` | `true` | OP（权限 2）可以绕过名字锁。 |
 | | `channelImmuneTags` | `["spellmob_boss"]` | 带这些标签的生物引导不被打断。 |
 | `presentation` | `enabled` | `true` | 是否绘制法阵。 |
-| | `density` | `1` | `0` = 不画，`1/2/3` = 8/12/16 个点。 |
+| | `points` | `8` | `0` = 不画法阵；范围 0–128。 |
+| | `ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0。 |
 | | `distance` | `24` | 粒子可见距离（4–64）。 |
 | | `interruptFeedback` | `true` | 被打断时的烟与"熄灭"音效。 |
 | | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵。 |
