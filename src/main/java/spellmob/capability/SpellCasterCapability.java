@@ -106,6 +106,12 @@ public final class SpellCasterCapability {
 
         @Override
         public void deserializeNBT(CompoundTag tag) {
+            // Forge calls this for every provider of every entity it loads, whether or not we ever
+            // saved anything. An empty tag means "never cast, no cooldowns to restore", so skipping
+            // it keeps ordinary mobs from allocating a caster just by entering a chunk.
+            if (tag.isEmpty()) {
+                return;
+            }
             this.caster().load(tag);
         }
 

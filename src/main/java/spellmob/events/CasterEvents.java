@@ -73,11 +73,8 @@ public final class CasterEvents {
             return;
         }
         if (event.getEntity() instanceof Mob mob) {
-            // Resolving the optional runs the provider supplier, which creates the caster. A type
-            // without rules can never own one, so a cow leaving a chunk must not allocate one.
-            if (SpellCasterRegistry.get(mob.getType()) == null) {
-                return;
-            }
+            // Deliberately ungated: an event triggered cast never runs through a goal, so this is
+            // the only place guaranteed to end it after a reload removed the mob's rules.
             mob.getCapability(SpellCasterCapability.capability())
                     .ifPresent(caster -> caster.cancel(CancelReason.UNLOADED));
         }
