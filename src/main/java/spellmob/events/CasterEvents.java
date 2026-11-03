@@ -109,6 +109,11 @@ public final class CasterEvents {
         if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide()) {
             return;
         }
+        // Types without rules can never cast, so skip the capability lookup for them. This keeps
+        // the per tick cost proportional to the configured mobs instead of every mob in the world.
+        if (SpellCasterRegistry.get(mob.getType()) == null) {
+            return;
+        }
         mob.getCapability(SpellCasterCapability.capability()).ifPresent(ISpellCaster::tick);
     }
 
