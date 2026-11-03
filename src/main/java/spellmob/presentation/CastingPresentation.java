@@ -1,5 +1,6 @@
 package spellmob.presentation;
 
+import io.redspace.ironsspellbooks.api.registry.SchoolRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
@@ -7,6 +8,7 @@ import io.redspace.ironsspellbooks.particle.SparkParticleOptions;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -15,6 +17,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
+
+import java.util.Map;
 import spellmob.capability.CancelReason;
 import spellmob.config.SpellMobConfig;
 import spellmob.util.Logs;
@@ -344,19 +348,81 @@ public final class CastingPresentation {
         return limit * limit;
     }
 
+    /**
+     * School colours as ISS registers them, used when the school itself can be resolved but its
+     * targeting colour cannot be read. The values mirror {@code SchoolRegistry} so a fallback still
+     * looks like the school instead of turning black.
+     */
+    private static final Map<String, Vector3f> KNOWN_SCHOOL_COLOURS = Map.ofEntries(
+            Map.entry("irons_spellbooks:fire", rgb(0xFFAA00)),
+            Map.entry("irons_spellbooks:ice", rgb(13695487)),
+            Map.entry("irons_spellbooks:lightning", rgb(0x55FFFF)),
+            Map.entry("irons_spellbooks:holy", rgb(16775380)),
+            Map.entry("irons_spellbooks:ender", rgb(0xFF55FF)),
+            Map.entry("irons_spellbooks:blood", rgb(0xAA0000)),
+            Map.entry("irons_spellbooks:evocation", rgb(0xFFFFFF)),
+            Map.entry("irons_spellbooks:nature", rgb(0x55FF55)),
+            Map.entry("irons_spellbooks:eldritch", rgb(1016732)));
+
+    private static Vector3f rgb(int value) {
+        return new Vector3f(((value >> 16) & 0xFF) / 255.0F, ((value >> 8) & 0xFF) / 255.0F, (value & 0xFF) / 255.0F);
+    }
+
     private static Vector3f colorOf(AbstractSpell spell) {
+        SchoolType school = schoolOf(spell);
+        Vector3f colour = targetingColourOf(school);
+        if (isUsable(colour)) {
+            return new Vector3f(colour);
+        }
+        if (school != null) {
+            Vector3f known = KNOWN_SCHOOL_COLOURS.get(school.getId().toString());
+            if (known != null) {
+                return new Vector3f(known);
+            }
+        }
+        return new Vector3f(DEFAULT_RED, DEFAULT_GREEN, DEFAULT_BLUE);
+    }
+
+    /**
+     * Resolves the school of a spell.
+     *
+     * <p>ISS 3.16 moved the school into the per spell configuration. When that configuration is
+     * absent - which is the case on the 1.20.1 build that ships without spell config files -
+     * {@code getSchoolType()} yields null. The spell's own default config still carries the school
+     * resource, so it is consulted before giving up.</p>
+     */
+    @Nullable
+    private static SchoolType schoolOf(AbstractSpell spell) {
         try {
             SchoolType school = spell.getSchoolType();
             if (school != null) {
-                Vector3f color = school.getTargetingColor();
-                if (isUsable(color)) {
-                    return new Vector3f(color);
-                }
+                return school;
             }
         } catch (Throwable exception) {
-            Logs.debug("Could not read the school colour of {}: {}", spell.getSpellId(), exception.getMessage());
+            Logs.debug("Could not read the school of {}: {}", spell.getSpellId(), exception.getMessage());
         }
-        return new Vector3f(DEFAULT_RED, DEFAULT_GREEN, DEFAULT_BLUE);
+        try {
+            ResourceLocation id = spell.getDefaultConfig().schoolResource;
+            if (id != null) {
+                return SchoolRegistry.getSchool(id);
+            }
+        } catch (Throwable exception) {
+            Logs.debug("Could not read the default school of {}: {}", spell.getSpellId(), exception.getMessage());
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Vector3f targetingColourOf(@Nullable SchoolType school) {
+        if (school == null) {
+            return null;
+        }
+        try {
+            return school.getTargetingColor();
+        } catch (Throwable exception) {
+            Logs.debug("Could not read the targeting colour of {}: {}", school.getId(), exception.getMessage());
+            return null;
+        }
     }
 
     private static boolean isUsable(@Nullable Vector3f color) {
