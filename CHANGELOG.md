@@ -32,6 +32,7 @@
 - 表现层异常改为吞掉 `Throwable`，任何粒子问题都不再中断施法。
 - 内置 `husk.json` 引用了 1.20.1 不存在的 `ice_spikes`，已改为 `icicle`。
 - 修正 1.20.1 版内置数据里几个 1.21.1 才有的法术 id（`raise_hell` → `raise_dead`、`fang_swirl` → `fang_strike`、`gravity_fissure` → `black_hole`）。
+- **Boss 法阵的脚底环改为学派色 dust**：普通施法、吟唱中与完成时都不再叠加烟雾外环（1.20.1 之前因为换成原版 `SMOKE` 而整圈发黑）；被打断时的烟雾环保留。
 
 ### 性能
 

@@ -254,19 +254,12 @@ public final class CastingPresentation {
             return;
         }
         DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
-        ParticleOptions smoke = ParticleTypes.SMOKE;
-        boolean extras = SpellMobConfig.bossExtras();
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.05D;
         double centerZ = mob.getZ();
         for (int index = 0; index < points; index++) {
             double angle = phase + Math.PI * 2.0D * index / points;
-            double cos = Math.cos(angle);
-            double sin = Math.sin(angle);
-            send(level, dust, centerX + cos * radius, centerY, centerZ + sin * radius);
-            if (extras) {
-                send(level, smoke, centerX + cos * radius * 1.18D, centerY, centerZ + sin * radius * 1.18D);
-            }
+            send(level, dust, centerX + Math.cos(angle) * radius, centerY, centerZ + Math.sin(angle) * radius);
         }
     }
 
