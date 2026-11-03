@@ -332,7 +332,7 @@
 | `protection.allowOpsRename` | `true` | 是否允许权限等级 ≥2 的玩家改名受保护生物 |
 | `protection.channelImmuneTags` | `["spellmob_boss"]` | 带这些标签的生物，引导不会因受伤中断 |
 | `presentation.enabled` | `true` | 是否显示法阵与打断反馈 |
-| `presentation.points` | `8` | 环上的点数，0 关闭；范围 0–128 |
+| `presentation.points` | `8` | 环上的点数，0 关闭；范围 0–128，小于 6 基本看不见，常用 8–48 |
 | `presentation.ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0 |
 | `presentation.distance` | `24.0` | 只向这个距离内的玩家发粒子 |
 | `presentation.interruptFeedback` | `true` | 被打断时是否冒烟 + 熄灭音效 |

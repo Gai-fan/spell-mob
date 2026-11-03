@@ -265,7 +265,7 @@ The config lives at `config/spellmob-common.toml` (COMMON type — one file for 
 | | `allowOpsRename` | `true` | Ops (permission 2) bypass the name lock. |
 | | `channelImmuneTags` | `["spellmob_boss"]` | Mobs with these tags never lose a channel to damage. |
 | `presentation` | `enabled` | `true` | Draw casting circles at all. |
-| | `points` | `8` | `0` = no circle; range 0–128. |
+| | `points` | `8` | `0` = no circle; range 0–128, values below 6 are barely visible, 8–48 is typical. |
 | | `ringScale` | `1.0` | Radius multiplier, range 0.25–4.0. |
 | | `distance` | `24` | Particle view distance (4–64). |
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
