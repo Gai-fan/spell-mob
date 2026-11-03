@@ -7,15 +7,6 @@
 
 ---
 
-## [2.0.4] — 未发布
-
-### 变更
-
-- 召唤类法术（`summon_vex`、`summon_swords`、`summon_polar_bear`、`summon_horse`、`raise_dead`、`raise_hell`）统一改为 `ATTACK_TARGET`：**没有攻击目标时不会召唤**，避免怪物挂机时凭空叫小弟。
-- 修正 1.20.1 版内置数据里几个 1.21.1 才有的法术 id（`raise_hell` → `raise_dead`、`fang_swirl` → `fang_strike`、`gravity_fissure` → `black_hole`）。
-
----
-
 ## [2.0.3] — 2026-11-03
 
 ### 新增
@@ -31,6 +22,7 @@
 
 ### 变更
 
+- 召唤类法术（`summon_vex`、`summon_swords`、`summon_polar_bear`、`summon_horse`、`raise_dead`、`raise_hell`）统一改为 `ATTACK_TARGET`：**没有攻击目标时不会召唤**，避免怪物挂机时凭空叫小弟。
 - 法阵点数改为直接配置 `points`（0–128），取代原来的 `density` 四档；0 表示不画圆环。
 - 默认内置双尸壳示例（`husk_boss` 标签为 Boss 版、`husk_elite` 为精英版，各 12 种法术），进游戏即可战斗。
 
@@ -39,6 +31,7 @@
 - 1.20.1 版不再直接引用 ISS 的 `ParticleRegistry` 字段：ISS 3.16.x 把字段类型从 `RegistryObject` 改成 `Supplier`，旧写法会抛 `NoSuchFieldError` 导致崩溃。
 - 表现层异常改为吞掉 `Throwable`，任何粒子问题都不再中断施法。
 - 内置 `husk.json` 引用了 1.20.1 不存在的 `ice_spikes`，已改为 `icicle`。
+- 修正 1.20.1 版内置数据里几个 1.21.1 才有的法术 id（`raise_hell` → `raise_dead`、`fang_swirl` → `fang_strike`、`gravity_fissure` → `black_hole`）。
 
 ### 性能
 
