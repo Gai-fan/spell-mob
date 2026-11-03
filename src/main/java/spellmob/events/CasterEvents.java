@@ -73,6 +73,11 @@ public final class CasterEvents {
             return;
         }
         if (event.getEntity() instanceof Mob mob) {
+            // Resolving the optional runs the provider supplier, which creates the caster. A type
+            // without rules can never own one, so a cow leaving a chunk must not allocate one.
+            if (SpellCasterRegistry.get(mob.getType()) == null) {
+                return;
+            }
             mob.getCapability(SpellCasterCapability.capability())
                     .ifPresent(caster -> caster.cancel(CancelReason.UNLOADED));
         }
@@ -158,6 +163,11 @@ public final class CasterEvents {
      */
     private static void interruptIfConfigured(LivingEntity hurt) {
         if (!(hurt instanceof Mob mob)) {
+            return;
+        }
+        // Same reason as onEntityLeaveLevel, and this path is hit far more often: every hurt
+        // animal would otherwise get a caster just to discover that it is not casting.
+        if (SpellCasterRegistry.get(mob.getType()) == null) {
             return;
         }
         mob.getCapability(SpellCasterCapability.capability()).ifPresent(caster -> {
