@@ -61,11 +61,7 @@
         "cooldown": 0,
         "priority": 0,
         "range": 0,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RANDOM_IN_RANGE",
-          "range": 5.0
-        }
+        "target": "ATTACK_TARGET"
       },
       "onKill": {
         "spell": "irons_spellbooks:heal",

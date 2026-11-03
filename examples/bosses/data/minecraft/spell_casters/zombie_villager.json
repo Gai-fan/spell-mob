@@ -45,29 +45,13 @@
         "spell": "irons_spellbooks:raise_dead",
         "level": 1,
         "cooldown": 300,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RELATIVE",
-          "relativeOffset": [
-            0,
-            0,
-            0
-          ]
-        }
+        "target": "ATTACK_TARGET"
       },
       "onDeath": {
         "_comment": "临终再召唤最后一波。",
         "spell": "irons_spellbooks:raise_dead",
         "level": 3,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RELATIVE",
-          "relativeOffset": [
-            0,
-            0,
-            0
-          ]
-        }
+        "target": "ATTACK_TARGET"
       }
     },
     {
@@ -112,28 +96,12 @@
         "spell": "irons_spellbooks:raise_dead",
         "level": 1,
         "cooldown": 300,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RELATIVE",
-          "relativeOffset": [
-            0,
-            0,
-            0
-          ]
-        }
+        "target": "ATTACK_TARGET"
       },
       "onDeath": {
         "spell": "irons_spellbooks:raise_dead",
         "level": 3,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RELATIVE",
-          "relativeOffset": [
-            0,
-            0,
-            0
-          ]
-        }
+        "target": "ATTACK_TARGET"
       }
     }
   ]

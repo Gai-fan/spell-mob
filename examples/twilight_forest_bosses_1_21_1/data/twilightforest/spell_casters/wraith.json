@@ -69,16 +69,7 @@
         "cooldown": 0,
         "priority": 0,
         "range": 0,
-        "target": {
-          "type": "POSITION",
-          "positionMode": "RELATIVE",
-          "range": 8.0,
-          "relativeOffset": [
-            0,
-            0,
-            2
-          ]
-        }
+        "target": "ATTACK_TARGET"
       }
     },
     {
