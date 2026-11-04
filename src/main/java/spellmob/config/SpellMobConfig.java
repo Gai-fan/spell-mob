@@ -111,11 +111,12 @@ public final class SpellMobConfig {
         INTERRUPT_FEEDBACK = builder.comment("Smoke puff and extinguish sound when a cast is interrupted.",
                         "（施法被打断时冒烟并播放熄灭音效）")
                 .define("interruptFeedback", true);
-        BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss circle.",
-                        "（带有任一这些计分板标签的生物使用更华丽的 Boss 法阵）")
+        BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss effects.",
+                        "Boss casters also get a vertical magic circle in front of them.",
+                        "（带有任一这些计分板标签的生物使用 Boss 特效；Boss 施法者还会在正前方出现竖直法阵）")
                 .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
-        BOSS_EXTRAS = builder.comment("Boss circles also get the floating rune halo, spark pillars and pulse rings.",
-                        "（Boss 法阵额外加上悬浮符环、光柱与脉冲环）")
+        BOSS_EXTRAS = builder.comment("Boss casters also draw the vertical magic circle and the periodic pulse rings.",
+                        "（Boss 施法者额外绘制正前方的竖直法阵与周期性脉冲环）")
                 .define("bossExtras", true);
         builder.pop();
 
