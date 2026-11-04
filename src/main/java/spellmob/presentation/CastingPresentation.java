@@ -79,7 +79,7 @@ public final class CastingPresentation {
             }
             Vector3f color = colorOf(spell);
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
+                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.55D, 0.0F, 20);
                 if (SpellMobConfig.bossExtras()) {
                     emitCastSigil(level, mob, spell, color, 0.3F);
                     emitBlastwave(level, mob, color, 0.6F);
@@ -122,7 +122,7 @@ public final class CastingPresentation {
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
             if (boss) {
                 if (ringTick) {
-                    emitBossRing(level, mob, color, radius * 1.35D, ticks * 0.22F, 12);
+                    emitBossRing(level, mob, color, radius * 1.55D, ticks * 0.22F, 16);
                 }
                 if (bossTick && SpellMobConfig.bossExtras()) {
                     emitCastSigil(level, mob, spell, color, 0.35F + progress * 0.65F);
@@ -162,7 +162,7 @@ public final class CastingPresentation {
             Vector3f color = colorOf(spell);
             emitCastSigil(level, mob, spell, color, 1.0F);
             emitBlastwave(level, mob, color, 1.8F);
-            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
+            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 2.1D, 0.0F, 24);
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -209,7 +209,7 @@ public final class CastingPresentation {
         if (points <= 0) {
             return;
         }
-        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.6F);
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.06D;
         double centerZ = mob.getZ();
@@ -307,14 +307,14 @@ public final class CastingPresentation {
         }
         right = right.normalize();
         Vec3 up = right.cross(forward).normalize();
-        double radius = Math.max(0.55D, Math.min(1.1D, 0.55D + mob.getBbWidth() * 0.25D));
+        double radius = Math.max(0.75D, Math.min(1.35D, 0.75D + mob.getBbWidth() * 0.3D));
         Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
         SchoolType school = schoolOf(spell);
         ParticleOptions ringParticle = sigilRingParticle(school, color);
         ParticleOptions lineParticle = sigilLineParticle(school, color);
         float clamped = Math.max(0.15F, Math.min(1.0F, progress));
-        int ringPoints = Math.max(8, Math.round(28 * clamped));
-        int edgePoints = Math.max(3, Math.round(7 * clamped));
+        int ringPoints = Math.max(16, Math.round(40 * clamped));
+        int edgePoints = Math.max(5, Math.round(12 * clamped));
         for (int index = 0; index < ringPoints; index++) {
             double angle = Math.PI * 2.0D * index / ringPoints;
             send(level, ringParticle, center.add(right.scale(Math.cos(angle) * radius))
@@ -337,13 +337,13 @@ public final class CastingPresentation {
             }
         }
         for (Vec3 vertex : vertices) {
-            send(level, ParticleTypes.END_ROD, vertex);
+            send(level, lineParticle, vertex);
         }
         if (progress >= 1.0F) {
-            for (int index = 0; index < 12; index++) {
-                double angle = Math.PI * 2.0D * index / 12.0D;
-                send(level, ParticleTypes.END_ROD, center.add(right.scale(Math.cos(angle) * radius * 1.12D))
-                        .add(up.scale(Math.sin(angle) * radius * 1.12D)));
+            for (int index = 0; index < 16; index++) {
+                double angle = Math.PI * 2.0D * index / 16.0D;
+                send(level, ringParticle, center.add(right.scale(Math.cos(angle) * radius * 1.14D))
+                        .add(up.scale(Math.sin(angle) * radius * 1.14D)));
             }
         }
     }
@@ -362,8 +362,8 @@ public final class CastingPresentation {
             case "evocation" -> ParticleTypes.WITCH;
             case "nature" -> ParticleTypes.HAPPY_VILLAGER;
             case "eldritch" -> ParticleTypes.SCULK_SOUL;
-            case "blood" -> new DustParticleOptions(new Vector3f(color), 1.2F);
-            default -> ParticleTypes.ENCHANT;
+            case "blood" -> new DustParticleOptions(new Vector3f(color), 1.4F);
+            default -> new DustParticleOptions(new Vector3f(color), 1.4F);
         };
     }
 
@@ -381,8 +381,8 @@ public final class CastingPresentation {
             case "evocation" -> ParticleTypes.ENCHANT;
             case "nature" -> ParticleTypes.COMPOSTER;
             case "eldritch" -> ParticleTypes.WARPED_SPORE;
-            case "blood" -> new DustParticleOptions(new Vector3f(color), 1.6F);
-            default -> ParticleTypes.END_ROD;
+            case "blood" -> new DustParticleOptions(new Vector3f(color), 2.0F);
+            default -> new DustParticleOptions(new Vector3f(color), 2.0F);
         };
     }
 

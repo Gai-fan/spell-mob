@@ -307,8 +307,8 @@ The config lives at `config/spellmob-common.toml` (COMMON type — one file for 
 | | `ringScale` | `1.0` | Radius multiplier, range 0.25–4.0. |
 | | `distance` | `24` | Particle view distance (4–64). |
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
-| | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the richer boss circle. |
-| | `bossExtras` | `true` | Adds the floating halo, spark pillars and pulse rings to boss circles. |
+| | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the boss effects: a vertical sigil in front plus a larger outer ground ring. |
+| | `bossExtras` | `true` | Adds the vertical sigil and the pulse rings to boss effects. |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).

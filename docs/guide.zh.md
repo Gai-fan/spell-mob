@@ -307,8 +307,8 @@ saves/<世界>/datapacks/我的法术/
 | | `ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0。 |
 | | `distance` | `24` | 粒子可见距离（4–64）。 |
 | | `interruptFeedback` | `true` | 被打断时的烟与"熄灭"音效。 |
-| | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用更华丽的 Boss 法阵。 |
-| | `bossExtras` | `true` | Boss 法阵是否加上悬浮符环、光柱与脉冲环。 |
+| | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：正前方竖直法阵 + 更大的脚下外环。 |
+| | `bossExtras` | `true` | Boss 特效是否加上竖直法阵与脉冲环。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。
