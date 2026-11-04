@@ -44,7 +44,8 @@ public final class CastingPresentation {
     /** Boss circles are denser, so they emit a little less often than the plain dust ring. */
     private static final int BOSS_EMIT_INTERVAL_TICKS = 4;
 
-    /** Ticks between two emissions of the vertical hexagram in front of the caster. */
+    /** Ticks of one outward pulse cycle inside the vertical sigil. */
+    private static final int SIGIL_PULSE_PERIOD = 8;
 
     /**
      * Fallback colour used when a spell has no school or the school has no usable colour.
@@ -82,8 +83,7 @@ public final class CastingPresentation {
                 emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F,
                         Math.max(4, SpellMobConfig.bossPoints()));
                 if (SpellMobConfig.bossExtras()) {
-                    emitRingPulse(level, mob, color, ringRadius(mob, 0.0F) * 1.05D,
-                            Math.max(4, SpellMobConfig.bossPoints()));
+                    emitVerticalSigil(level, mob, spell, color, 0.0D);
                     emitBlastwave(level, mob, color, 0.6F);
                 }
             } else {
@@ -128,10 +128,7 @@ public final class CastingPresentation {
                             Math.max(3, SpellMobConfig.bossPoints() * 3 / 4));
                 }
                 if (bossTick && SpellMobConfig.bossExtras()) {
-                    if (ticks % 10 == 0) {
-                        emitRingPulse(level, mob, color, radius * (1.05D + progress * 0.9D),
-                                Math.max(4, SpellMobConfig.bossPoints()));
-                    }
+                    emitVerticalSigil(level, mob, spell, color, ticks);
                     if (ticks % 20 == 0) {
                         emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
                     }
@@ -169,8 +166,7 @@ public final class CastingPresentation {
             emitBlastwave(level, mob, color, 1.8F);
             emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F,
                     Math.max(4, SpellMobConfig.bossPoints() * 5 / 4));
-            emitRingPulse(level, mob, color, ringRadius(mob, 0.0F) * 1.6D,
-                    Math.max(4, SpellMobConfig.bossPoints()));
+            emitSigilBurst(level, mob, spell, color, 1.6D);
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -294,17 +290,131 @@ public final class CastingPresentation {
      * @param radius ring radius in blocks
      * @param points number of dust dots
      */
-    private static void emitRingPulse(ServerLevel level, Mob mob, Vector3f color, double radius, int points) {
-        if (points <= 0 || radius <= 0.0D) {
+    /**
+     * Draws the vertical sigil in front of a boss caster: one static school coloured ring plus two
+     * outward pulses that keep expanding while the cast lasts.
+     *
+     * <p>The plane comes from the caster's look direction so the ring always faces its target, and
+     * the center is the spell origin (eye height, slightly in front of the head) where projectiles
+     * actually spawn, so the spell looks like it flies out of the ring.</p>
+     *
+     * @param mob     the caster
+     * @param spell   the spell being cast, used to pick the school particle
+     * @param colour  the resolved school colour
+     * @param elapsed ticks since the cast started, drives the pulse animation
+     */
+    private static void emitVerticalSigil(ServerLevel level, Mob mob, AbstractSpell spell, Vector3f colour, double elapsed) {
+        SigilFrame frame = sigilFrame(mob);
+        if (frame == null) {
             return;
         }
-        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 2.0F);
-        double centerX = mob.getX();
-        double centerY = mob.getY() + 0.05D;
-        double centerZ = mob.getZ();
+        ParticleOptions ring = sigilRingParticle(spell, colour);
+        ParticleOptions pulse = sigilPulseParticle(spell, colour);
+        int points = 36;
         for (int index = 0; index < points; index++) {
             double angle = Math.PI * 2.0D * index / points;
-            send(level, dust, centerX + Math.cos(angle) * radius, centerY, centerZ + Math.sin(angle) * radius);
+            send(level, ring, frame.point(Math.cos(angle), Math.sin(angle), frame.radius()));
+        }
+        for (int wave = 0; wave < 2; wave++) {
+            double phase = (((elapsed + wave * (SIGIL_PULSE_PERIOD / 2.0D)) % SIGIL_PULSE_PERIOD) + SIGIL_PULSE_PERIOD)
+                    % SIGIL_PULSE_PERIOD / SIGIL_PULSE_PERIOD;
+            double radius = frame.radius() * (0.55D + 0.75D * phase);
+            int wavePoints = Math.max(8, (int) Math.round(points * (0.85D - 0.45D * phase)));
+            for (int index = 0; index < wavePoints; index++) {
+                double angle = Math.PI * 2.0D * index / wavePoints;
+                send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), radius));
+            }
+        }
+    }
+
+    /** Expands the sigil outward once when a boss cast finishes. */
+    private static void emitSigilBurst(ServerLevel level, Mob mob, AbstractSpell spell, Vector3f colour, double scale) {
+        SigilFrame frame = sigilFrame(mob);
+        if (frame == null) {
+            return;
+        }
+        ParticleOptions ring = sigilRingParticle(spell, colour);
+        ParticleOptions pulse = sigilPulseParticle(spell, colour);
+        int points = 40;
+        for (int index = 0; index < points; index++) {
+            double angle = Math.PI * 2.0D * index / points;
+            send(level, ring, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale));
+        }
+        int wavePoints = 24;
+        for (int index = 0; index < wavePoints; index++) {
+            double angle = Math.PI * 2.0D * index / wavePoints;
+            send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 1.35D));
+        }
+    }
+
+    /**
+     * Builds the vertical plane of the sigil from the caster's look direction.
+     *
+     * @return the frame, or null when the look vector is degenerate
+     */
+    private static @Nullable SigilFrame sigilFrame(Mob mob) {
+        Vec3 forward = mob.getLookAngle();
+        if (forward.lengthSqr() < 1.0E-6D) {
+            return null;
+        }
+        forward = forward.normalize();
+        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
+        if (right.lengthSqr() < 1.0E-6D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
+        }
+        if (right.lengthSqr() < 1.0E-6D) {
+            return null;
+        }
+        right = right.normalize();
+        Vec3 up = right.cross(forward).normalize();
+        double radius = Math.max(0.75D, Math.min(1.5D, 0.75D + mob.getBbWidth() * 0.35D));
+        Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
+        return new SigilFrame(center, right, up, radius);
+    }
+
+    /** Ring particle for the school, or a school coloured dust fallback for unknown schools. */
+    private static ParticleOptions sigilRingParticle(AbstractSpell spell, Vector3f colour) {
+        String path = schoolPath(spell);
+        return switch (path) {
+            case "fire" -> ParticleTypes.FLAME;
+            case "ice" -> ParticleTypes.SNOWFLAKE;
+            case "lightning" -> ParticleTypes.ELECTRIC_SPARK;
+            case "holy" -> ParticleTypes.END_ROD;
+            case "ender" -> ParticleTypes.PORTAL;
+            case "evocation" -> ParticleTypes.WITCH;
+            case "nature" -> ParticleTypes.HAPPY_VILLAGER;
+            case "eldritch" -> ParticleTypes.SCULK_SOUL;
+            default -> new DustParticleOptions(new Vector3f(colour), 1.4F);
+        };
+    }
+
+    /** Pulse particle for the school, or a school coloured dust fallback for unknown schools. */
+    private static ParticleOptions sigilPulseParticle(AbstractSpell spell, Vector3f colour) {
+        String path = schoolPath(spell);
+        return switch (path) {
+            case "fire" -> ParticleTypes.LAVA;
+            case "ice" -> ParticleTypes.CLOUD;
+            case "lightning" -> ParticleTypes.END_ROD;
+            case "holy" -> ParticleTypes.TOTEM_OF_UNDYING;
+            case "ender" -> ParticleTypes.REVERSE_PORTAL;
+            case "evocation" -> ParticleTypes.ENCHANT;
+            case "nature" -> ParticleTypes.COMPOSTER;
+            case "eldritch" -> ParticleTypes.WARPED_SPORE;
+            default -> new DustParticleOptions(new Vector3f(colour), 2.0F);
+        };
+    }
+
+    private static String schoolPath(AbstractSpell spell) {
+        SchoolType school = schoolOf(spell);
+        ResourceLocation id = school == null ? null : school.getId();
+        return id == null ? "" : id.getPath();
+    }
+
+    /** Precomputed plane of the vertical sigil: center plus two orthonormal axes. */
+    private record SigilFrame(Vec3 center, Vec3 right, Vec3 up, double radius) {
+
+        Vec3 point(double cos, double sin, double radius) {
+            return center.add(right.scale(cos * radius)).add(up.scale(sin * radius));
         }
     }
 
