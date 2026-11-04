@@ -133,12 +133,7 @@ public final class TargetResolver {
         if (definition.target().lineOfSight() && !mob.getSensing().hasLineOfSight(target)) {
             return false;
         }
-        double maxHealthPercent = definition.target().maxHealthPercent();
-        if (maxHealthPercent < 1.0D) {
-            float maxHealth = target.getMaxHealth();
-            return maxHealth > 0.0F && target.getHealth() / maxHealth <= maxHealthPercent;
-        }
-        return true;
+        return definition.target().filters().test(mob, target);
     }
 
     private static @Nullable LivingEntity nearest(Mob mob, SpellCastDefinition definition,

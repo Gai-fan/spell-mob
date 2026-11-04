@@ -7,6 +7,24 @@
 
 ---
 
+## [2.1.0] — 2026-11-04
+
+### 新增
+
+- **目标过滤 `target.filters`**：在目标类型之上再筛一层，支持 `entityTypes`（实体 id 白名单）、`entityTags`（实体类型标签）、`excludeTags`（计分板标签排除）、`excludeCasterTeam`（排除同队）、`ignoreCreative`（忽略创造/旁观）、`minHealthPercent` / `maxHealthPercent`（血量区间）、`requireNoShield`（只打没有格挡的目标）。
+- **血量下限 `minHealthPercent`**：以前只能表达"只打残血"，现在也能写"只打健康目标"或"别打死残血"。
+
+### 变更
+
+- `conditions` 支持按来源分组的嵌套写法 `self{...}` / `target{...}`，旧的扁平写法继续有效（同名键以扁平写法为准）。
+
+### 文档
+
+- README 与 `docs/guide.zh.md`、`docs/guide.en.md` 补充 filters 字段表与嵌套 conditions 说明。
+- 新增 `examples/filters_demo/` 演示数据包。
+
+---
+
 ## [2.0.3] — 2026-11-03
 
 ### 新增

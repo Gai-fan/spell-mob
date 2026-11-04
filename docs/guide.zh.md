@@ -99,6 +99,15 @@ saves/<世界>/datapacks/我的法术/
 | `minTargetDistance` | `0` | 目标比这更近就不放。 |
 | `maxTargetDistance` | 不限 | 目标比这更远就不放。 |
 
+也可以按来源分组嵌套，扁平写法仍然有效（同名键以扁平为准）：
+
+```json
+"conditions": {
+  "self":   { "healthBelow": 0.5 },
+  "target": { "minTargetDistance": 4.0 }
+}
+```
+
 位置类施法（没有实体目标）会跳过距离判定。
 
 ## 触发器
@@ -163,9 +172,40 @@ saves/<世界>/datapacks/我的法术/
 | `type` | `ATTACK_TARGET` | 上表之一。 |
 | `sort` | `NEAREST` | `NEAREST`、`FARTHEST`、`LOWEST_HEALTH`、`HIGHEST_HEALTH`、`RANDOM`。 |
 | `lineOfSight` | `true` | 实体目标必须可见（`POSITION` 忽略）。 |
-| `maxHealthPercent` | `1.0` | 只接受血量比例不高于此值的目标。 |
+| `maxHealthPercent` | `1.0` | 只接受血量比例不高于此值的目标；等价于 `filters.maxHealthPercent`。 |
 | `positionMode` | `RELATIVE` | 仅 `POSITION`，见下。 |
 | `relativeOffset` | `[0,0,0]` | 仅 `POSITION` + `RELATIVE`。 |
+| `filters` | 空 | 目标过滤，见下。 |
+
+#### 目标过滤（filters）
+
+```json
+"target": {
+  "type": "NEAREST_HOSTILE",
+  "filters": {
+    "entityTypes": ["minecraft:skeleton", "minecraft:stray"],
+    "entityTags": ["minecraft:raiders"],
+    "excludeTags": ["spellmob_immune"],
+    "excludeCasterTeam": true,
+    "minHealthPercent": 0.3,
+    "maxHealthPercent": 0.9,
+    "requireNoShield": true
+  }
+}
+```
+
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `entityTypes` | 空 | 只接受这些实体 id |
+| `entityTags` | 空 | 只接受带其中任意一个实体类型标签的目标 |
+| `excludeTags` | 空 | 带这些计分板标签的目标直接排除 |
+| `excludeCasterTeam` | `false` | 排除与施法者同队的目标 |
+| `ignoreCreative` | `true` | 忽略创造/旁观玩家 |
+| `minHealthPercent` / `maxHealthPercent` | `0.0` / `1.0` | 只接受生命比例落在这个区间的目标 |
+| `requireNoShield` | `false` | 只接受没有格挡的目标 |
+
+过滤在候选实体解析出来之后、起手之前判定；`POSITION` 类目标不看过滤。
+
 
 ### 位置模式（仅 `POSITION`）
 
