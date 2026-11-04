@@ -19,7 +19,7 @@
 * **个体定向** —— `variants` 按名字、正则或 scoreboard tag 挑出个别生物：同名物种里 A 与 B 可以放不同法术，其余个体完全不施法
 * **物种规则也能写进配置** —— `species.extraRules` 一行一条 JSON，可直接用 Configured 之类的 GUI 编辑物种级规则；同一物种若已有数据包文件，则以数据包为准（配置项被忽略并打一行日志）
 * **名字锁** —— 给生物打上 `protection.protectedTags` 里的 tag 后，普通玩家无法用命名牌覆盖它已有的名字（OP 可放行）
-* **施法表现** —— 吟唱时脚下浮现学派配色的旋转法阵，环的大小随读条进度呼吸；Boss 施法者还会在正前方出现竖直法阵（圆环套六芒星），脚下再多一圈更大的同色圆环；被打断时冒烟并播放熄灭音效。纯服务端发包，客户端不需要安装本模组
+* **施法表现** —— 吟唱时脚下浮现学派配色的旋转法阵，环的大小随读条进度呼吸；Boss 施法者脚下会多一圈更大的同色外环，并在吟唱期间周期性地向外扩散脉冲尘环；被打断时冒烟并播放熄灭音效。纯服务端发包，客户端不需要安装本模组
 * **阶段与节奏** —— `select.healthBelow` 让同一个生物半血后换一套法术；`interruptOnDamage` 让吟唱被伤害打断；`cooldownGroup` 让换阶段时共享冷却；`chance` 让法术按概率触发
 * **特殊怪掉落** —— `dropRules` 按名字、正则、tag 或血量挑出个别生物，而且只有会施法的怪才掉；支持固定物品、数量区间、概率、抢夺加成与整张战利品表
 
@@ -348,7 +348,7 @@
 
 * 吟唱开始时脚下出现一圈尘粒子法阵，颜色取自法术所属学派的 `SchoolType#getTargetingColor()`（读不到颜色时用纯黑兜底；纯黑只可能来自兜底，正常学派色不会黑到被判为不可用）；
 * 每 3 tick 刷新一次，环的半径随进度先扩后收、并持续旋转，末尾还会冒出上升的光点 —— 不看 UI 也能判断读条到哪了；
-* Boss 施法者额外在正前方绘制竖直法阵：外接圆环 + 内嵌六芒星，按学派取色，随吟唱淡入、释放瞬间铺满；脚下再多画一圈更大更粗的同色外环。
+* Boss 施法者脚下额外画一圈更大的同色外环，并在吟唱期间每 10 tick 向外扩散一圈脉冲尘环；外环点数由 `presentation.bossPoints` 控制，与普通圆环的 `points` 分开配置。
 * 法阵大小按生物碰撞箱宽度缩放，大体型生物不会"踩在圈外"；
 * 被打断时（目标丢失、施法者死亡、法术回调抛异常）冒一团烟并播放熄灭音效；因卸载、重载或改名而中止的施法不会触发，避免在区块边界来回走时刷屏。
 
@@ -372,12 +372,13 @@
 | `protection.allowOpsRename` | `true` | 是否允许权限等级 ≥2 的玩家改名受保护生物 |
 | `protection.channelImmuneTags` | `["spellmob_boss"]` | 带这些标签的生物，引导不会因受伤中断 |
 | `presentation.enabled` | `true` | 是否显示法阵与打断反馈 |
-| `presentation.points` | `8` | 环上的点数，0 关闭；范围 0–128，小于 6 基本看不见，常用 8–48 |
+| `presentation.points` | `24` | 普通圆环的点数，0 关闭；范围 0–128，小于 6 基本看不见，常用 8–48 |
+| `presentation.bossPoints` | `32` | Boss 圆环的点数，0 关闭 Boss 圆环；范围 0–128 |
 | `presentation.ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0 |
 | `presentation.distance` | `24.0` | 只向这个距离内的玩家发粒子 |
 | `presentation.interruptFeedback` | `true` | 被打断时是否冒烟 + 熄灭音效 |
-| `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：正前方竖直法阵 + 更大的脚下外环 |
-| `presentation.bossExtras` | `true` | Boss 特效是否加上竖直法阵与脉冲环 |
+| `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：更大的脚下外环 + 脉冲环 |
+| `presentation.bossExtras` | `true` | Boss 特效是否加上周期性脉冲环 |
 | `species.extraRules` | `[]` | 写在配置里的物种级规则，一行一条 JSON |
 
 ### 物种规则写进配置（extraRules）
