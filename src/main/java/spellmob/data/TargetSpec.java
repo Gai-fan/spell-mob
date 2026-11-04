@@ -9,11 +9,11 @@ import net.minecraft.world.phys.Vec3;
  * @param lineOfSight      whether a clear line of sight is required
  * @param positionMode     how the aim point is computed for {@link TargetType#POSITION}
  * @param relativeOffset   offset used by {@link PositionMode#RELATIVE}
- * @param maxHealthPercent only accept targets at or below this fraction of their max health (0..1)
  * @param sort             how several valid candidates are ranked, defaults to {@link TargetSort#NEAREST}
+ * @param filters          extra restrictions a candidate has to pass, never null
  */
 public record TargetSpec(TargetType type, boolean lineOfSight, PositionMode positionMode, Vec3 relativeOffset,
-                         double maxHealthPercent, TargetSort sort) {
+                         TargetSort sort, TargetFilters filters) {
 
     public TargetSpec {
         if (type == null) {
@@ -28,13 +28,13 @@ public record TargetSpec(TargetType type, boolean lineOfSight, PositionMode posi
         if (sort == null) {
             sort = TargetSort.NEAREST;
         }
-        maxHealthPercent = Math.max(0.0D, Math.min(1.0D, maxHealthPercent));
+        filters = filters == null ? TargetFilters.NONE : filters;
     }
 
     /** @return the default spec used when json omits {@code target} */
     public static TargetSpec attackTarget() {
-        return new TargetSpec(TargetType.ATTACK_TARGET, true, PositionMode.RELATIVE, Vec3.ZERO, 1.0D,
-                TargetSort.NEAREST);
+        return new TargetSpec(TargetType.ATTACK_TARGET, true, PositionMode.RELATIVE, Vec3.ZERO,
+                TargetSort.NEAREST, TargetFilters.NONE);
     }
 
     public boolean isPosition() {

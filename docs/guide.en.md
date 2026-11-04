@@ -99,6 +99,15 @@ Conditions are checked before the cast starts and compare the **caster's** healt
 | `minTargetDistance` | `0` | Skip the cast if the target is closer than this. |
 | `maxTargetDistance` | unlimited | Skip the cast if the target is farther than this. |
 
+Conditions can also be grouped by source; the flat form keeps working (flat keys win):
+
+```json
+"conditions": {
+  "self":   { "healthBelow": 0.5 },
+  "target": { "minTargetDistance": 4.0 }
+}
+```
+
 Distance conditions are skipped for position casts (they have no entity target).
 
 ## Triggers
@@ -163,9 +172,38 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 | `type` | `ATTACK_TARGET` | One of the types above. |
 | `sort` | `NEAREST` | `NEAREST`, `FARTHEST`, `LOWEST_HEALTH`, `HIGHEST_HEALTH`, `RANDOM`. |
 | `lineOfSight` | `true` | Entity targets must be visible (ignored for `POSITION`). |
-| `maxHealthPercent` | `1.0` | Only accept targets at or below this health fraction. |
+| `maxHealthPercent` | `1.0` | Only accept targets at or below this health fraction; same as `filters.maxHealthPercent`. |
 | `positionMode` | `RELATIVE` | `POSITION` only — see below. |
 | `relativeOffset` | `[0,0,0]` | `POSITION` + `RELATIVE` only. |
+| `filters` | empty | Target filters, see below. |
+#### Target filters
+
+```json
+"target": {
+  "type": "NEAREST_HOSTILE",
+  "filters": {
+    "entityTypes": ["minecraft:skeleton", "minecraft:stray"],
+    "entityTags": ["minecraft:raiders"],
+    "excludeTags": ["spellmob_immune"],
+    "excludeCasterTeam": true,
+    "minHealthPercent": 0.3,
+    "maxHealthPercent": 0.9,
+    "requireNoShield": true
+  }
+}
+```
+
+| Key | Default | Notes |
+|---|---|---|
+| `entityTypes` | empty | Only these entity ids. |
+| `entityTags` | empty | Only entities carrying any of these entity-type tags. |
+| `excludeTags` | empty | Entities with any of these scoreboard tags are rejected. |
+| `excludeCasterTeam` | `false` | Reject entities allied to the caster's team. |
+| `ignoreCreative` | `true` | Ignore creative / spectator players. |
+| `minHealthPercent` / `maxHealthPercent` | `0.0` / `1.0` | Only entities inside this health band. |
+| `requireNoShield` | `false` | Only entities that are not blocking. |
+
+Filters run after a candidate is resolved and before the cast starts; `POSITION` targets ignore them.
 
 ### Position modes (`POSITION` only)
 

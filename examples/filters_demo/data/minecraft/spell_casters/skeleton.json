@@ -1,0 +1,35 @@
+{
+  "_comment": "演示 target.filters：第一发只打没有格挡、血量 30%~90% 的玩家；第二发排除了同队目标和带 spellmob_boss 标签的目标。",
+  "goals": [
+    {
+      "spell": "irons_spellbooks:magic_missile",
+      "level": 1,
+      "cooldown": 100,
+      "priority": 1,
+      "range": 20.0,
+      "target": {
+        "type": "NEAREST_PLAYER",
+        "filters": {
+          "minHealthPercent": 0.3,
+          "maxHealthPercent": 0.9,
+          "requireNoShield": true,
+          "ignoreCreative": true
+        }
+      }
+    },
+    {
+      "spell": "irons_spellbooks:slow",
+      "level": 1,
+      "cooldown": 200,
+      "priority": 2,
+      "range": 16.0,
+      "target": {
+        "type": "NEAREST_HOSTILE",
+        "filters": {
+          "excludeCasterTeam": true,
+          "excludeTags": ["spellmob_boss"]
+        }
+      }
+    }
+  ]
+}

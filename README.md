@@ -245,8 +245,36 @@
 | `lineOfSight` | 是否需要视线，默认 `true` |
 | `positionMode` | 仅 `POSITION` 使用，见下表 |
 | `relativeOffset` | 仅 `RELATIVE` 使用，相对施法者的偏移（格） |
-| `maxHealthPercent` | 只选择生命比例不高于该值的实体，默认 `1.0` |
+| `filters` | 目标过滤，字段见下；顶层的 `maxHealthPercent` 仍然可用，等价于 `filters.maxHealthPercent` |
 | `sort` | 多个候选时如何排序：`NEAREST`（默认）、`FARTHEST`、`LOWEST_HEALTH`、`HIGHEST_HEALTH`、`RANDOM`；只影响"多选一"的类型（`NEAREST_*`、`THREATENING_ENTITY`），平局按距离 |
+#### 目标过滤（filters）
+
+```json
+"target": {
+  "type": "NEAREST_HOSTILE",
+  "filters": {
+    "entityTypes": ["minecraft:skeleton", "minecraft:stray"],
+    "entityTags": ["minecraft:raiders"],
+    "excludeTags": ["spellmob_immune"],
+    "excludeCasterTeam": true,
+    "minHealthPercent": 0.3,
+    "maxHealthPercent": 0.9,
+    "requireNoShield": true
+  }
+}
+```
+
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `entityTypes` | 空 | 只接受这些实体 id |
+| `entityTags` | 空 | 只接受带其中任意一个实体类型标签的目标 |
+| `excludeTags` | 空 | 带这些计分板标签的目标直接排除 |
+| `excludeCasterTeam` | `false` | 排除与施法者同队的目标 |
+| `ignoreCreative` | `true` | 忽略创造/旁观玩家 |
+| `minHealthPercent` / `maxHealthPercent` | `0.0` / `1.0` | 只接受生命比例落在这个区间的目标 |
+| `requireNoShield` | `false` | 只接受没有格挡的目标 |
+
+过滤在候选实体解析出来之后、起手之前判定；`POSITION` 类目标不看过滤。
 
 ### 目标类型（15 种）
 
@@ -286,6 +314,15 @@
 | `healthAbove` | `0.0` | 自身生命比例**高于**该值才触发 |
 | `minTargetDistance` | `0` | 目标与自己的最小距离（格） |
 | `maxTargetDistance` | `∞` | 目标与自己的最大距离（格） |
+
+也支持按来源分组嵌套，扁平写法仍然有效（同名键以扁平为准）：
+
+```json
+"conditions": {
+  "self":   { "healthBelow": 0.5, "healthAbove": 0.1 },
+  "target": { "minTargetDistance": 4.0, "maxTargetDistance": 16.0 }
+}
+```
 
 ## 施法流程
 
