@@ -79,9 +79,11 @@ public final class CastingPresentation {
             }
             Vector3f color = colorOf(spell);
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.55D, 0.0F, 20);
+                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F,
+                        Math.max(4, SpellMobConfig.bossPoints()));
                 if (SpellMobConfig.bossExtras()) {
-                    emitCastSigil(level, mob, spell, color, 0.3F);
+                    emitRingPulse(level, mob, color, ringRadius(mob, 0.0F) * 1.05D,
+                            Math.max(4, SpellMobConfig.bossPoints()));
                     emitBlastwave(level, mob, color, 0.6F);
                 }
             } else {
@@ -122,10 +124,14 @@ public final class CastingPresentation {
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
             if (boss) {
                 if (ringTick) {
-                    emitBossRing(level, mob, color, radius * 1.55D, ticks * 0.22F, 16);
+                    emitBossRing(level, mob, color, radius * 1.35D, ticks * 0.22F,
+                            Math.max(3, SpellMobConfig.bossPoints() * 3 / 4));
                 }
                 if (bossTick && SpellMobConfig.bossExtras()) {
-                    emitCastSigil(level, mob, spell, color, 0.35F + progress * 0.65F);
+                    if (ticks % 10 == 0) {
+                        emitRingPulse(level, mob, color, radius * (1.05D + progress * 0.9D),
+                                Math.max(4, SpellMobConfig.bossPoints()));
+                    }
                     if (ticks % 20 == 0) {
                         emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
                     }
@@ -160,9 +166,11 @@ public final class CastingPresentation {
                 return;
             }
             Vector3f color = colorOf(spell);
-            emitCastSigil(level, mob, spell, color, 1.0F);
             emitBlastwave(level, mob, color, 1.8F);
-            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 2.1D, 0.0F, 24);
+            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F,
+                    Math.max(4, SpellMobConfig.bossPoints() * 5 / 4));
+            emitRingPulse(level, mob, color, ringRadius(mob, 0.0F) * 1.6D,
+                    Math.max(4, SpellMobConfig.bossPoints()));
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -277,113 +285,27 @@ public final class CastingPresentation {
     }
 
     /**
-     * Magic circle (a ring with an inscribed hexagram) standing in front of the caster's face,
-     * aligned with the direction the spell travels, so the projectile looks like it leaves the
-     * circle.
+     * Draws one expanding dust ring at the caster's feet. This is the boss pulse: the same kind of
+     * ring as the normal casting circle, only brighter and farther out.
      *
-     * <p>The circle does not rotate: it fades in while the cast progresses and is drawn at full
-     * density when the spell is released. Blood magic is the only school that falls back to dust,
-     * because vanilla has no red particle that reads as blood.</p>
-     *
-     * @param level    the server level
-     * @param mob      the caster
-     * @param spell    the spell being cast, used to pick the school particles
-     * @param color    the school colour
-     * @param progress 0..1 cast progress
+     * @param level  the server level
+     * @param mob    the caster
+     * @param color  the school colour
+     * @param radius ring radius in blocks
+     * @param points number of dust dots
      */
-    private static void emitCastSigil(ServerLevel level, Mob mob, AbstractSpell spell, Vector3f color,
-                                      float progress) {
-        Vec3 forward = mob.getLookAngle();
-        if (forward.lengthSqr() < 1.0E-6D) {
+    private static void emitRingPulse(ServerLevel level, Mob mob, Vector3f color, double radius, int points) {
+        if (points <= 0 || radius <= 0.0D) {
             return;
         }
-        forward = forward.normalize();
-        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
-        if (right.lengthSqr() < 1.0E-6D) {
-            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 2.0F);
+        double centerX = mob.getX();
+        double centerY = mob.getY() + 0.05D;
+        double centerZ = mob.getZ();
+        for (int index = 0; index < points; index++) {
+            double angle = Math.PI * 2.0D * index / points;
+            send(level, dust, centerX + Math.cos(angle) * radius, centerY, centerZ + Math.sin(angle) * radius);
         }
-        if (right.lengthSqr() < 1.0E-6D) {
-            return;
-        }
-        right = right.normalize();
-        Vec3 up = right.cross(forward).normalize();
-        double radius = Math.max(0.75D, Math.min(1.35D, 0.75D + mob.getBbWidth() * 0.3D));
-        Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
-        SchoolType school = schoolOf(spell);
-        ParticleOptions ringParticle = sigilRingParticle(school, color);
-        ParticleOptions lineParticle = sigilLineParticle(school, color);
-        float clamped = Math.max(0.15F, Math.min(1.0F, progress));
-        int ringPoints = Math.max(16, Math.round(40 * clamped));
-        int edgePoints = Math.max(5, Math.round(12 * clamped));
-        for (int index = 0; index < ringPoints; index++) {
-            double angle = Math.PI * 2.0D * index / ringPoints;
-            send(level, ringParticle, center.add(right.scale(Math.cos(angle) * radius))
-                    .add(up.scale(Math.sin(angle) * radius)));
-        }
-        Vec3[] vertices = new Vec3[6];
-        for (int index = 0; index < 6; index++) {
-            double angle = Math.PI * 0.5D + Math.PI * 2.0D * index / 6.0D;
-            vertices[index] = center.add(right.scale(Math.cos(angle) * radius * 0.94D))
-                    .add(up.scale(Math.sin(angle) * radius * 0.94D));
-        }
-        for (int triangle = 0; triangle < 2; triangle++) {
-            for (int edge = 0; edge < 3; edge++) {
-                Vec3 from = vertices[(triangle + edge * 2) % 6];
-                Vec3 to = vertices[(triangle + (edge + 1) * 2) % 6];
-                for (int step = 1; step < edgePoints; step++) {
-                    double fraction = (double) step / edgePoints;
-                    send(level, lineParticle, from.add(to.subtract(from).scale(fraction)));
-                }
-            }
-        }
-        for (Vec3 vertex : vertices) {
-            send(level, lineParticle, vertex);
-        }
-        if (progress >= 1.0F) {
-            for (int index = 0; index < 16; index++) {
-                double angle = Math.PI * 2.0D * index / 16.0D;
-                send(level, ringParticle, center.add(right.scale(Math.cos(angle) * radius * 1.14D))
-                        .add(up.scale(Math.sin(angle) * radius * 1.14D)));
-            }
-        }
-    }
-
-    /**
-     * Outer ring particle for the cast sigil, matched to the school's colour family.
-     */
-    private static ParticleOptions sigilRingParticle(@Nullable SchoolType school, Vector3f color) {
-        String path = school == null ? "" : school.getId().getPath();
-        return switch (path) {
-            case "fire" -> ParticleTypes.FLAME;
-            case "ice" -> ParticleTypes.SNOWFLAKE;
-            case "lightning" -> ParticleTypes.ELECTRIC_SPARK;
-            case "holy" -> ParticleTypes.END_ROD;
-            case "ender" -> ParticleTypes.PORTAL;
-            case "evocation" -> ParticleTypes.WITCH;
-            case "nature" -> ParticleTypes.HAPPY_VILLAGER;
-            case "eldritch" -> ParticleTypes.SCULK_SOUL;
-            case "blood" -> new DustParticleOptions(new Vector3f(color), 1.4F);
-            default -> new DustParticleOptions(new Vector3f(color), 1.4F);
-        };
-    }
-
-    /**
-     * Hexagram line particle for the cast sigil, sharper and brighter than the ring particle.
-     */
-    private static ParticleOptions sigilLineParticle(@Nullable SchoolType school, Vector3f color) {
-        String path = school == null ? "" : school.getId().getPath();
-        return switch (path) {
-            case "fire" -> ParticleTypes.LAVA;
-            case "ice" -> ParticleTypes.CLOUD;
-            case "lightning" -> ParticleTypes.END_ROD;
-            case "holy" -> ParticleTypes.TOTEM_OF_UNDYING;
-            case "ender" -> ParticleTypes.REVERSE_PORTAL;
-            case "evocation" -> ParticleTypes.ENCHANT;
-            case "nature" -> ParticleTypes.COMPOSTER;
-            case "eldritch" -> ParticleTypes.WARPED_SPORE;
-            case "blood" -> new DustParticleOptions(new Vector3f(color), 2.0F);
-            default -> new DustParticleOptions(new Vector3f(color), 2.0F);
-        };
     }
 
     /**

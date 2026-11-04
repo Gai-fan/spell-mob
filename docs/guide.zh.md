@@ -303,12 +303,13 @@ saves/<世界>/datapacks/我的法术/
 | | `allowOpsRename` | `true` | OP（权限 2）可以绕过名字锁。 |
 | | `channelImmuneTags` | `["spellmob_boss"]` | 带这些标签的生物引导不被打断。 |
 | `presentation` | `enabled` | `true` | 是否绘制法阵。 |
-| | `points` | `8` | `0` = 不画法阵；范围 0–128，小于 6 基本看不见，常用 8–48。 |
+| | `points` | `24` | 普通圆环的点数，`0` = 不画法阵；范围 0–128，小于 6 基本看不见，常用 8–48。 |
+| | `bossPoints` | `32` | Boss 圆环的点数，`0` = 不画 Boss 圆环；范围 0–128。 |
 | | `ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0。 |
 | | `distance` | `24` | 粒子可见距离（4–64）。 |
 | | `interruptFeedback` | `true` | 被打断时的烟与"熄灭"音效。 |
-| | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：正前方竖直法阵 + 更大的脚下外环。 |
-| | `bossExtras` | `true` | Boss 特效是否加上竖直法阵与脉冲环。 |
+| | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：更大的脚下外环 + 脉冲环。 |
+| | `bossExtras` | `true` | Boss 特效是否加上周期性脉冲环。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。

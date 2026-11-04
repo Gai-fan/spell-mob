@@ -27,6 +27,7 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.ConfigValue<List<? extends String>> EXTRA_RULES;
     private static final ModConfigSpec.BooleanValue PRESENTATION_ENABLED;
     private static final ModConfigSpec.IntValue PRESENTATION_POINTS;
+    private static final ModConfigSpec.IntValue BOSS_POINTS;
     private static final ModConfigSpec.DoubleValue RING_SCALE;
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
@@ -102,6 +103,10 @@ public final class SpellMobConfig {
                         "Values below 6 are barely visible, 8 - 48 is the useful range.",
                         "（法阵每圈的点数，0 表示不画法阵，范围 0 - 128；小于 6 基本看不见，常用 8 - 48）")
                 .defineInRange("points", 24, 0, 128);
+        BOSS_POINTS = builder.comment("Particles per boss ring, 0 disables the boss ring (0 - 128).",
+                        "Boss casters also pulse extra dust rings outward while they channel.",
+                        "（Boss 圆环每圈的点数，0 表示不画 Boss 圆环，范围 0 - 128；Boss 吟唱时还会向外扩散尘环脉冲）")
+                .defineInRange("bossPoints", 32, 0, 128);
         RING_SCALE = builder.comment("Multiplier applied to the casting circle radius.",
                         "（施法法阵半径的倍率）")
                 .defineInRange("ringScale", 1.0D, 0.25D, 4.0D);
@@ -113,10 +118,10 @@ public final class SpellMobConfig {
                 .define("interruptFeedback", true);
         BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss effects.",
                         "Boss casters also get a vertical magic circle in front of them.",
-                        "（带有任一这些计分板标签的生物使用 Boss 特效；Boss 施法者还会在正前方出现竖直法阵）")
+                        "（带有任一这些计分板标签的生物使用 Boss 特效；Boss 施法者脚下会多一圈更大的外环并周期性脉冲）")
                 .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
-        BOSS_EXTRAS = builder.comment("Boss casters also draw the vertical magic circle and the periodic pulse rings.",
-                        "（Boss 施法者额外绘制正前方的竖直法阵与周期性脉冲环）")
+        BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 10 ticks.",
+                        "（Boss 施法者还会每 10 tick 向外扩散一圈脉冲尘环）")
                 .define("bossExtras", true);
         builder.pop();
 
@@ -195,9 +200,14 @@ public final class SpellMobConfig {
         return !ready() || PRESENTATION_ENABLED.get();
     }
 
-    /** @return number of particles drawn on the casting circle ring */
+    /** @return dust dots per casting circle ring, 0 disables the circle */
     public static int presentationPoints() {
-        return ready() ? PRESENTATION_POINTS.get() : 8;
+        return ready() ? PRESENTATION_POINTS.get() : 24;
+    }
+
+    /** @return dust dots per boss ring, 0 disables the boss ring */
+    public static int bossPoints() {
+        return ready() ? BOSS_POINTS.get() : 32;
     }
 
     /** @return multiplier applied to the casting circle radius */

@@ -303,12 +303,13 @@ The config lives at `config/spellmob-common.toml` (COMMON type — one file for 
 | | `allowOpsRename` | `true` | Ops (permission 2) bypass the name lock. |
 | | `channelImmuneTags` | `["spellmob_boss"]` | Mobs with these tags never lose a channel to damage. |
 | `presentation` | `enabled` | `true` | Draw casting circles at all. |
-| | `points` | `8` | `0` = no circle; range 0–128, values below 6 are barely visible, 8–48 is typical. |
+| | `points` | `24` | Dots per normal circle, `0` = no circle; range 0–128, values below 6 are barely visible. |
+| | `bossPoints` | `32` | Dots per boss circle, `0` = no boss circle; range 0–128. |
 | | `ringScale` | `1.0` | Radius multiplier, range 0.25–4.0. |
 | | `distance` | `24` | Particle view distance (4–64). |
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
-| | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the boss effects: a vertical sigil in front plus a larger outer ground ring. |
-| | `bossExtras` | `true` | Adds the vertical sigil and the pulse rings to boss effects. |
+| | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the boss effects: a larger outer ground ring plus pulse rings. |
+| | `bossExtras` | `true` | Adds the periodic pulse rings to boss effects. |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).

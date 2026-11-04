@@ -1,0 +1,133 @@
+{
+  "_comment": "SpellMob filters + minHealthPercent 测试包：5 个变体靠计分板标签区分，互不干扰；野生僵尸完全不受影响。",
+  "variants": [
+    {
+      "_comment": "① 处刑者：只打血量 <= 35% 的目标（maxHealthPercent）。把测试目标打到 30% 血，它才会出手。",
+      "select": {
+        "tags": [
+          "filter_execute"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 20.0,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "filters": {
+              "maxHealthPercent": 0.35,
+              "ignoreCreative": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "② 骑士：不打血量 < 50% 的目标（minHealthPercent），用来验证“别打死残血”。满血时正常开火。",
+      "select": {
+        "tags": [
+          "filter_knight"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 20.0,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "filters": {
+              "minHealthPercent": 0.5,
+              "ignoreCreative": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "③ 刺客：只打没举盾的玩家（requireNoShield）。举盾靠近它，它不应施法；放下盾，它立刻开火。",
+      "select": {
+        "tags": [
+          "filter_assassin"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:slow",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 16.0,
+          "target": {
+            "type": "NEAREST_PLAYER",
+            "filters": {
+              "requireNoShield": true,
+              "ignoreCreative": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "④ 独行侠：不与同队成员交手（excludeCasterTeam）。把它和你加进同一个队伍后，它就不打你。",
+      "select": {
+        "tags": [
+          "filter_loner"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 18.0,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "filters": {
+              "excludeCasterTeam": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "⑤ 猎手：只打袭击者（entityTags），并忽略带 spellmob_immune 标签的目标（excludeTags）。召唤一只劫掠者测试。",
+      "select": {
+        "tags": [
+          "filter_hunter"
+        ]
+      },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:slow",
+          "level": 1,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 18.0,
+          "target": {
+            "type": "NEAREST_HOSTILE",
+            "filters": {
+              "entityTags": [
+                "minecraft:raiders"
+              ],
+              "excludeTags": [
+                "spellmob_immune"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
