@@ -1,13 +1,13 @@
 package spellmob.presentation;
 
+import io.redspace.ironsspellbooks.api.registry.SchoolRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
-import io.redspace.ironsspellbooks.particle.SparkParticleOptions;
-import io.redspace.ironsspellbooks.registries.ParticleRegistry;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -16,6 +16,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3f;
+
+import java.util.Map;
 import spellmob.capability.CancelReason;
 import spellmob.config.SpellMobConfig;
 import spellmob.util.Logs;
@@ -76,14 +78,14 @@ public final class CastingPresentation {
                 return;
             }
             Vector3f color = colorOf(spell);
-            emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
             if (SpellMobConfig.isBossCaster(mob)) {
+                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
                 if (SpellMobConfig.bossExtras()) {
-                    emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.35D, 0.0F, 14);
-                    emitHalo(level, mob, 0.0F);
+                    emitCastSigil(level, mob, spell, color, 0.3F);
                     emitBlastwave(level, mob, color, 0.6F);
                 }
             } else {
+                emitRing(level, mob, color, ringRadius(mob, 0.0F), 0.0F);
                 emitAura(level, mob);
             }
         } catch (Throwable exception) {
@@ -118,25 +120,21 @@ public final class CastingPresentation {
             float progress = totalTicks <= 0 ? 1.0F : Math.min(1.0F, (float) ticks / (float) totalTicks);
             Vector3f color = colorOf(spell);
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
-            if (ringTick) {
-                emitRing(level, mob, color, radius, ticks * 0.35F);
-                if (!boss) {
-                    emitAura(level, mob);
-                    if (progress >= 0.7F) {
-                        emitSpark(level, mob, radius);
-                    }
-                }
-            }
-            if (boss && SpellMobConfig.bossExtras()) {
+            if (boss) {
                 if (ringTick) {
-                    emitBossRing(level, mob, radius * 1.35D, ticks * 0.22F, 12);
+                    emitBossRing(level, mob, color, radius * 1.35D, ticks * 0.22F, 12);
                 }
-                if (bossTick) {
-                    emitHalo(level, mob, ticks * 0.12F);
-                    emitPillars(level, mob, color, radius);
+                if (bossTick && SpellMobConfig.bossExtras()) {
+                    emitCastSigil(level, mob, spell, color, 0.35F + progress * 0.65F);
                     if (ticks % 20 == 0) {
                         emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
                     }
+                }
+            } else {
+                emitRing(level, mob, color, radius, ticks * 0.35F);
+                emitAura(level, mob);
+                if (progress >= 0.7F) {
+                    emitSpark(level, mob, radius);
                 }
             }
         } catch (Throwable exception) {
@@ -162,8 +160,9 @@ public final class CastingPresentation {
                 return;
             }
             Vector3f color = colorOf(spell);
+            emitCastSigil(level, mob, spell, color, 1.0F);
             emitBlastwave(level, mob, color, 1.8F);
-            emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
+            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F, 20);
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -197,7 +196,7 @@ public final class CastingPresentation {
                 }
             }
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
+                emitBossSmokeRing(level, mob, ringRadius(mob, 0.0F) * 1.5D, 0.0F, 12);
             }
             level.playSound(null, x, y, z, SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.7F, 0.7F);
         } catch (Throwable exception) {
@@ -249,11 +248,25 @@ public final class CastingPresentation {
      * @param phase  rotation offset in radians
      * @param points number of smoke puffs on the ring
      */
-    private static void emitBossRing(ServerLevel level, Mob mob, double radius, float phase, int points) {
+    private static void emitBossRing(ServerLevel level, Mob mob, Vector3f color, double radius, float phase, int points) {
         if (points <= 0) {
             return;
         }
-        ParticleOptions smoke = ParticleRegistry.RING_SMOKE_PARTICLE.get();
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
+        double centerX = mob.getX();
+        double centerY = mob.getY() + 0.05D;
+        double centerZ = mob.getZ();
+        for (int index = 0; index < points; index++) {
+            double angle = phase + Math.PI * 2.0D * index / points;
+            send(level, dust, centerX + Math.cos(angle) * radius, centerY, centerZ + Math.sin(angle) * radius);
+        }
+    }
+
+    private static void emitBossSmokeRing(ServerLevel level, Mob mob, double radius, float phase, int points) {
+        if (points <= 0) {
+            return;
+        }
+        ParticleOptions smoke = ParticleTypes.SMOKE;
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.05D;
         double centerZ = mob.getZ();
@@ -264,45 +277,113 @@ public final class CastingPresentation {
     }
 
     /**
-     * Slow counter rotating rune halo floating above the caster.
+     * Magic circle (a ring with an inscribed hexagram) standing in front of the caster's face,
+     * aligned with the direction the spell travels, so the projectile looks like it leaves the
+     * circle.
      *
-     * @param level the server level
-     * @param mob   the caster
-     * @param phase rotation offset in radians
+     * <p>The circle does not rotate: it fades in while the cast progresses and is drawn at full
+     * density when the spell is released. Blood magic is the only school that falls back to dust,
+     * because vanilla has no red particle that reads as blood.</p>
+     *
+     * @param level    the server level
+     * @param mob      the caster
+     * @param spell    the spell being cast, used to pick the school particles
+     * @param color    the school colour
+     * @param progress 0..1 cast progress
      */
-    private static void emitHalo(ServerLevel level, Mob mob, float phase) {
-        ParticleOptions frame = ParticleRegistry.PORTAL_FRAME_PARTICLE.get();
-        double radius = Math.max(0.9D, mob.getBbWidth() * 1.1D);
-        double x = mob.getX();
-        double y = mob.getY() + mob.getBbHeight() + 0.35D + 0.12D * Math.sin(phase * 0.7D);
-        double z = mob.getZ();
-        for (int index = 0; index < 8; index++) {
-            double angle = -phase + Math.PI * 2.0D * index / 8.0D;
-            send(level, frame, x + Math.cos(angle) * radius, y, z + Math.sin(angle) * radius);
+    private static void emitCastSigil(ServerLevel level, Mob mob, AbstractSpell spell, Vector3f color,
+                                      float progress) {
+        Vec3 forward = mob.getLookAngle();
+        if (forward.lengthSqr() < 1.0E-6D) {
+            return;
+        }
+        forward = forward.normalize();
+        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
+        if (right.lengthSqr() < 1.0E-6D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
+        }
+        if (right.lengthSqr() < 1.0E-6D) {
+            return;
+        }
+        right = right.normalize();
+        Vec3 up = right.cross(forward).normalize();
+        double radius = Math.max(0.55D, Math.min(1.1D, 0.55D + mob.getBbWidth() * 0.25D));
+        Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
+        SchoolType school = schoolOf(spell);
+        ParticleOptions ringParticle = sigilRingParticle(school, color);
+        ParticleOptions lineParticle = sigilLineParticle(school, color);
+        float clamped = Math.max(0.15F, Math.min(1.0F, progress));
+        int ringPoints = Math.max(8, Math.round(28 * clamped));
+        int edgePoints = Math.max(3, Math.round(7 * clamped));
+        for (int index = 0; index < ringPoints; index++) {
+            double angle = Math.PI * 2.0D * index / ringPoints;
+            send(level, ringParticle, center.add(right.scale(Math.cos(angle) * radius))
+                    .add(up.scale(Math.sin(angle) * radius)));
+        }
+        Vec3[] vertices = new Vec3[6];
+        for (int index = 0; index < 6; index++) {
+            double angle = Math.PI * 0.5D + Math.PI * 2.0D * index / 6.0D;
+            vertices[index] = center.add(right.scale(Math.cos(angle) * radius * 0.94D))
+                    .add(up.scale(Math.sin(angle) * radius * 0.94D));
+        }
+        for (int triangle = 0; triangle < 2; triangle++) {
+            for (int edge = 0; edge < 3; edge++) {
+                Vec3 from = vertices[(triangle + edge * 2) % 6];
+                Vec3 to = vertices[(triangle + (edge + 1) * 2) % 6];
+                for (int step = 1; step < edgePoints; step++) {
+                    double fraction = (double) step / edgePoints;
+                    send(level, lineParticle, from.add(to.subtract(from).scale(fraction)));
+                }
+            }
+        }
+        for (Vec3 vertex : vertices) {
+            send(level, ParticleTypes.END_ROD, vertex);
+        }
+        if (progress >= 1.0F) {
+            for (int index = 0; index < 12; index++) {
+                double angle = Math.PI * 2.0D * index / 12.0D;
+                send(level, ParticleTypes.END_ROD, center.add(right.scale(Math.cos(angle) * radius * 1.12D))
+                        .add(up.scale(Math.sin(angle) * radius * 1.12D)));
+            }
         }
     }
 
     /**
-     * Five short spark pillars around the circle, tinted with the school colour.
-     *
-     * @param level  the server level
-     * @param mob    the caster
-     * @param color  the school colour
-     * @param radius the circle radius
+     * Outer ring particle for the cast sigil, matched to the school's colour family.
      */
-    private static void emitPillars(ServerLevel level, Mob mob, Vector3f color, double radius) {
-        SparkParticleOptions spark = new SparkParticleOptions(new Vector3f(color));
-        double x = mob.getX();
-        double y = mob.getY();
-        double z = mob.getZ();
-        for (int index = 0; index < 5; index++) {
-            double angle = Math.PI * 2.0D * index / 5.0D;
-            double px = x + Math.cos(angle) * radius * 1.05D;
-            double pz = z + Math.sin(angle) * radius * 1.05D;
-            for (int step = 0; step < 3; step++) {
-                send(level, spark, px, y + 0.15D + step * 0.35D, pz);
-            }
-        }
+    private static ParticleOptions sigilRingParticle(@Nullable SchoolType school, Vector3f color) {
+        String path = school == null ? "" : school.getId().getPath();
+        return switch (path) {
+            case "fire" -> ParticleTypes.FLAME;
+            case "ice" -> ParticleTypes.SNOWFLAKE;
+            case "lightning" -> ParticleTypes.ELECTRIC_SPARK;
+            case "holy" -> ParticleTypes.END_ROD;
+            case "ender" -> ParticleTypes.PORTAL;
+            case "evocation" -> ParticleTypes.WITCH;
+            case "nature" -> ParticleTypes.HAPPY_VILLAGER;
+            case "eldritch" -> ParticleTypes.SCULK_SOUL;
+            case "blood" -> new DustParticleOptions(new Vector3f(color), 1.2F);
+            default -> ParticleTypes.ENCHANT;
+        };
+    }
+
+    /**
+     * Hexagram line particle for the cast sigil, sharper and brighter than the ring particle.
+     */
+    private static ParticleOptions sigilLineParticle(@Nullable SchoolType school, Vector3f color) {
+        String path = school == null ? "" : school.getId().getPath();
+        return switch (path) {
+            case "fire" -> ParticleTypes.LAVA;
+            case "ice" -> ParticleTypes.CLOUD;
+            case "lightning" -> ParticleTypes.END_ROD;
+            case "holy" -> ParticleTypes.TOTEM_OF_UNDYING;
+            case "ender" -> ParticleTypes.REVERSE_PORTAL;
+            case "evocation" -> ParticleTypes.ENCHANT;
+            case "nature" -> ParticleTypes.COMPOSTER;
+            case "eldritch" -> ParticleTypes.WARPED_SPORE;
+            case "blood" -> new DustParticleOptions(new Vector3f(color), 1.6F);
+            default -> ParticleTypes.END_ROD;
+        };
     }
 
     /**
@@ -334,6 +415,10 @@ public final class CastingPresentation {
         }
     }
 
+    private static void send(ServerLevel level, ParticleOptions particle, Vec3 position) {
+        send(level, particle, position.x, position.y, position.z);
+    }
+
     private static double ringRadius(Mob mob, float pulse) {
         double base = 0.5D + mob.getBbWidth() * 0.85D;
         return base * SpellMobConfig.ringScale() * (0.8D + 0.45D * pulse);
@@ -348,19 +433,81 @@ public final class CastingPresentation {
         return limit * limit;
     }
 
+    /**
+     * School colours as ISS registers them, used when the school itself can be resolved but its
+     * targeting colour cannot be read. The values mirror {@code SchoolRegistry} so a fallback still
+     * looks like the school instead of turning black.
+     */
+    private static final Map<String, Vector3f> KNOWN_SCHOOL_COLOURS = Map.ofEntries(
+            Map.entry("irons_spellbooks:fire", rgb(0xFFAA00)),
+            Map.entry("irons_spellbooks:ice", rgb(13695487)),
+            Map.entry("irons_spellbooks:lightning", rgb(0x55FFFF)),
+            Map.entry("irons_spellbooks:holy", rgb(16775380)),
+            Map.entry("irons_spellbooks:ender", rgb(0xFF55FF)),
+            Map.entry("irons_spellbooks:blood", rgb(0xAA0000)),
+            Map.entry("irons_spellbooks:evocation", rgb(0xFFFFFF)),
+            Map.entry("irons_spellbooks:nature", rgb(0x55FF55)),
+            Map.entry("irons_spellbooks:eldritch", rgb(1016732)));
+
+    private static Vector3f rgb(int value) {
+        return new Vector3f(((value >> 16) & 0xFF) / 255.0F, ((value >> 8) & 0xFF) / 255.0F, (value & 0xFF) / 255.0F);
+    }
+
     private static Vector3f colorOf(AbstractSpell spell) {
+        SchoolType school = schoolOf(spell);
+        Vector3f colour = targetingColourOf(school);
+        if (isUsable(colour)) {
+            return new Vector3f(colour);
+        }
+        if (school != null) {
+            Vector3f known = KNOWN_SCHOOL_COLOURS.get(school.getId().toString());
+            if (known != null) {
+                return new Vector3f(known);
+            }
+        }
+        return new Vector3f(DEFAULT_RED, DEFAULT_GREEN, DEFAULT_BLUE);
+    }
+
+    /**
+     * Resolves the school of a spell.
+     *
+     * <p>ISS 3.16 moved the school into the per spell configuration. When that configuration is
+     * absent - which is the case on the 1.20.1 build that ships without spell config files -
+     * {@code getSchoolType()} yields null. The spell's own default config still carries the school
+     * resource, so it is consulted before giving up.</p>
+     */
+    @Nullable
+    private static SchoolType schoolOf(AbstractSpell spell) {
         try {
             SchoolType school = spell.getSchoolType();
             if (school != null) {
-                Vector3f color = school.getTargetingColor();
-                if (isUsable(color)) {
-                    return new Vector3f(color);
-                }
+                return school;
             }
         } catch (Throwable exception) {
-            Logs.debug("Could not read the school colour of {}: {}", spell.getSpellId(), exception.getMessage());
+            Logs.debug("Could not read the school of {}: {}", spell.getSpellId(), exception.getMessage());
         }
-        return new Vector3f(DEFAULT_RED, DEFAULT_GREEN, DEFAULT_BLUE);
+        try {
+            ResourceLocation id = spell.getDefaultConfig().schoolResource;
+            if (id != null) {
+                return SchoolRegistry.getSchool(id);
+            }
+        } catch (Throwable exception) {
+            Logs.debug("Could not read the default school of {}: {}", spell.getSpellId(), exception.getMessage());
+        }
+        return null;
+    }
+
+    @Nullable
+    private static Vector3f targetingColourOf(@Nullable SchoolType school) {
+        if (school == null) {
+            return null;
+        }
+        try {
+            return school.getTargetingColor();
+        } catch (Throwable exception) {
+            Logs.debug("Could not read the targeting colour of {}: {}", school.getId(), exception.getMessage());
+            return null;
+        }
     }
 
     private static boolean isUsable(@Nullable Vector3f color) {
