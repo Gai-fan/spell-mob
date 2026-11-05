@@ -308,12 +308,10 @@ public final class CastingPresentation {
         if (frame == null) {
             return;
         }
-        ParticleOptions ring = sigilRingParticle(spell, colour);
-        ParticleOptions pulse = sigilPulseParticle(spell, colour);
         int points = 36;
         for (int index = 0; index < points; index++) {
             double angle = Math.PI * 2.0D * index / points;
-            send(level, ring, frame.point(Math.cos(angle), Math.sin(angle), frame.radius()));
+            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius()));
         }
         for (int wave = 0; wave < 2; wave++) {
             double phase = (((elapsed + wave * (SIGIL_PULSE_PERIOD / 2.0D)) % SIGIL_PULSE_PERIOD) + SIGIL_PULSE_PERIOD)
@@ -322,7 +320,7 @@ public final class CastingPresentation {
             int wavePoints = Math.max(8, (int) Math.round(points * (0.85D - 0.45D * phase)));
             for (int index = 0; index < wavePoints; index++) {
                 double angle = Math.PI * 2.0D * index / wavePoints;
-                send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), radius));
+                sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), radius));
             }
         }
     }
@@ -333,17 +331,15 @@ public final class CastingPresentation {
         if (frame == null) {
             return;
         }
-        ParticleOptions ring = sigilRingParticle(spell, colour);
-        ParticleOptions pulse = sigilPulseParticle(spell, colour);
         int points = 40;
         for (int index = 0; index < points; index++) {
             double angle = Math.PI * 2.0D * index / points;
-            send(level, ring, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale));
+            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale));
         }
         int wavePoints = 24;
         for (int index = 0; index < wavePoints; index++) {
             double angle = Math.PI * 2.0D * index / wavePoints;
-            send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 0.90D));
+            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 0.90D));
         }
     }
 
@@ -372,42 +368,33 @@ public final class CastingPresentation {
         return new SigilFrame(center, right, up, radius);
     }
 
-    /** Ring particle for the school, or a school coloured dust fallback for unknown schools. */
-    private static ParticleOptions sigilRingParticle(AbstractSpell spell, Vector3f colour) {
-        String path = schoolPath(spell);
-        return switch (path) {
-            case "fire" -> ParticleTypes.FLAME;
-            case "ice" -> ParticleTypes.SNOWFLAKE;
-            case "lightning" -> ParticleTypes.ELECTRIC_SPARK;
-            case "holy" -> ParticleTypes.END_ROD;
-            case "ender" -> ParticleTypes.PORTAL;
-            case "evocation" -> ParticleTypes.WITCH;
-            case "nature" -> ParticleTypes.HAPPY_VILLAGER;
-            case "eldritch" -> ParticleTypes.SCULK_SOUL;
-            default -> new DustParticleOptions(new Vector3f(colour), 1.4F);
-        };
+    /**
+     * Sends one school coloured {@code entity_effect} particle.
+     *
+     * <p>1.20.1 has no colour particle option, but {@code SpellParticle.MobProvider} takes the
+     * particle colour from the three velocity arguments. Sending with {@code count == 0} makes the
+     * client pass {@code maxSpeed * (xDist, yDist, zDist)} straight through as that velocity, so
+     * the school colour travels in the distance fields with {@code maxSpeed == 1}.</p>
+     *
+     * @param level    the server level
+     * @param colour   the school colour, components in {@code 0..1}
+     * @param position where the particle spawns
+     */
+    private static void sendColored(ServerLevel level, Vector3f colour, Vec3 position) {
+        float red = clampComponent(colour.x());
+        float green = clampComponent(colour.y());
+        float blue = clampComponent(colour.z());
+        double limitSqr = limitSqr();
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(position.x, position.y, position.z) <= limitSqr) {
+                level.sendParticles(player, ParticleTypes.ENTITY_EFFECT, false,
+                        position.x, position.y, position.z, 0, red, green, blue, 1.0D);
+            }
+        }
     }
 
-    /** Pulse particle for the school, or a school coloured dust fallback for unknown schools. */
-    private static ParticleOptions sigilPulseParticle(AbstractSpell spell, Vector3f colour) {
-        String path = schoolPath(spell);
-        return switch (path) {
-            case "fire" -> ParticleTypes.LAVA;
-            case "ice" -> ParticleTypes.CLOUD;
-            case "lightning" -> ParticleTypes.END_ROD;
-            case "holy" -> ParticleTypes.TOTEM_OF_UNDYING;
-            case "ender" -> ParticleTypes.REVERSE_PORTAL;
-            case "evocation" -> ParticleTypes.ENCHANT;
-            case "nature" -> ParticleTypes.COMPOSTER;
-            case "eldritch" -> ParticleTypes.WARPED_SPORE;
-            default -> new DustParticleOptions(new Vector3f(colour), 2.0F);
-        };
-    }
-
-    private static String schoolPath(AbstractSpell spell) {
-        SchoolType school = schoolOf(spell);
-        ResourceLocation id = school == null ? null : school.getId();
-        return id == null ? "" : id.getPath();
+    private static float clampComponent(float value) {
+        return Math.max(0.0F, Math.min(1.0F, value));
     }
 
     /** Precomputed plane of the vertical sigil: center plus two orthonormal axes. */
