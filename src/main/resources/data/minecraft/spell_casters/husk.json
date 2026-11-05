@@ -2,7 +2,7 @@
   "_comment": "两个尸壳用标签区分：husk_boss(+spellmob_boss) 与 husk_elite。野生尸壳没有这两个标签，因此不会施法。",
   "variants": [
     {
-      "_comment": "带 spellmob_boss 标签：竖立六芒星 + 引导免打断 + 名字锁。12 种法术覆盖瞬发/吟唱/引导/范围/控制/位移/召唤/连锁/斩首/治疗/增益/防御。",
+      "_comment": "带 spellmob_boss 标签：Boss 法阵 + 引导免打断 + 名字锁。12 种法术覆盖瞬发/吟唱/引导/范围/控制/位移/召唤/连锁/斩首/治疗/增益/防御。",
       "select": {
         "tags": [
           "husk_boss",

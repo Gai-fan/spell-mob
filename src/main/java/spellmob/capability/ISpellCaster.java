@@ -77,7 +77,4 @@ public interface ISpellCaster {
      * @return remaining cooldown in ticks for that definition, 0 when ready
      */
     int cooldownTicks(SpellCastDefinition definition);
-
-    /** Clears cooldowns and the active cast. */
-    void clear();
 }

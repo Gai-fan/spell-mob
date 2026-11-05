@@ -52,7 +52,7 @@ public final class ConfigRuleLoader {
                 json.remove("entity");
                 SpellCasterData data = SpellCasterData.parse(json, where);
                 if (data == null) {
-                    Logs.warn("{}: needs at least one of 'goals', 'onHurt' or 'onTarget', skipping", where);
+                    Logs.warn("{}: needs at least one of 'goals', 'onHurt', 'onTarget', 'onDeath' or 'onKill', skipping", where);
                     continue;
                 }
                 if (rules.putIfAbsent(id, data) != null) {
