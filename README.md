@@ -151,6 +151,8 @@ my_spellmob_pack/
 /spellmob info @e[type=minecraft:zombie,sort=nearest,limit=1]
 ```
 
+> **改完数据包记得两步走：** `/reload` 只负责把 JSON 重新读进内存，**已经加载在世界里的生物不会自动换配置**；再执行一次 `/spellmob resync`（或让它们重新进入加载范围）才会应用新的 goal。打 tag、改名同理——改名和驯服会自动重同步，打 tag 不会。
+
 ## 数据包格式
 
 一个 `spell_casters` 文件可以包含以下任意组合；如果**一个都没有**，文件会被忽略（避免误读其他模组放在同名目录里的文件）：
@@ -563,7 +565,16 @@ extraRules = [
 内置示例全部使用标签限定（例如 `spellmob_boss`）。给生物打上对应标签，或使用 `variants.select` 按名字/tag 匹配，才会命中配置。也可以用 `/spellmob info` 查看它命中了哪个变体。
 
 **改了数据包但没生效？**
-确认路径是 `data/<namespace>/spell_casters/<entity_id>.json`、`pack.mcmeta` 的 `pack_format` 与游戏版本匹配，然后执行 `/reload`。用 `/spellmob list` 确认定义已加载；加载失败的具体原因看日志里的 `[SpellMob]` 行。
+确认路径是 `data/<namespace>/spell_casters/<entity_id>.json`、`pack.mcmeta` 的 `pack_format` 与游戏版本匹配，然后执行 `/reload`，**再 `/spellmob resync`**（只 `/reload` 不会替换已加载生物的 goal）。用 `/spellmob list` 确认定义已加载；加载失败的具体原因看日志里的 `[SpellMob]` 行。
+
+**法术等级为什么没生效？**
+`level` 会被 Iron's Spellbooks 的 `getMaxLevel()` 夹取——ISS 侧没给这个法术配置更高等级时，写 `level: 5` 也会按 1 级放。调等级前先在 ISS 的配置/法术书里确认它支持到几级。
+
+**两个数据包写了同一个实体，谁生效？**
+后加载的、优先级更高的数据包覆盖前面的；同一个包内一个实体只能有一个 `spell_casters/<id>.json`。配置里的 `[species] extraRules` 优先级最低，被数据包覆盖时日志会说明，`/spellmob info` 也会显示来源。
+
+**冷却写多少合适？**
+单位是 **tick**（20 tick = 1 秒）。`cooldown: 100` 是 5 秒；`cooldown: 0` 会被压到最短 1 tick，等于无限连发，慎用。想让几个法术共享冷却就设同一个 `cooldownGroup`。
 
 **为什么某个法术不放？**
 先跑 `/spellmob validate`。常见原因是法术 id 拼错、ISS 版本不包含该法术、该法术在 ISS 配置里被禁用，或者 `level`/`range`/`conditions` 不满足。加载阶段被丢弃的条目只会出现在日志里。
