@@ -362,7 +362,6 @@
 |---|---|---|
 | `general.enabled` | `true` | 模组总开关 |
 | `general.debugLogging` | `false` | 调试日志 |
-| `general.castSounds` | `true` | 是否播放施法音效 |
 | `balance.cooldownMultiplier` | `1.0` | 全局冷却倍率 |
 | `balance.maxRange` | `32.0` | 最大施法距离上限，JSON 的 `range` 会被截断 |
 | `balance.interruptChannelsOnDamage` | `true` | 引导型法术是否被伤害打断（普通吟唱仍由每条法术的 `interruptOnDamage` 控制） |

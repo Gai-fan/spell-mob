@@ -17,7 +17,6 @@ public final class SpellMobConfig {
 
     private static final ForgeConfigSpec.BooleanValue ENABLED;
     private static final ForgeConfigSpec.BooleanValue DEBUG_LOGGING;
-    private static final ForgeConfigSpec.BooleanValue CAST_SOUNDS;
     private static final ForgeConfigSpec.DoubleValue COOLDOWN_MULTIPLIER;
     private static final ForgeConfigSpec.DoubleValue MAX_RANGE;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENTITY_BLACKLIST;
@@ -47,9 +46,6 @@ public final class SpellMobConfig {
         DEBUG_LOGGING = builder.comment("Log every cast, cancellation and goal sync. Noisy, for debugging only.",
                         "（记录每次施法、打断与目标同步，很吵，仅用于调试）")
                 .define("debugLogging", false);
-        CAST_SOUNDS = builder.comment("Play the casting sounds Iron's Spellbooks uses for its own casters.",
-                        "（播放 Iron's Spellbooks 给自家施法生物用的施法音效）")
-                .define("castSounds", true);
         builder.pop();
 
         builder.comment("Balance knobs applied on top of the datapack values.",
@@ -154,10 +150,6 @@ public final class SpellMobConfig {
 
     public static boolean debugLogging() {
         return ready() && DEBUG_LOGGING.get();
-    }
-
-    public static boolean castSounds() {
-        return !ready() || CAST_SOUNDS.get();
     }
 
     public static double cooldownMultiplier() {

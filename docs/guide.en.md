@@ -295,7 +295,6 @@ The config lives at `config/spellmob-common.toml` (COMMON type — one file for 
 |---|---|---|---|
 | `general` | `enabled` | `true` | Master switch. |
 | | `debugLogging` | `false` | Verbose `[SpellMob]` logging. |
-| | `castSounds` | `true` | Play ISS cast start/finish sounds. |
 | `balance` | `cooldownMultiplier` | `1.0` | Scales every data pack cooldown; `0` compresses it to the 1-tick minimum. |
 | | `maxRange` | `32` | Hard cap on `range` from data packs (up to 128). |
 | | `interruptChannelsOnDamage` | `true` | Damage interrupts channeled spells. |
