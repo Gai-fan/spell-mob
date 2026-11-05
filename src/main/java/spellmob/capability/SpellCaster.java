@@ -435,14 +435,6 @@ public final class SpellCaster implements ISpellCaster {
             return false;
         }
 
-        if (SpellMobConfig.castSounds()) {
-            try {
-                spell.playSound(spell.getCastStartSound(), mob);
-            } catch (RuntimeException exception) {
-                Logs.debug("Could not play the start sound of {}: {}", definition.spellId(), exception.getMessage());
-            }
-        }
-
         this.retryAtTick = 0;
         ActiveCast cast = new ActiveCast(definition, spell, spellLevel, castTime, target, position,
                 channel, scaledCooldown, key);
@@ -479,13 +471,6 @@ public final class SpellCaster implements ISpellCaster {
         }
         if (cast.totalTicks > 0) {
             CastingPresentation.onCastFinish(mob, cast.spell, cast.totalTicks);
-        }
-        if (SpellMobConfig.castSounds()) {
-            try {
-                cast.spell.playSound(cast.spell.getCastFinishSound(), mob);
-            } catch (RuntimeException exception) {
-                Logs.debug("Could not play the finish sound of {}: {}", cast.spell.getSpellId(), exception.getMessage());
-            }
         }
         applyCooldown(cast);
     }

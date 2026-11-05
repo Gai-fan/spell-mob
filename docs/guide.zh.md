@@ -293,7 +293,6 @@ saves/<世界>/datapacks/我的法术/
 |---|---|---|---|
 | `general` | `enabled` | `true` | 总开关。 |
 | | `debugLogging` | `false` | 打开 `[SpellMob]` 详细日志。 |
-| | `castSounds` | `true` | 播放 ISS 的施法开始/结束音效。 |
 | `balance` | `cooldownMultiplier` | `1.0` | 缩放数据包里的所有冷却；`0` 会压到最短 1 tick。 |
 | | `maxRange` | `32` | 数据包 `range` 的硬上限（最高 128）。 |
 | | `interruptChannelsOnDamage` | `true` | 受伤是否打断引导法术。 |
