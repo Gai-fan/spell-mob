@@ -166,7 +166,7 @@ public final class CastingPresentation {
             emitBlastwave(level, mob, color, 1.8F);
             emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F,
                     Math.max(4, SpellMobConfig.bossPoints() * 5 / 4));
-            emitSigilBurst(level, mob, spell, color, 1.6D);
+            emitSigilBurst(level, mob, spell, color, 1.0D);
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -318,7 +318,7 @@ public final class CastingPresentation {
         for (int wave = 0; wave < 2; wave++) {
             double phase = (((elapsed + wave * (SIGIL_PULSE_PERIOD / 2.0D)) % SIGIL_PULSE_PERIOD) + SIGIL_PULSE_PERIOD)
                     % SIGIL_PULSE_PERIOD / SIGIL_PULSE_PERIOD;
-            double radius = frame.radius() * (0.55D + 0.75D * phase);
+            double radius = frame.radius() * (0.45D + 0.50D * phase);
             int wavePoints = Math.max(8, (int) Math.round(points * (0.85D - 0.45D * phase)));
             for (int index = 0; index < wavePoints; index++) {
                 double angle = Math.PI * 2.0D * index / wavePoints;
@@ -343,7 +343,7 @@ public final class CastingPresentation {
         int wavePoints = 24;
         for (int index = 0; index < wavePoints; index++) {
             double angle = Math.PI * 2.0D * index / wavePoints;
-            send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 1.35D));
+            send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 0.90D));
         }
     }
 
@@ -367,7 +367,7 @@ public final class CastingPresentation {
         }
         right = right.normalize();
         Vec3 up = right.cross(forward).normalize();
-        double radius = Math.max(0.75D, Math.min(1.5D, 0.75D + mob.getBbWidth() * 0.35D));
+        double radius = 0.75D;
         Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
         return new SigilFrame(center, right, up, radius);
     }
