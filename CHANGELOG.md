@@ -24,6 +24,7 @@
 
 ### 修复
 
+- 施法音效重复播放：Iron's Spellbooks 的 `onServerPreCast` 与 `onCast` 已经播放起手音与结束音，模组此前又各播了一遍；现在删掉重复播放，音效完全交给 ISS。
 - 施法途中死亡时死亡法术会被吞掉：现在先用 `CASTER_DIED` 收尾当前施法，再正常释放 `onDeath`。
 - `onDeath` / `onKill` 的强制施法会绕过 `entityBlacklist` 与 `dimensionBlacklist`，与“永不施法”的约定冲突；现在同样检查这两个名单。
 - 创造模式玩家不再被硬性排除：改由 `target.filters.ignoreCreative`（默认 `true`）控制，旁观者仍然始终排除。
