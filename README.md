@@ -38,7 +38,7 @@
 3. 进游戏执行 `/reload`；
 4. 生成对应生物验证。
 
-安装后**默认附带一份双尸壳示例**（`data/minecraft/spell_casters/husk.json`，源码见 `examples/husk_twins_1_20_1/`）：带 `husk_boss` + `spellmob_boss` 标签的是 Boss 版（12 种法术、竖立 Boss 法阵、引导免打断），带 `husk_elite` 标签的是精英版（另外 12 种法术）；野生尸壳没有这些标签，行为保持不变。此外 jar 内还内置了五名**只能召唤**的 Boss（`data/twilightforest/spell_casters/{naga,lich,alpha_yeti}.json` 与 `data/minecraft/spell_casters/{drowned,phantom}.json`）：娜迦（自然系）、巫妖（13 种）、雪怪首领（冰系）、溺尸 jack（雷系）与幻翼（8 种）。它们都靠 `spellmob_boss` + 各自专属标签识别，野生同类完全不受影响；召唤命令见 `docs/guide.zh.md`。想要更多示例，从仓库的 `examples/` 里挑——`classic/`、`bosses/`、`channel_test/`、`kitchen_sink/`、`filters_demo/`、`wolf_tamed/`；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
+安装后**默认附带一份双尸壳示例**（`data/minecraft/spell_casters/husk.json`，源码见 `examples/husk_twins_1_20_1/`）：带 `husk_boss` + `spellmob_boss` 标签的是 Boss 版（12 种法术、Boss 法阵、引导免打断），带 `husk_elite` 标签的是精英版（另外 12 种法术）；野生尸壳没有这些标签，行为保持不变。此外 jar 内还内置了五名**只能召唤**的 Boss（`data/twilightforest/spell_casters/{naga,lich,alpha_yeti}.json` 与 `data/minecraft/spell_casters/{drowned,phantom}.json`）：娜迦（自然系）、巫妖（13 种）、雪怪首领（冰系）、溺尸 jack（雷系）与幻翼（8 种）。它们都靠 `spellmob_boss` + 各自专属标签识别，野生同类完全不受影响；召唤命令见 `docs/guide.zh.md`。想要更多示例，从仓库的 `examples/` 里挑——`classic/`、`bosses/`、`channel_test/`、`kitchen_sink/`、`filters_demo/`、`wolf_tamed/`；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
 
 ### Boss 数据包（`examples/bosses/`）
 
@@ -98,7 +98,7 @@
 * `goals`：周期性施法，数组，按顺序尝试；每条独立冷却；
 * `onHurt`：被攻击时触发，单对象，可选；
 * `onTarget`：锁定新目标时触发，单对象，可选；
-* `onDeath`：自己死亡时触发，单对象，可选；施法者已经死亡，所以**强制瞬发**（忽略 `castTime`），也不检查冷却/黑名单；
+* `onDeath`：自己死亡时触发，单对象，可选；施法者已经死亡，所以**强制瞬发**（忽略 `castTime`），不检查冷却与概率，但仍然检查 `conditions` 与实体/维度黑名单；
 * `onKill`：自己击杀生物后触发，单对象，可选；击杀目标已死，默认瞄准尸体的位置；
 * 五者与 `variants` 都没有时，说明这个文件不是 SpellMob 的格式，会被静默忽略（别的模组也用 `spell_casters` 这个目录名）。
 
@@ -340,7 +340,7 @@
 
 `onHurt` / `onTarget` / `onKill` 与 `goals` 共用同一个施法状态机：如果生物已经在吟唱，事件触发会被忽略（不会打断当前施法）。
 
-`onDeath` 是唯一会绕过就绪检查的触发：施法者已经死亡、下一 tick 不再 tick，所以它总是瞬发，并且不检查冷却与黑名单；如果法术本身要求活着的施法者，效果由 Iron's Spellbooks 决定。
+`onDeath` 是唯一会绕过就绪检查的触发：施法者已经死亡、下一 tick 不再 tick，所以它总是瞬发，不检查冷却与概率；但它仍然检查 `conditions` 与实体/维度黑名单。如果法术本身要求活着的施法者，效果由 Iron's Spellbooks 决定。
 
 ## 表现（粒子）
 
@@ -348,7 +348,7 @@
 
 * 吟唱开始时脚下出现一圈尘粒子法阵，颜色取自法术所属学派的 `SchoolType#getTargetingColor()`（读不到颜色时用纯黑兜底；纯黑只可能来自兜底，正常学派色不会黑到被判为不可用）；
 * 每 3 tick 刷新一次，环的半径随进度先扩后收、并持续旋转，末尾还会冒出上升的光点 —— 不看 UI 也能判断读条到哪了；
-* Boss 施法者脚下额外画一圈更大的同色外环，并在吟唱期间每 10 tick 向外扩散一圈脉冲尘环；外环点数由 `presentation.bossPoints` 控制，与普通圆环的 `points` 分开配置。
+* Boss 施法者脚下额外画一圈更大的同色外环，并在吟唱期间每 20 tick 向外扩散一圈脉冲尘环；外环点数由 `presentation.bossPoints` 控制，与普通圆环的 `points` 分开配置。
 * 法阵大小按生物碰撞箱宽度缩放，大体型生物不会"踩在圈外"；
 * 被打断时（目标丢失、施法者死亡、法术回调抛异常）冒一团烟并播放熄灭音效；因卸载、重载或改名而中止的施法不会触发，避免在区块边界来回走时刷屏。
 
