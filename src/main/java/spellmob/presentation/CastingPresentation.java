@@ -4,6 +4,7 @@ import io.redspace.ironsspellbooks.api.registry.SchoolRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
+import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -308,12 +309,10 @@ public final class CastingPresentation {
         if (frame == null) {
             return;
         }
-        ParticleOptions ring = sigilRingParticle(spell, colour);
-        ParticleOptions pulse = sigilPulseParticle(spell, colour);
         int points = 36;
         for (int index = 0; index < points; index++) {
             double angle = Math.PI * 2.0D * index / points;
-            send(level, ring, frame.point(Math.cos(angle), Math.sin(angle), frame.radius()));
+            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius()));
         }
         for (int wave = 0; wave < 2; wave++) {
             double phase = (((elapsed + wave * (SIGIL_PULSE_PERIOD / 2.0D)) % SIGIL_PULSE_PERIOD) + SIGIL_PULSE_PERIOD)
@@ -322,7 +321,7 @@ public final class CastingPresentation {
             int wavePoints = Math.max(8, (int) Math.round(points * (0.85D - 0.45D * phase)));
             for (int index = 0; index < wavePoints; index++) {
                 double angle = Math.PI * 2.0D * index / wavePoints;
-                send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), radius));
+                sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), radius));
             }
         }
     }
@@ -333,17 +332,15 @@ public final class CastingPresentation {
         if (frame == null) {
             return;
         }
-        ParticleOptions ring = sigilRingParticle(spell, colour);
-        ParticleOptions pulse = sigilPulseParticle(spell, colour);
         int points = 40;
         for (int index = 0; index < points; index++) {
             double angle = Math.PI * 2.0D * index / points;
-            send(level, ring, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale));
+            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale));
         }
         int wavePoints = 24;
         for (int index = 0; index < wavePoints; index++) {
             double angle = Math.PI * 2.0D * index / wavePoints;
-            send(level, pulse, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 0.90D));
+            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 0.90D));
         }
     }
 
@@ -372,42 +369,32 @@ public final class CastingPresentation {
         return new SigilFrame(center, right, up, radius);
     }
 
-    /** Ring particle for the school, or a school coloured dust fallback for unknown schools. */
-    private static ParticleOptions sigilRingParticle(AbstractSpell spell, Vector3f colour) {
-        String path = schoolPath(spell);
-        return switch (path) {
-            case "fire" -> ParticleTypes.FLAME;
-            case "ice" -> ParticleTypes.SNOWFLAKE;
-            case "lightning" -> ParticleTypes.ELECTRIC_SPARK;
-            case "holy" -> ParticleTypes.END_ROD;
-            case "ender" -> ParticleTypes.PORTAL;
-            case "evocation" -> ParticleTypes.WITCH;
-            case "nature" -> ParticleTypes.HAPPY_VILLAGER;
-            case "eldritch" -> ParticleTypes.SCULK_SOUL;
-            default -> new DustParticleOptions(new Vector3f(colour), 1.4F);
-        };
+    /**
+     * Sends one school coloured {@code entity_effect} particle.
+     *
+     * <p>1.21.1 exposes {@link ColorParticleOption}, so the colour rides inside the particle
+     * options instead of the velocity fields. The client spawns a single swirl tinted exactly like
+     * the school, which keeps the sigil and the ground rings the same colour.</p>
+     *
+     * @param level    the server level
+     * @param colour   the school colour, components in {@code 0..1}
+     * @param position where the particle spawns
+     */
+    private static void sendColored(ServerLevel level, Vector3f colour, Vec3 position) {
+        ParticleOptions particle = ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, packColour(colour));
+        double limitSqr = limitSqr();
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(position.x, position.y, position.z) <= limitSqr) {
+                level.sendParticles(player, particle, false, position.x, position.y, position.z, 0, 0.0D, 0.0D, 0.0D, 0.0D);
+            }
+        }
     }
 
-    /** Pulse particle for the school, or a school coloured dust fallback for unknown schools. */
-    private static ParticleOptions sigilPulseParticle(AbstractSpell spell, Vector3f colour) {
-        String path = schoolPath(spell);
-        return switch (path) {
-            case "fire" -> ParticleTypes.LAVA;
-            case "ice" -> ParticleTypes.CLOUD;
-            case "lightning" -> ParticleTypes.END_ROD;
-            case "holy" -> ParticleTypes.TOTEM_OF_UNDYING;
-            case "ender" -> ParticleTypes.REVERSE_PORTAL;
-            case "evocation" -> ParticleTypes.ENCHANT;
-            case "nature" -> ParticleTypes.COMPOSTER;
-            case "eldritch" -> ParticleTypes.WARPED_SPORE;
-            default -> new DustParticleOptions(new Vector3f(colour), 2.0F);
-        };
-    }
-
-    private static String schoolPath(AbstractSpell spell) {
-        SchoolType school = schoolOf(spell);
-        ResourceLocation id = school == null ? null : school.getId();
-        return id == null ? "" : id.getPath();
+    private static int packColour(Vector3f colour) {
+        int red = Math.round(Math.max(0.0F, Math.min(1.0F, colour.x())) * 255.0F);
+        int green = Math.round(Math.max(0.0F, Math.min(1.0F, colour.y())) * 255.0F);
+        int blue = Math.round(Math.max(0.0F, Math.min(1.0F, colour.z())) * 255.0F);
+        return (red << 16) | (green << 8) | blue;
     }
 
     /** Precomputed plane of the vertical sigil: center plus two orthonormal axes. */
