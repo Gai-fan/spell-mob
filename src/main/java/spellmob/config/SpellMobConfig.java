@@ -117,7 +117,7 @@ public final class SpellMobConfig {
                         "（施法被打断时冒烟并播放熄灭音效）")
                 .define("interruptFeedback", true);
         BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss effects.",
-                        "Boss casters also get a vertical magic circle in front of them.",
+                        "Boss casters get a second, larger circle under their feet.",
                         "（带有任一这些计分板标签的生物使用 Boss 特效；Boss 施法者脚下会多一圈更大的外环并周期性脉冲）")
                 .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
         BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 10 ticks.",
@@ -245,7 +245,7 @@ public final class SpellMobConfig {
         return false;
     }
 
-    /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
+    /** @return whether the boss circle adds the periodic pulse rings and the finishing blast */
     public static boolean bossExtras() {
         return !ready() || BOSS_EXTRAS.get();
     }
