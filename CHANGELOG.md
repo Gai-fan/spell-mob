@@ -7,6 +7,26 @@
 
 ---
 
+## [2.0.5] — 2026-11-06
+
+### 新增
+
+- **`POSITION + BEHIND_TARGET`**：瞄准目标背后（`relativeOffset.x` 距离，默认 2 格；`relativeOffset.y` 垂直偏移），适合让传送类法术落到玩家身后。
+- **`target.placement`**：给 `POSITION` 的落点加安全检查，`avoidFluid` 拒绝任何液体，`avoidLava` 只拒绝岩浆；`RANDOM_IN_RANGE` 最多重试 8 次，`BEHIND_TARGET` 不安全时退回目标位置。
+- `/spellmob validate` 新增黄色警告：`POSITION` 目标 + 投射物法术（id 含 missile/bolt/ball/icicle/lance/ray/skull… 且开启 `lineOfSight`）时提示“只会改朝向”，警告数与问题数一起计入汇总。
+
+### 变更
+
+- 文档与 README 把“位置模式”改称**“瞄准模式”**，明确写清 `POSITION` 只改变视线方向、不改变法术出生点：纯投射物只改朝向（打不穿墙），只有传送/岩浆炸弹/黑洞这类靠视线找落点的法术真正受影响，自施法无效。
+- 内置 `minecraft:husk` 的一处 `icicle + POSITION/TARGET_ENTITY` 改回 `ATTACK_TARGET`，避免丢掉视线检测与 `filters`。
+- 文档补充：`SELF` 表示“目标就是自己”，与是否有敌人无关（附改 `ATTACK_TARGET` 的示例）；`dropRules` 必须是根节点数组且只使用第一条命中的规则；`config/spellmob-common.toml` 可被 **Configured** 这类配置编辑模组读取，普通数值改完即时生效，`[species]` 规则文本需要 `/spellmob resync` 或重启。
+
+### 修复
+
+- `TargetResolver` 的随机落点现在按 `placement` 判定重试，不再直接命中液体里的点。
+
+---
+
 ## [2.0.4] — 2026-11-05
 
 ### 新增

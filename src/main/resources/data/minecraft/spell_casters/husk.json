@@ -47,15 +47,12 @@
           "castTime": 15
         },
         {
-          "spell": "irons_spellbooks:ice_spikes",
+          "spell": "irons_spellbooks:icicle",
           "level": 2,
           "cooldown": 160,
           "priority": 1,
           "range": 20,
-          "target": {
-            "type": "POSITION",
-            "positionMode": "TARGET_ENTITY"
-          }
+          "target": "ATTACK_TARGET"
         },
         {
           "spell": "irons_spellbooks:cone_of_cold",
@@ -139,7 +136,7 @@
         "target": "ATTACK_TARGET"
       },
       "onDeath": {
-        "spell": "irons_spellbooks:ice_spikes",
+        "spell": "irons_spellbooks:icicle",
         "level": 2,
         "cooldown": 0,
         "priority": 1,
@@ -340,7 +337,7 @@
         "target": "ATTACK_TARGET"
       },
       "onDeath": {
-        "spell": "irons_spellbooks:raise_hell",
+        "spell": "irons_spellbooks:raise_dead",
         "level": 1,
         "cooldown": 0,
         "priority": 1,

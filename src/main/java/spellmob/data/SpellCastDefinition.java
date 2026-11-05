@@ -20,7 +20,7 @@ import spellmob.util.JsonHelper;
  * <p>Instances are immutable and shared by every mob that uses the same data pack entry.</p>
  *
  * @param spellId           id of the Iron's Spellbooks spell
- * @param level             spell level, clamped to 1..10 (ISS caps it again at cast time)
+ * @param level             spell level, clamped to the spell's maximum
  * @param cooldownTicks     cooldown in ticks, negative means "use the spell's own cooldown"
  * @param priority          goal priority, clamped to 0..9
  * @param range             maximum distance to the target, in blocks
@@ -107,7 +107,7 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
             }
         }
 
-        int level = JsonHelper.optInt(json, "level", 1);
+        int level = Math.max(1, Math.min(spell.getMaxLevel(), JsonHelper.optInt(json, "level", 1)));
         return new SpellCastDefinition(
                 spellId,
                 level,
@@ -133,7 +133,7 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         if (element.isJsonPrimitive()) {
             TargetType type = requireType(element.getAsString(), where);
             return new TargetSpec(type, true, PositionMode.RELATIVE, Vec3.ZERO, TargetSort.NEAREST,
-                    TargetFilters.NONE);
+                    TargetFilters.NONE, PlacementSpec.NONE);
         }
         if (!element.isJsonObject()) {
             throw new IllegalArgumentException(where + ": 'target' must be a string or an object");
@@ -163,7 +163,21 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
                 mode,
                 parseOffset(object.get("relativeOffset"), where),
                 sort,
-                parseFilters(object, where));
+                parseFilters(object, where),
+                parsePlacement(object.get("placement"), where));
+    }
+
+    private static PlacementSpec parsePlacement(JsonElement element, String where) {
+        if (element == null || element.isJsonNull()) {
+            return PlacementSpec.NONE;
+        }
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException(where + ": 'placement' must be an object");
+        }
+        JsonObject object = element.getAsJsonObject();
+        return new PlacementSpec(
+                JsonHelper.optBoolean(object, "avoidFluid", false),
+                JsonHelper.optBoolean(object, "avoidLava", false));
     }
 
     private static Vec3 parseOffset(JsonElement element, String where) {
@@ -180,7 +194,6 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         return new Vec3(array.get(0).getAsDouble(), array.get(1).getAsDouble(), array.get(2).getAsDouble());
     }
 
-    @Nullable
     private static TargetFilters parseFilters(JsonObject target, String where) {
         JsonObject object = null;
         JsonElement element = target.get("filters");
@@ -208,10 +221,9 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
                 requireNoShield);
     }
 
-    @Nullable
     private static List<ResourceLocation> readIds(@Nullable JsonObject object, String key, String where) {
         if (object == null || !object.has(key)) {
-            return null;
+            return List.of();
         }
         JsonElement element = object.get(key);
         if (!element.isJsonArray()) {
@@ -229,10 +241,9 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         return ids;
     }
 
-    @Nullable
     private static List<String> readStrings(@Nullable JsonObject object, String key) {
         if (object == null || !object.has(key)) {
-            return null;
+            return List.of();
         }
         JsonElement element = object.get(key);
         if (!element.isJsonArray()) {
@@ -245,12 +256,6 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         return values;
     }
 
-    @Nullable
-    private static JsonObject readObject(JsonObject parent, String key) {
-        JsonElement element = parent.get(key);
-        return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
-    }
-
     private static CastConditions parseConditions(JsonObject json, String where) {
         JsonElement element = json.get("conditions");
         if (element == null || element.isJsonNull()) {
@@ -260,23 +265,26 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
             throw new IllegalArgumentException(where + ": 'conditions' must be an object");
         }
         JsonObject object = element.getAsJsonObject();
-        return parseConditionsObject(object);
-    }
-
-    private static CastConditions parseConditionsObject(JsonObject object) {
         JsonObject self = readObject(object, "self");
         JsonObject target = readObject(object, "target");
-        return new CastConditions(
-                object.has("healthBelow") ? JsonHelper.optDouble(object, "healthBelow", 1.0D)
-                        : self != null ? JsonHelper.optDouble(self, "healthBelow", 1.0D) : 1.0D,
-                object.has("healthAbove") ? JsonHelper.optDouble(object, "healthAbove", 0.0D)
-                        : self != null ? JsonHelper.optDouble(self, "healthAbove", 0.0D) : 0.0D,
-                object.has("minTargetDistance") ? JsonHelper.optDouble(object, "minTargetDistance", 0.0D)
-                        : target != null ? JsonHelper.optDouble(target, "minTargetDistance", 0.0D) : 0.0D,
-                object.has("maxTargetDistance")
-                        ? JsonHelper.optDouble(object, "maxTargetDistance", Double.MAX_VALUE)
-                        : target != null ? JsonHelper.optDouble(target, "maxTargetDistance", Double.MAX_VALUE)
-                        : Double.MAX_VALUE);
+        double healthBelow = object.has("healthBelow") ? JsonHelper.optDouble(object, "healthBelow", 1.0D)
+                : self != null ? JsonHelper.optDouble(self, "healthBelow", 1.0D) : 1.0D;
+        double healthAbove = object.has("healthAbove") ? JsonHelper.optDouble(object, "healthAbove", 0.0D)
+                : self != null ? JsonHelper.optDouble(self, "healthAbove", 0.0D) : 0.0D;
+        double minDistance = object.has("minTargetDistance")
+                ? JsonHelper.optDouble(object, "minTargetDistance", 0.0D)
+                : target != null ? JsonHelper.optDouble(target, "minTargetDistance", 0.0D) : 0.0D;
+        double maxDistance = object.has("maxTargetDistance")
+                ? JsonHelper.optDouble(object, "maxTargetDistance", Double.MAX_VALUE)
+                : target != null ? JsonHelper.optDouble(target, "maxTargetDistance", Double.MAX_VALUE)
+                : Double.MAX_VALUE;
+        return new CastConditions(healthBelow, healthAbove, minDistance, maxDistance);
+    }
+
+    @Nullable
+    private static JsonObject readObject(JsonObject parent, String key) {
+        JsonElement element = parent.get(key);
+        return element != null && element.isJsonObject() ? element.getAsJsonObject() : null;
     }
 
     private static TargetType requireType(String raw, String where) {

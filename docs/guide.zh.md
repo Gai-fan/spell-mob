@@ -12,11 +12,11 @@ SpellMob 是 *Iron's Spells 'n Spellbooks*（ISS）的附属模组，不添加�
 
 | | |
 |---|---|
-| Minecraft | 1.21.1 |
-| NeoForge | 21.1.x |
-| Iron's Spells 'n Spellbooks | `1.21.1-3.16.3` 或更新 |
+| Minecraft | 1.20.1 |
+| Forge | 47.x |
+| Iron's Spells 'n Spellbooks | `1.20.1-3.4.0.9` 或更新（已验证到 `3.16.3`） |
 
-SpellMob 本身没有其它依赖。如果使用 ISS 3.15+，请按 ISS 的要求装好它需要的前置（新版 NeoForge、GeckoLib、Curios、`irons_lib`）——那是 ISS 的要求，不是本模组的。
+SpellMob 本身没有其它依赖。如果使用 ISS 3.15+，请按 ISS 的要求装好它需要的前置（新版 Forge、GeckoLib、Curios、`irons_lib`）——那是 ISS 的要求，不是本模组的。
 
 ## 安装
 
@@ -163,7 +163,17 @@ saves/<世界>/datapacks/我的法术/
 | `OWNER` | 驯服生物的主人。 |
 | `NEAREST_ALLY` | 最近的同类或同队生物。 |
 | `RANDOM_HOSTILE` | 范围内随机一个敌对目标。 |
-| `POSITION` | 世界中的一个点，见位置模式。 |
+| `POSITION` | 世界中的一个点，见瞄准模式。 |
+
+> ⚠️ **`SELF` 表示“目标就是自己”。** 而“自己”永远找得到，所以只要冷却好了、法术可用，它就会放，跟有没有敌人在场完全无关。
+> 如果你想要“只在战斗中才召唤/治疗”，把那一行的 `target` 换成 `ATTACK_TARGET`：
+
+```json
+"goals": [
+  { "spell": "irons_spellbooks:heal", "cooldown": 400, "target": "SELF" },
+  { "spell": "irons_spellbooks:summon_vex", "cooldown": 400, "target": "ATTACK_TARGET" }
+]
+```
 
 ### 目标对象字段
 
@@ -174,8 +184,10 @@ saves/<世界>/datapacks/我的法术/
 | `lineOfSight` | `true` | 实体目标必须可见（`POSITION` 忽略）。 |
 | `maxHealthPercent` | `1.0` | 只接受血量比例不高于此值的目标；等价于 `filters.maxHealthPercent`。 |
 | `positionMode` | `RELATIVE` | 仅 `POSITION`，见下。 |
-| `relativeOffset` | `[0,0,0]` | 仅 `POSITION` + `RELATIVE`。 |
+| `relativeOffset` | `[0,0,0]` | 仅 `POSITION`；`RELATIVE` 用全部三个分量，`BEHIND_TARGET` 用 `x`（距离）和 `y`（垂直偏移）。 |
+| `placement` | 空 | 仅 `POSITION` 的落点安全检查，见下。 |
 | `filters` | 空 | 目标过滤，见下。 |
+
 #### 目标过滤（filters）
 
 ```json
@@ -205,15 +217,47 @@ saves/<世界>/datapacks/我的法术/
 
 过滤在候选实体解析出来之后、起手之前判定；`POSITION` 类目标不看过滤。
 
-### 位置模式（仅 `POSITION`）
 
-| 模式 | 落点 |
+### 瞄准模式（仅 `POSITION`）
+
+> **先弄明白一件事：`POSITION` 不是“落点”，它只决定朝哪看。**
+>
+> Iron's Spells 的施法接口没有坐标参数，投射物一律从施法者的眼睛/身体生成，再沿着它当时的视线飞出去。
+> 所以 `POSITION` 解析出来的点会被喂给 `lookAt`，法术真正“出生”的位置不会变。
+>
+> - 纯投射物（冰锥、魔法飞弹、火球、各种射线）：只改朝向。只有在“没有实体目标也要打”的时候才有意义，**它不能打到墙后的目标**。
+> - 靠视线找落点的法术（传送、岩浆炸弹、黑洞、冰块、传送门）：真正受影响，因为射线起点和方向变了。
+> - 自施法 / 增益 / 召唤：完全无效。
+>
+> 想要“追着目标打”就用 `ATTACK_TARGET` / `NEAREST_HOSTILE` 这类实体目标，不要用 `POSITION + TARGET_ENTITY`——后者会丢掉视线检测和 `filters`。
+
+| 模式 | 瞄准哪儿 |
 |---|---|
 | `RELATIVE` | 施法者位置 + `relativeOffset`。 |
 | `EYES_LOOK` | 眼睛位置 + 视线方向 × `range`。 |
-| `FEET_LOOK` | 脚下位置 + 视线方向 × `range`。 |
+| `FEET_LOOK` | 脚下位置 + 视线方向 × `range`（和 `EYES_LOOK` 的射线起点不同）。 |
 | `TARGET_ENTITY` | 目标所在位置；没有目标就不施放。 |
+| `BEHIND_TARGET` | 目标背后：`relativeOffset.x` 是距离（默认 `2` 格），`relativeOffset.y` 是垂直偏移。用来让传送类法术落到玩家身后，而不是脚下。 |
 | `RANDOM_IN_RANGE` | `range` 格内的随机一点。 |
+
+#### 落点安全检查（placement）
+
+`RANDOM_IN_RANGE` 和 `BEHIND_TARGET` 可以再加一层安全检查，避免把瞄准点丢进水里或岩浆里：
+
+```json
+"target": {
+  "type": "POSITION",
+  "positionMode": "RANDOM_IN_RANGE",
+  "placement": { "avoidFluid": true, "avoidLava": true }
+}
+```
+
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `avoidFluid` | `false` | 拒绝落在任何液体里的点（水、岩浆都算）。 |
+| `avoidLava` | `false` | 只拒绝岩浆，水仍然可以。 |
+
+`RANDOM_IN_RANGE` 最多重试 8 次，全都落在被禁止的液体里就放弃这次施法；`BEHIND_TARGET` 不安全时退回到目标自身的位置。
 
 ## 变体
 
@@ -266,6 +310,12 @@ saves/<世界>/datapacks/我的法术/
 
 `dropRules` 让真正会施法的生物额外掉落。只有当前解析出非空施法配置的生物才会结算，普通生物不受影响。
 
+> ⚠️ **`dropRules` 只能是根节点上的一个数组，且只使用第一条命中的规则。**
+>
+> - 把它写在 `variants` 的某个变体里、或者写进 `goals` 里，都不会生效——解析器只认文件最外层的 `dropRules`。
+> - 数组里从上往下匹配，**第一条 `select` 命中的规则生效，后面的全部忽略**。所以具体的规则（比如带专属标签的 Boss）放前面，兜底的放最后。
+> - 没有 `dropRules`，或者没有一条命中，就不掉额外物品。
+
 ```json
 "dropRules": [
   {
@@ -279,7 +329,7 @@ saves/<世界>/datapacks/我的法术/
 ]
 ```
 
-- 只使用**第一条命中的规则**。
+- 只使用**第一条命中的规则**（同上）。
 - 规则级 `chance` 掷一次，条目级 `chance` 逐条掷。
 - 每个条目二选一：`item` 或 `lootTable`。
 - 固定数量用 `count`，区间用 `minCount` / `maxCount`。
@@ -288,6 +338,12 @@ saves/<世界>/datapacks/我的法术/
 ## 配置
 
 配置文件在 `config/spellmob-common.toml`（COMMON 类型——整份安装共用一个文件，不是每个世界一份）。
+
+它就是一个普通的 Forge `ModConfigSpec`，所以 **Configured** 这类“游戏内编辑配置”的模组可以直接读到它、也能在游戏里改：
+
+- 开关、冷却倍率、黑名单、法阵这些**普通数值**改完立即生效，不用重启（我们是每次用到时现读，不缓存）。
+- 但 `[species]` 里的规则文本（`extraRules`、`spawnEgg` 等）是启动时解析成规则对象的，改完需要 `/spellmob resync`，或者重启游戏。
+- 数据包永远优先于配置里的同名规则：数据包定义了某个实体，配置里对它的规则就会被忽略（`/spellmob info` 会显示来源，日志里也会打一行提示）。
 
 | 分节 | 键 | 默认 | 说明 |
 |---|---|---|---|
@@ -329,7 +385,7 @@ saves/<世界>/datapacks/我的法术/
 - **纯服务端。** 客户端不需要装模组；法阵是服务端发送的普通粒子。
 - **数据包路径必须镜像实体 id。** `data/mypack/` 下的文件永远影响不到 `minecraft:zombie`。
 - **未知 JSON 键会被忽略。** 字段名拼错不会报错——用 `validate` 和 `info` 抓。
-- **ISS 版本。** 以 3.16.3 的 API 编译并验证；jar 声明 `[1.21.1-3.16.3,)`。
+- **ISS 版本。** 以 3.4.0.9 的 API 编译，已在 3.16.3 上验证；jar 声明 `[1.20.1-3.4.0.9,)`。
 
 ## 示例
 

@@ -1,386 +1,513 @@
 # SpellMob
 
-一个数据驱动的生物施法模组：用数据包给任意生物配置法术，让它们像术士一样吟唱、索敌、开火。
+**让任何生物成为 Iron's Spells 'n Spellbooks 施法者。**
 
-* Minecraft 1.21.1 / NeoForge 21.1.x
-* 必须安装 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/mc-mods/irons-spells-n-spellbooks) `1.21.1-3.16.3` 或更高
-* 纯服务端逻辑，客户端无需安装（但联机时服务端必须装）
+纯服务端 · 数据包驱动 · 不新增方块、物品或实体
 
-> 完整使用文档：[中文](docs/guide.zh.md) · [English](docs/guide.en.md)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.20.1%20%7C%201.21.1-3C8527?style=flat-square)
+![Forge](https://img.shields.io/badge/Forge-47.2%2B-E04E14?style=flat-square)
+![NeoForge](https://img.shields.io/badge/NeoForge-21.1%2B-FF9F00?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
+
+> **English:** SpellMob is a server-side, data-driven spellcasting framework for Iron's Spells 'n Spellbooks. Any mob can cast configured spells — no client mod required. See the [English guide](docs/guide.en.md).
+
+SpellMob 是 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/mc-mods/irons-spells-n-spellbooks)（下称 ISS）的附加模组。它不重新实现法术，而是把 ISS 自己的施法管线接到任意生物身上：你在数据包里写下“这个生物会什么法术、什么时候放、打谁”，它就会像 ISS 自带的施法怪一样读条、索敌、引导和开火。
+
+**你不需要写 Java，也不需要安装客户端模组。** 一个 JSON 文件就能让僵尸变成火法师、让幻翼变成雷暴 Boss，或者只让某一只被命名的 Boss 施法。
+
+---
+
+## 目录
+
+- [特性](#特性)
+- [版本与前置](#版本与前置)
+- [安装](#安装)
+- [快速开始](#快速开始)
+- [数据包格式](#数据包格式)
+- [触发器](#触发器)
+- [目标与条件](#目标与条件)
+- [变体与阶段](#变体与阶段)
+- [掉落规则](#掉落规则)
+- [内置内容](#内置内容)
+- [配置](#配置)
+- [命令](#命令)
+- [施法表现](#施法表现)
+- [常见问题](#常见问题)
+- [从源码构建](#从源码构建)
+- [贡献与许可](#贡献与许可)
 
 ## 特性
 
-* **数据包驱动** —— 不注册任何新实体、方块或物品，只解析 `data/<namespace>/spell_casters/<entity_id>.json`
-* **五种触发方式** —— 周期性施法（`goals`）、受伤时（`onHurt`）、锁定目标时（`onTarget`）、死亡时（`onDeath`）、击杀后（`onKill`）
-* **15 种目标类型 + 5 种位置模式**，覆盖"打当前目标""打最近的亡灵""传送到随机位置"等常见需求
-* **走 Iron's Spellbooks 自己的施法管线** —— 读条、施法音效与 `CastSource.MOB` 语义与 ISS 一致（冷却由数据包控制），而不是直接调 `onCast`
-* **真正可用的优先级** —— JSON 里的 `priority` 会用于 `GoalSelector`，施法期间占用 `MOVE` + `LOOK`，不会再被原版近战 AI 抢掉
-* **全局配置** —— `config/spellmob-common.toml`：总开关、冷却倍率、最大射程、实体/维度黑名单、名字保护、粒子表现、物种规则
-* **个体定向** —— `variants` 按名字、正则或 scoreboard tag 挑出个别生物：同名物种里 A 与 B 可以放不同法术，其余个体完全不施法
-* **物种规则也能写进配置** —— `species.extraRules` 一行一条 JSON，可直接用 Configured 之类的 GUI 编辑物种级规则；同一物种若已有数据包文件，则以数据包为准（配置项被忽略并打一行日志）
-* **名字锁** —— 给生物打上 `protection.protectedTags` 里的 tag 后，普通玩家无法用命名牌覆盖它已有的名字（OP 可放行）
-* **施法表现** —— 吟唱时脚下浮现学派配色的旋转法阵，环的大小随读条进度呼吸；Boss 施法者脚下会多一圈更大的同色外环，并在吟唱期间周期性地向外扩散脉冲尘环；被打断时冒烟并播放熄灭音效。纯服务端发包，客户端不需要安装本模组
-* **阶段与节奏** —— `select.healthBelow` 让同一个生物半血后换一套法术；`interruptOnDamage` 让吟唱被伤害打断；`cooldownGroup` 让换阶段时共享冷却；`chance` 让法术按概率触发
-* **特殊怪掉落** —— `dropRules` 按名字、正则、tag 或血量挑出个别生物，而且只有会施法的怪才掉；支持固定物品、数量区间、概率、抢夺加成与整张战利品表
+- **纯数据包驱动**：不注册新实体、方块或物品，只解析 `data/<namespace>/spell_casters/<entity_id>.json`。
+- **五种触发方式**：周期性施法（`goals`）、受伤时（`onHurt`）、锁定目标时（`onTarget`）、死亡时（`onDeath`）、击杀后（`onKill`）。
+- **完整的目标系统**：15 个目标类型、6 种瞄准模式（含 `BEHIND_TARGET` 与落点检查）、视线判定、距离限制、目标排序，以及实体 id / 实体标签 / 计分板标签 / 队伍 / 血量 / 格挡等过滤器。
+- **阶段与个体定向**：`variants` 可以按名字、正则、tag、血量、是否驯服挑出个别生物；同一物种的不同个体可以放不同法术，甚至完全不施法。
+- **可用的施法节奏**：`cooldown`、`cooldownGroup`、`chance`、`checkInterval`、`castTime`、`interruptOnDamage`、`repeatOnCast`，以及真正生效的 Goal `priority`。
+- **特殊怪掉落**：`dropRules` 支持固定物品、数量区间、概率、抢夺加成、玩家击杀保护和整张战利品表。
+- **服务端表现**：学派配色的旋转法阵、读条呼吸、Boss 外环与冲击波、打断烟雾；全部由服务端发包，客户端不需要 SpellMob。
+- **全局配置**：总开关、冷却倍率、最大射程、实体/维度黑名单、名字锁、引导免疫、粒子强度，以及可直接写进配置的物种规则。
+- **兼容任意生物**：原版和模组生物都可以用；模组生物使用它自己的命名空间。
+- **不重复造法术**：法术、音效、粒子与施法判定都来自 ISS；SpellMob 只负责“谁、何时、对谁施法”。
+
+## 版本与前置
+
+SpellMob 同时维护 Forge 1.20.1 与 NeoForge 1.21.1 两个发行版，数据格式一致；差异只在加载器和少量原版 API。
+
+| 发行版 | Minecraft | 加载器 | Iron's Spellbooks | 维护分支 |
+|---|---|---|---|---|
+| Forge 版 | 1.20.1 | Forge 47.2+ | `1.20.1-3.4.0.9` 或更高 | `master` |
+| NeoForge 版 | 1.21.1 | NeoForge 21.1+ | `1.21.1-3.16.3` 或更高 | `neoforge-1.21.1` |
+
+- **SpellMob 本身是纯服务端逻辑。** 专用服务器只需要在服务端安装 SpellMob；客户端安装 ISS 即可，不需要安装 SpellMob。
+- **ISS 必须同时安装在客户端和服务端。** 法术、音效和粒子资源都来自 ISS；只装 SpellMob 不会凭空多出法术。
+- **Java 版本**：Forge 1.20.1 使用 Java 17；NeoForge 1.21.1 使用 Java 21。
+- 上表是源码维护分支；实际可下载的版本以 Releases 页面为准，版本号可在 `gradle.properties` 的 `mod_version` 查看。
+
+## 安装
+
+1. 安装对应版本的 Minecraft、Forge/NeoForge 与 Iron's Spells 'n Spellbooks。
+2. 把 SpellMob 的 jar 放进 `mods/` 目录。
+3. 启动一次游戏或服务器，生成 `config/spellmob-common.toml`。
+4. 准备数据包（见下一节），或直接使用 jar 内置的召唤 Boss。
+5. 进入世界执行 `/reload`，让数据包生效。
+
+> 单人游戏需要把 SpellMob 放进客户端 `mods/`（它运行在内置服务器上）。多人服务器只需要服务端安装 SpellMob，客户端不需要；但客户端仍然需要 ISS。
 
 ## 快速开始
 
-1. 安装 NeoForge 21.1.x 与 Iron's Spells 'n Spellbooks；
-2. 把数据包放进世界的 `datapacks/` 目录（或模组的 `data/` 里），路径形如：
+下面做一个最小数据包：只让带有 `spellmob_demo` 标签的僵尸放火球，野生僵尸保持原样。
 
-   ```
-   data/<namespace>/spell_casters/<entity_id>.json
-   ```
+### 1. 数据包目录
 
-   例如 `data/minecraft/spell_casters/zombie.json` 对应 `minecraft:zombie`；
-   模组生物则用它自己的命名空间，如 `data/irons_spellbooks/spell_casters/necromancer.json`。
-
-3. 进游戏执行 `/reload`；
-4. 生成对应生物验证。
-
-安装后**默认附带一份双尸壳示例**（`data/minecraft/spell_casters/husk.json`，源码见 `examples/husk_twins_1_21_1/`）：带 `husk_boss` + `spellmob_boss` 标签的是 Boss 版（12 种法术、Boss 法阵、引导免打断），带 `husk_elite` 标签的是精英版（另外 12 种法术）；野生尸壳没有这些标签，行为保持不变。此外 jar 内还内置了五名**只能召唤**的 Boss（`data/twilightforest/spell_casters/{naga,lich,alpha_yeti}.json` 与 `data/minecraft/spell_casters/{drowned,phantom}.json`）：娜迦（自然系）、巫妖（13 种）、雪怪首领（冰系）、溺尸 jack（雷系）与幻翼（8 种）。它们都靠 `spellmob_boss` + 各自专属标签识别，野生同类完全不受影响；召唤命令见 `docs/guide.zh.md`。想要更多示例，从仓库的 `examples/` 里挑——`classic/`、`bosses/`、`channel_test/`、`kitchen_sink/`、`twilight_forest_1_21_1/`、`twilight_forest_bosses_1_21_1/`；`full-reference.json` 是字段最全的参考 JSON，不是数据包。
-
-### Boss 数据包（`examples/bosses/`）
-
-仓库里的 `examples/bosses/` 是一份独立数据包，内置六个“名字 + tag”双重限定的 Boss，野生同类生物不受影响：
-
-| 文件 | Boss | 基底 | 机制 |
-|---|---|---|---|
-| `stray.json` | 霜寂领主 | 流浪者 | 三阶段冰系；挨打瞬移；死亡冰环 |
-| `zombie_villager.json` | 血誓祭司 | 僵尸村民 | 召唤亡灵滚雪球；击杀/死亡都召唤 |
-| `ravager.json` | 雷霆战帅 | 劫掠兽 | 雷暴控场 + 冲击波反击；阵亡雷暴 |
-| `wither_skeleton.json` | 虚空织法者 | 凋灵骷髅 | 黑洞拉扯 + 穿墙声波；阵亡黑洞 |
-| `phantom.json` | 虚空之眼 | 幻翼 | 五阶段、九学派轮转 + 引导法术；挨打瞬移 |
-| `husk.json` | 沙海祭司 | 尸壳 | 四阶段；五类触发器全用上 + 掉落规则 |
-
-安装：把 `examples/bosses/` 整个复制到 `saves/<存档>/datapacks/spellmob_bosses/`（目录里应有 `pack.mcmeta` 与 `data/`），进游戏 `/reload`，日志出现 `Loaded N spell caster definition(s)` 即生效。
-
-召唤示例：
-
-```mcfunction
-/summon minecraft:stray ~ ~ ~5 {CustomName:'{"text":"霜寂领主","color":"aqua"}',CustomNameVisible:1b,Tags:["spellmob_boss","frost"],PersistenceRequired:1b,Attributes:[{Name:"generic.max_health",Base:120.0}],Health:120.0f}
+```
+my_spellmob_pack/
+├── pack.mcmeta
+└── data/
+    └── minecraft/
+        └── spell_casters/
+            └── zombie.json
 ```
 
-五个 Boss 的完整召唤命令见 `examples/bosses/README.md`。
-
-> 名字与 tag 必须同时匹配：只改名、或只加 tag 都不会触发 Boss 配置。若在配置里把 `spellmob_boss` 加进 `[protection] protectedTags`，玩家就无法用命名牌覆盖 Boss 的名字。
-
-## JSON 结构
+`pack.mcmeta`（1.20.1 使用 `pack_format: 15`；1.21.1 使用对应版本值，当前示例为 `48`）：
 
 ```json
 {
-  "_comment": "注释字段会被忽略",
-  "goals": [
-    {
-      "spell": "irons_spellbooks:fireball",
-      "level": 2,
-      "cooldown": 200,
-      "priority": 1,
-      "range": 20.0,
-      "castTime": 30,
-      "checkInterval": 10,
-      "target": "ATTACK_TARGET",
-      "conditions": { "healthBelow": 0.5 }
-    }
-  ],
-  "onHurt": { "spell": "irons_spellbooks:heal", "level": 1, "cooldown": 400, "target": "SELF" },
-  "onTarget": { "spell": "irons_spellbooks:slow", "level": 1, "cooldown": 150, "range": 25.0 },
-  "onDeath": {
-    "spell": "irons_spellbooks:ice_spikes",
-    "level": 2,
-    "range": 4,
-    "target": { "type": "POSITION", "positionMode": "RANDOM_IN_RANGE", "lineOfSight": false }
-  },
-  "onKill": { "spell": "irons_spellbooks:heal", "level": 1, "cooldown": 200, "target": "SELF" }
+  "pack": {
+    "description": "My SpellMob pack",
+    "pack_format": 15
+  }
 }
 ```
 
-* `goals`：周期性施法，数组，按顺序尝试；每条独立冷却；
-* `onHurt`：被攻击时触发，单对象，可选；
-* `onTarget`：锁定新目标时触发，单对象，可选；
-* `onDeath`：自己死亡时触发，单对象，可选；施法者已经死亡，所以**强制瞬发**（忽略 `castTime`），不检查冷却与概率，但仍然检查 `conditions` 与实体/维度黑名单；
-* `onKill`：自己击杀生物后触发，单对象，可选；击杀目标已死，默认瞄准尸体的位置；
-* 五者与 `variants` 都没有时，说明这个文件不是 SpellMob 的格式，会被静默忽略（别的模组也用 `spell_casters` 这个目录名）。
+> 文件路径就是实体 id：`data/minecraft/spell_casters/zombie.json` 对应 `minecraft:zombie`；模组生物使用它自己的命名空间，例如 `data/irons_spellbooks/spell_casters/necromancer.json`。
 
-### 个体变体（variants）
-
-同一物种可以让个别生物施不同的法术，甚至完全不施法。`variants` 是一个数组，按顺序匹配，**第一个命中的生效**：
+### 2. 规则文件
 
 ```json
 {
-  "goals": [ { "spell": "irons_spellbooks:heal", "target": "SELF" } ],
+  "_comment": "只有带 spellmob_demo 标签的僵尸会施法",
   "variants": [
     {
-      "select": { "name": "A" },
+      "select": {
+        "tags": ["spellmob_demo"]
+      },
       "override": true,
       "goals": [
-        { "spell": "irons_spellbooks:fireball", "level": 3, "range": 24, "castTime": 20 }
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 16.0,
+          "castTime": 20,
+          "target": "ATTACK_TARGET"
+        }
       ]
     }
   ]
 }
 ```
 
-| 字段 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| `select` | object | 必填 | 匹配条件，见下 |
-| `override` | bool | `true` | `true` 只用变体自己的配置；`false` 表示把变体配置叠加在物种默认配置上（`goals` 拼接、`onHurt`/`onTarget` 变体优先） |
-| `goals`/`onHurt`/`onTarget`/`onDeath`/`onKill` | | 无 | 与顶层同名字段完全一样；全都不写表示"这个变体什么都不放" |
+这个文件没有顶层默认配置，所以没有 `spellmob_demo` 标签的僵尸什么都不会放；它们仍使用原版 AI。
 
-`select` 支持五种条件，同时书写时要求**全部满足**：
+### 3. 生效与召唤
 
-| 字段 | 说明 |
-|---|---|
-| `name` | 自定义名精确匹配（需要命名牌） |
-| `nameRegex` | 自定义名正则全匹配，如 `"^守卫-\\d+$"` |
-| `tags` | scoreboard tag 列表，要求生物拥有全部 tag |
-| `healthBelow` | 当前生命比例**低于**该值（`0`–`1`）时命中，用于血量阶段 |
-| `healthAbove` | 当前生命比例**高于**该值（`0`–`1`）时命中 |
+把数据包放进世界的 `datapacks/` 目录，然后：
 
-没有被任何变体命中的生物使用顶层默认配置；顶层也可以完全省略这五个字段，此时这些生物不施法。
-
-### 阶段（用血量切换变体）
-
-`select` 里的 `healthBelow` / `healthAbove` 可以按当前生命比例挑变体。变体按数组顺序匹配，所以把"低血量"那条放在前面，物种默认配置就自然成为最后一个阶段：
-
-```json
-{
-  "variants": [
-    {
-      "select": { "name": "A", "healthBelow": 0.4 },
-      "goals": [ { "spell": "irons_spellbooks:ice_spikes", "castTime": 20, "interruptOnDamage": true, "cooldownGroup": "a_phase" } ]
-    },
-    {
-      "select": { "name": "A" },
-      "goals": [ { "spell": "irons_spellbooks:fireball", "castTime": 20, "cooldownGroup": "a_phase" } ]
-    }
-  ]
-}
+```mcfunction
+/reload
+/summon minecraft:zombie ~ ~ ~5 {PersistenceRequired:1b,Tags:["spellmob_demo"]}
 ```
 
-* 血量变化每 tick 用一次 float 比较检测；跨过阈值后重建该生物的 Goal，如果此时正在吟唱会等这次吟唱结束再切换，不会打断自己；
-* `cooldownGroup` 让两个阶段的法术共用一份冷却，避免"半血瞬间无缝换招"；
-* 两个阈值同时写时要求 `healthBelow` 大于 `healthAbove`，否则加载阶段就会报错。
+也可以先召唤再打标签：
 
-改名会在一秒内自动生效（每 tick 比较自定义名）；用 `/tag` 加标签、或直接改完数据包后，执行 `/spellmob resync` 立即重建。
-
-### 掉落（dropRules）
-
-只有**会施法**的生物才会结算 `dropRules`（当前解析出的施法配置非空），所以普通同类不会被顺手塞上掉落。规则按数组顺序匹配、**第一条命中的生效**，和 `variants` 一致；但两者互相独立：Boss 切阶段换法术时，掉落规则不受影响。
-
-```json
-"dropRules": [
-  {
-    "select": { "tags": ["spellmob_boss", "dune"] },
-    "drops": [
-      { "item": "minecraft:gold_block", "count": 1 },
-      { "item": "minecraft:emerald", "min": 2, "max": 4, "looting": true },
-      { "item": "minecraft:enchanted_golden_apple", "chance": 0.15 }
-    ]
-  },
-  {
-    "select": { "tags": ["spellmob_boss"] },
-    "chance": 0.2,
-    "drops": [ { "lootTable": "minecraft:chests/desert_pyramid" } ]
-  }
-]
+```mcfunction
+/tag @e[type=minecraft:zombie,sort=nearest,limit=1] add spellmob_demo
 ```
 
-| 字段 | 类型 | 默认 | 说明 |
-|---|---|---|---|
-| `select` | object | 必填 | 与变体相同的选择器：`name` / `nameRegex` / `tags` / `healthBelow` / `healthAbove` |
-| `chance` | double | `1.0` | **整条规则**掷一次骰，没中就整条不掉 |
-| `drops` | array | 必填 | 条目列表，至少一条可用 |
-| `drops[].item` | string | 二选一 | 物品 id |
-| `drops[].lootTable` | string | 二选一 | 原版战利品表 id，适合附魔、随机装备这类复杂池 |
-| `drops[].count` | int | `1` | 固定数量，与 `min`/`max` 二选一 |
-| `drops[].min` / `max` | int | `1` | 数量区间（含两端） |
-| `drops[].chance` | double | `1.0` | 这一条独立掷一次骰 |
-| `drops[].looting` | bool | `false` | 吃抢夺等级，每级多 0~1 个 |
-| `drops[].requirePlayerKill` | bool | `true` | 只算玩家击杀，防刷怪塔；用 `/kill` 测试不会掉，用玩家攻击或 `/damage` |
+日志出现 `[SpellMob] Loaded 1 spell caster definition(s)` 即加载成功。用下面的命令检查这只僵尸最终拿到了什么配置：
 
-* 规则和变体一样按顺序**第一条命中生效**，所以具体的（名字）写前面、通用的（tag）写后面；
-* 掉落与阶段解耦：Boss 掉到半血切到第二阶段变体后，仍旧按同一条掉落规则结算；
-* 数量超过单组上限会自动拆成多组；
-* `lootTable` 以 `LootContextParamSets.ENTITY` 生成，带上了击杀者与抢夺等级。
+```mcfunction
+/spellmob info @e[type=minecraft:zombie,sort=nearest,limit=1]
+```
+
+## 数据包格式
+
+一个 `spell_casters` 文件可以包含以下任意组合；如果**一个都没有**，文件会被忽略（避免误读其他模组放在同名目录里的文件）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `goals` | array | 周期性施法，每条是一个施法对象；按 Goal 优先级竞争 |
+| `onHurt` | object | 受到伤害时触发 |
+| `onTarget` | object | 获得新攻击目标时触发 |
+| `onDeath` | object | 死亡时触发，强制瞬发 |
+| `onKill` | object | 击杀生物后触发，走正常就绪检查 |
+| `variants` | array | 个体/阶段规则，按顺序匹配，第一个命中的生效 |
+| `dropRules` | array | 掉落规则；**必须写在文件根节点**，不能写在 variant 里 |
+
+以 `_` 开头的键可以当注释使用；未知键会被忽略。
 
 ### 施法对象字段
 
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
-| `spell` | string | 必填 | 法术 id，如 `irons_spellbooks:fireball` |
-| `level` | int | `1` | 法术等级，1–10，超过法术上限会自动降到上限 |
-| `cooldown` | int | `-1` | 冷却（tick）。`-1` 表示使用 ISS 该法术的默认冷却（秒 × 20）；实际生效值最小 1 tick |
-| `priority` | int | `1` | Goal 优先级，0–9，**数字越小越优先** |
-| `range` | double | `16` | 施法距离（格），用于索敌与打断判定 |
-| `castTime` | int | `-1` | 吟唱时间（tick）。`-1` 表示使用 ISS 计算值（`getEffectiveCastTime`） |
-| `checkInterval` | int | `10` | `canUse()` 的检查间隔（tick），降低高频索敌开销 |
+| `spell` | string | 必填 | ISS 法术 id，例如 `irons_spellbooks:fireball`；必须已注册且未被 ISS 配置禁用 |
+| `level` | int | `1` | 法术等级，1–10；超过该法术最大等级会被截到上限 |
+| `cooldown` | int | `-1` | 冷却（tick）。`-1` 使用 ISS 的默认冷却（秒 × 20）；实际最小 1 tick |
+| `priority` | int | `1` | Goal 优先级，0–9，数字越小越优先；只对 `goals` 有意义 |
+| `range` | double | `16.0` | 施法/索敌距离（格）；最终会被 `balance.maxRange`（默认 32）截断 |
+| `castTime` | int | `-1` | 吟唱时间（tick）。`-1` 使用 ISS 计算值；`0` 表示瞬发 |
+| `checkInterval` | int | `10` | 周期性 Goal 重新检查的间隔（tick），范围 1–200 |
 | `target` | string/object | `ATTACK_TARGET` | 目标选择，见下 |
 | `conditions` | object | 无 | 额外条件，见下 |
-| `interruptOnDamage` | bool | `false` | 为 `true` 时，吟唱期间受到任意伤害即打断（不返还冷却） |
-| `cooldownGroup` | string | 无 | 共享冷却组名（`a-z0-9_.-`，1–32 字符）；同组法术共用一个冷却 |
-| `chance` | double | `1.0` | 每次尝试真正施放的概率（`0`–`1`）；未掷中时按 `checkInterval` 再试 |
-| `repeatOnCast` | bool | `true` | 仅引导型（`CONTINUOUS`）法术：是否每 10 tick 重跑一次 `onCast`。个别"每次结算都会重新生成实体"的法术可设为 `false` |
+| `interruptOnDamage` | bool | `false` | 吟唱期间受到伤害是否打断（引导法术使用全局开关 + 标签免疫） |
+| `cooldownGroup` | string | 无 | 共享冷却组，1–32 字符，只允许 `a-z0-9_.-`；同组法术共用冷却 |
+| `chance` | double | `1.0` | 每次尝试真正施放的概率（0–1）；未命中时等下一次检查 |
+| `repeatOnCast` | bool | `true` | 仅 `CONTINUOUS` 引导法术：是否每 10 tick 重跑一次 `onCast`；对于“每次结算都会重新生成实体”的法术建议设为 `false` |
 
-### target
+> `level` 会在解析时按 ISS 给出的法术上限进行夹取；`range` 会被全局 `maxRange` 限制；`cooldown` 的最小有效值是 1 tick。
 
-字符串简写等价于 `{ "type": "<类型>", "lineOfSight": true }`。
+## 触发器
 
-对象形式：
+### `goals`：周期性施法
+
+每条 `goals` 都会变成一个独立的 Goal。Goal 每 `checkInterval` tick 检查一次：先确认自身就绪（冷却、黑名单、总开关），再解析目标、检查 `conditions`、掷 `chance`，最后进入 ISS 的施法管线。
+
+- `priority` 会直接用于 `GoalSelector`；施法期间占用 `MOVE` + `LOOK`，普通近战 Goal 不会把吟唱抢掉。
+- 同一条法术可以写多次，用不同等级、目标或冷却组形成轮换。
+- 多条 `goals` 同时可用时，由 Goal 优先级决定谁先开始；同一优先级下先加入的优先。
+
+### `onHurt`：受伤时
+
+受到伤害时触发，优先以攻击者为目标。它会走正常的就绪检查：如果生物正在吟唱、处于冷却、被黑名单禁用，或没有合法目标，就不会触发。
+
+### `onTarget`：获得新目标时
+
+生物设置新的攻击目标时触发，优先使用这个新目标。适合做“锁定瞬间减速/标记/瞬移”之类的反应。
+
+### `onDeath`：死亡时
+
+强制、瞬发的死亡法术：
+
+- 不检查冷却、`chance` 和“是否活着”；
+- 仍然检查 `enabled`、实体/维度黑名单和 `conditions`；
+- 如果死亡时正在施法，会先用 `CASTER_DIED` 收尾当前施法，再释放死亡法术；
+- 不读 `castTime`，避免死亡实体不再 tick 导致法术永远放不出来。
+
+### `onKill`：击杀后
+
+击杀一个生物后触发，走正常冷却和条件检查。被击杀目标已经死亡，实体目标会退化为瞄准尸体位置；`SELF` 类法术不受影响。
+
+> `onHurt`、`onTarget`、`onKill` 与 `goals` 共用一个施法状态机：如果生物已经在吟唱，事件触发通常会被忽略，不会打断当前施法。例外是受伤打断：如果当前吟唱配置了 `interruptOnDamage`（或引导法术被 `balance.interruptChannelsOnDamage` 打断），会先取消当前施法，再允许 `onHurt` 起一个新法术。
+
+## 目标与条件
+
+### `target` 的两种写法
+
+字符串简写：
 
 ```json
-{
+"target": "ATTACK_TARGET"
+```
+
+等价于 `{ "type": "ATTACK_TARGET", "lineOfSight": true }`。
+
+对象写法：
+
+```json
+"target": {
   "type": "POSITION",
   "lineOfSight": false,
   "positionMode": "RANDOM_IN_RANGE",
   "relativeOffset": [0, 1, -2],
-  "maxHealthPercent": 0.5,
-  "sort": "LOWEST_HEALTH"
-}
-```
-
-| 字段 | 说明 |
-|---|---|
-| `type` | 目标类型，见下表 |
-| `lineOfSight` | 是否需要视线，默认 `true` |
-| `positionMode` | 仅 `POSITION` 使用，见下表 |
-| `relativeOffset` | 仅 `RELATIVE` 使用，相对施法者的偏移（格） |
-| `filters` | 目标过滤，字段见下；顶层的 `maxHealthPercent` 仍然可用，等价于 `filters.maxHealthPercent` |
-| `sort` | 多个候选时如何排序：`NEAREST`（默认）、`FARTHEST`、`LOWEST_HEALTH`、`HIGHEST_HEALTH`、`RANDOM`；只影响"多选一"的类型（`NEAREST_*`、`THREATENING_ENTITY`），平局按距离 |
-#### 目标过滤（filters）
-
-```json
-"target": {
-  "type": "NEAREST_HOSTILE",
+  "sort": "LOWEST_HEALTH",
   "filters": {
-    "entityTypes": ["minecraft:skeleton", "minecraft:stray"],
-    "entityTags": ["minecraft:raiders"],
-    "excludeTags": ["spellmob_immune"],
-    "excludeCasterTeam": true,
     "minHealthPercent": 0.3,
-    "maxHealthPercent": 0.9,
-    "requireNoShield": true
+    "maxHealthPercent": 0.9
   }
 }
 ```
 
 | 字段 | 默认 | 说明 |
 |---|---|---|
-| `entityTypes` | 空 | 只接受这些实体 id |
-| `entityTags` | 空 | 只接受带其中任意一个实体类型标签的目标 |
-| `excludeTags` | 空 | 带这些计分板标签的目标直接排除 |
-| `excludeCasterTeam` | `false` | 排除与施法者同队的目标 |
-| `ignoreCreative` | `true` | 忽略创造/旁观玩家 |
-| `minHealthPercent` / `maxHealthPercent` | `0.0` / `1.0` | 只接受生命比例落在这个区间的目标 |
-| `requireNoShield` | `false` | 只接受没有格挡的目标 |
-
-过滤在候选实体解析出来之后、起手之前判定；`POSITION` 类目标不看过滤。
+| `type` | `ATTACK_TARGET` | 目标类型，见下表 |
+| `lineOfSight` | `true` | 实体目标是否需要视线；`POSITION` 忽略此项 |
+| `positionMode` | `RELATIVE` | 仅 `POSITION` 使用，见“瞄准模式” |
+| `relativeOffset` | `[0,0,0]` | 仅 `POSITION`；`RELATIVE` 用三个分量，`BEHIND_TARGET` 用 `x`（距离）与 `y`（垂直偏移） |
+| `placement` | 空 | 仅 `POSITION` 的落点检查：`avoidFluid` / `avoidLava` |
+| `sort` | `NEAREST` | 多候选时的排序：`NEAREST` / `FARTHEST` / `LOWEST_HEALTH` / `HIGHEST_HEALTH` / `RANDOM` |
+| `filters` | 空 | 额外目标过滤，见下 |
+| `minHealthPercent` / `maxHealthPercent` | 无 | 顶层写法，等价于 `filters` 里的同名字段 |
 
 ### 目标类型（15 种）
 
 | 类型 | 含义 |
 |---|---|
 | `ATTACK_TARGET` | 当前攻击目标 |
-| `HOSTILE_TARGET` | 同 `ATTACK_TARGET`（兼容 1.x 数据包） |
-| `LAST_DAMAGE_SOURCE` | 最后伤害自己的实体 |
-| `THREATENING_ENTITY` | 最近一个把自己当作攻击目标的生物 |
-| `NEAREST_HOSTILE` | 最近的敌对目标：玩家（排除创造/旁观）或怪物，且非同队、非同类 |
-| `NEAREST_UNDEAD` | 最近的亡灵（`MobType.UNDEAD`，含僵尸/骷髅/幻翼等） |
-| `NEAREST_ARTHROPOD` | 最近的节肢动物（`MobType.ARTHROPOD`，含蜘蛛/蠹虫等） |
-| `NEAREST_ANIMAL` | 最近的动物（`Animal`） |
-| `NEAREST_MONSTER` | 最近的怪物（`Enemy`） |
-| `NEAREST_PLAYER` | 最近的玩家（排除创造/旁观） |
+| `HOSTILE_TARGET` | `ATTACK_TARGET` 的别名（兼容旧数据包） |
+| `LAST_DAMAGE_SOURCE` | 最后一个伤害自己的实体 |
+| `THREATENING_ENTITY` | 攻击过自己、或正以自己为目标的实体 |
+| `NEAREST_HOSTILE` | 最近的敌对目标（玩家或怪物，排除同队/同类） |
+| `NEAREST_UNDEAD` | 最近的亡灵生物 |
+| `NEAREST_ARTHROPOD` | 最近的节肢生物 |
+| `NEAREST_ANIMAL` | 最近的动物 |
+| `NEAREST_MONSTER` | 最近的怪物（实现 `Enemy` 的生物） |
+| `NEAREST_PLAYER` | 最近的玩家；默认排除创造/旁观 |
 | `OWNER` | 驯服生物的主人 |
-| `NEAREST_ALLY` | 最近的同类型或同队生物 |
+| `NEAREST_ALLY` | 最近的同类型或同队生物（不含玩家） |
 | `SELF` | 施法者自己 |
 | `RANDOM_HOSTILE` | 范围内随机一个敌对目标 |
-| `POSITION` | 不锁定实体，瞄准一个坐标 |
+| `POSITION` | 不锁定实体，瞄准一个坐标（见“瞄准模式”） |
 
-### 位置模式（5 种，仅 `POSITION`）
+> ⚠️ **`SELF` 表示“目标就是自己”。** “自己”永远找得到，所以只要冷却好了、法术可用，它就会放，跟有没有敌人完全无关。
+> 想改成“只在战斗中才召唤/治疗”，把那一行的 `target` 换成 `ATTACK_TARGET`：
 
-| 模式 | 含义 |
-|---|---|
-| `RELATIVE` | 施法者位置 + `relativeOffset` |
-| `EYES_LOOK` | 沿视线方向，取 `range` 处 |
-| `FEET_LOOK` | 沿脚部朝向，取 `range` 处 |
-| `TARGET_ENTITY` | 当前目标脚下（没有目标时本次施法不会开始） |
-| `RANDOM_IN_RANGE` | 以施法者为中心、`range` 为半径的圆内随机一点 |
+```json
+"goals": [
+  { "spell": "irons_spellbooks:heal", "cooldown": 400, "target": "SELF" },
+  { "spell": "irons_spellbooks:summon_vex", "cooldown": 400, "target": "ATTACK_TARGET" }
+]
+```
 
-### conditions
+### 目标过滤（`filters`）
+
+所有过滤器按 AND 生效；列表为空表示不限制。
 
 | 字段 | 默认 | 说明 |
 |---|---|---|
-| `healthBelow` | `1.0` | 自身生命比例**低于**该值才触发 |
-| `healthAbove` | `0.0` | 自身生命比例**高于**该值才触发 |
-| `minTargetDistance` | `0` | 目标与自己的最小距离（格） |
-| `maxTargetDistance` | `∞` | 目标与自己的最大距离（格） |
+| `entityTypes` | 空 | 只接受这些实体 id（任意一个匹配即可） |
+| `entityTags` | 空 | 只接受带其中任意一个实体类型标签的目标 |
+| `excludeTags` | 空 | 带这些计分板标签的目标直接排除 |
+| `excludeCasterTeam` | `false` | 排除与施法者同队的目标 |
+| `ignoreCreative` | `true` | 是否忽略创造模式玩家；旁观者始终排除 |
+| `minHealthPercent` / `maxHealthPercent` | `0.0` / `1.0` | 只接受生命比例落在这个区间的目标 |
+| `requireNoShield` | `false` | 只接受没有举盾格挡的目标 |
 
-也支持按来源分组嵌套，扁平写法仍然有效（同名键以扁平为准）：
+过滤发生在候选实体解析之后、真正起手之前；`POSITION` 类目标不看过滤器。
+
+### 瞄准模式（仅 `POSITION`）
+
+> **`POSITION` 只决定“朝哪看”，不改变法术的出生点。** ISS 的施法接口没有坐标参数，投射物一律从施法者身上生成、沿当前视线飞出；
+> 这里算出来的点只会喂给 `lookAt`。所以纯投射物用 `POSITION` 只能改朝向（打不穿墙），
+> 传送 / 岩浆炸弹 / 黑洞这类靠视线找落点的法术才真正受影响，自施法完全无效。
+> 想追着目标打，请用 `ATTACK_TARGET` / `NEAREST_HOSTILE`——`POSITION + TARGET_ENTITY` 会丢掉视线检测与 `filters`。
+
+| 模式 | 含义 |
+|---|---|
+| `RELATIVE` | 施法者脚下 + `relativeOffset` |
+| `EYES_LOOK` | 眼睛位置 + 视线方向 × `range` |
+| `FEET_LOOK` | 脚下位置 + 视线方向 × `range` |
+| `TARGET_ENTITY` | 当前目标脚下；没有目标时本次施法不会开始 |
+| `BEHIND_TARGET` | 目标背后：`relativeOffset.x` 是距离（默认 2 格），`relativeOffset.y` 是垂直偏移；适合传送类法术落到玩家身后 |
+| `RANDOM_IN_RANGE` | 以施法者为中心、`range` 为半径的圆内随机一点（同一高度） |
+
+`RANDOM_IN_RANGE` 与 `BEHIND_TARGET` 还可以加落点检查，避免瞄进水里或岩浆：
 
 ```json
-"conditions": {
-  "self":   { "healthBelow": 0.5, "healthAbove": 0.1 },
-  "target": { "minTargetDistance": 4.0, "maxTargetDistance": 16.0 }
+"target": {
+  "type": "POSITION",
+  "positionMode": "RANDOM_IN_RANGE",
+  "placement": { "avoidFluid": true, "avoidLava": true }
 }
 ```
 
-## 施法流程
+`avoidFluid` 拒绝任何液体，`avoidLava` 只拒绝岩浆；随机点多试 8 次，全失败就放弃这次施法，`BEHIND_TARGET` 则退回目标自身位置。
 
-1. `CastSpellGoal.canUse()` 解析目标并检查冷却（带 `checkInterval` 缓存）；冷却通过后按 `chance` 掷骰；
-2. 施法者转向目标（`POSITION` 则转向坐标）；
-3. `spell.checkPreCastConditions()`，失败则放弃、不进冷却，并在 20 tick 内不再重试；
-4. `MagicData.initiateCast(..., CastSource.MOB, MAINHAND)` 进入吟唱，播放起手音效；
-5. 每 tick 调 `onServerCastTick()`；期间占用 `MOVE` + `LOOK`，生物会停下并持续面向目标；
-6. 引导型法术（ISS 的 `CastType.CONTINUOUS`，例如冰锥、电刑、虹吸射线）额外每 10 tick 重跑一次 `onCast()`，与玩家按住施法的节奏一致；个别"每次结算都会重新生成实体"的法术可以设 `repeatOnCast: false`；
-7. 完成时调 `onCast()`（引导型若最后一拍已经跑过则跳过）+ `onServerCastComplete()`，播放结束音效，清空吟唱状态；引导型的冷却从这一刻才开始计。
+### `conditions`：额外条件
 
-打断条件（任一满足即取消，不返还冷却）：施法者死亡/卸载、目标死亡或离开 `range + 4`、需要视线但丢失视线、`spell.shouldAIStopCasting()` 返回 true、更高优先级的 Goal 抢占、法术配了 `interruptOnDamage` 时受到任意伤害；引导型法术（`CONTINUOUS`）则统一看 `balance.interruptChannelsOnDamage`，带 `protection.channelImmuneTags` 标签的生物不会被伤害打断。
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `healthBelow` | `1.0` | 施法者生命比例不高于该值才施放（≤） |
+| `healthAbove` | `0.0` | 施法者生命比例不低于该值才施放（≥） |
+| `minTargetDistance` | `0` | 与目标的距离下限（格） |
+| `maxTargetDistance` | `∞` | 与目标的距离上限（格） |
 
-`onHurt` / `onTarget` / `onKill` 与 `goals` 共用同一个施法状态机：如果生物已经在吟唱，事件触发会被忽略（不会打断当前施法）。
+也支持按来源分组；扁平写法仍然有效，同名键以扁平写法为准：
 
-`onDeath` 是唯一会绕过就绪检查的触发：施法者已经死亡、下一 tick 不再 tick，所以它总是瞬发，不检查冷却与概率；但它仍然检查 `conditions` 与实体/维度黑名单。如果法术本身要求活着的施法者，效果由 Iron's Spellbooks 决定。
+```json
+"conditions": {
+  "self": {
+    "healthBelow": 0.5,
+    "healthAbove": 0.1
+  },
+  "target": {
+    "minTargetDistance": 4.0,
+    "maxTargetDistance": 16.0
+  }
+}
+```
 
-## 表现（粒子）
+## 变体与阶段
 
-施法反馈全部由服务端发包，客户端不需要安装本模组：
+`variants` 让同一物种的个别生物拥有不同配置。数组按顺序匹配，**第一个命中的生效**：
 
-* 吟唱开始时脚下出现一圈尘粒子法阵，颜色取自法术所属学派的 `SchoolType#getTargetingColor()`（读不到颜色时用纯黑兜底；纯黑只可能来自兜底，正常学派色不会黑到被判为不可用）；
-* 每 3 tick 刷新一次，环的半径随进度先扩后收、并持续旋转，末尾还会冒出上升的光点 —— 不看 UI 也能判断读条到哪了；
-* Boss 施法者脚下额外画一圈更大的同色外环，并在吟唱期间每 20 tick 向外扩散一圈脉冲尘环；外环点数由 `presentation.bossPoints` 控制，与普通圆环的 `points` 分开配置。
-* 法阵大小按生物碰撞箱宽度缩放，大体型生物不会"踩在圈外"；
-* 被打断时（目标丢失、施法者死亡、法术回调抛异常）冒一团烟并播放熄灭音效；因卸载、重载或改名而中止的施法不会触发，避免在区块边界来回走时刷屏。
+```json
+{
+  "variants": [
+    {
+      "select": { "tags": ["husk_boss", "spellmob_boss"] },
+      "override": true,
+      "goals": [
+        { "spell": "irons_spellbooks:fireball", "level": 2, "range": 24.0 }
+      ]
+    },
+    {
+      "select": { "name": "普通尸壳卫兵" },
+      "override": false,
+      "goals": [
+        { "spell": "irons_spellbooks:haste", "level": 1, "target": "SELF" }
+      ]
+    }
+  ]
+}
+```
 
-代价是每个环点一次发包：原版没有"环形"粒子，一次 `sendParticles` 只会在方框里随机撒点，看起来是一团方雾而不是圆。想省带宽可以把 `presentation.points` 调成 0 关掉法阵，或把 `presentation.distance` 调小。
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `select` | 必填 | 匹配条件，至少配置一项 |
+| `override` | `true` | `true` 只用变体自己的配置；`false` 与顶层默认配置合并：`goals` 拼接（变体在前），触发器只在变体未定义时回落到顶层 |
+| `goals` / `onHurt` / `onTarget` / `onDeath` / `onKill` | 无 | 与顶层同名字段一致；全都不写表示“这个变体什么都不放” |
+
+`select` 支持以下条件，同时存在时要求全部满足：
+
+| 字段 | 说明 |
+|---|---|
+| `name` | 自定义名的精确匹配（需要命名牌） |
+| `nameRegex` | 自定义名的正则全匹配，例如 `"^守卫-\\d+$"` |
+| `tags` | 计分板标签列表；生物必须拥有全部标签 |
+| `healthBelow` | 当前生命比例**严格低于**该值（0–1） |
+| `healthAbove` | 当前生命比例**严格高于**该值（0–1） |
+| `tamed` | 是否被驯服；驯服状态变化会自动重同步 |
+
+- 没有被任何变体命中的生物使用顶层默认配置；顶层也没有配置时，这只生物不施法。
+- 改名、血量变化和驯服状态变化会自动重建 Goal；直接改 tag 或改数据包后，执行 `/spellmob resync` 立即生效。
+- 用血量做阶段时，建议把“低血量阶段”放在前面，顶层默认配置自然成为最后一个阶段。
+- 阶段切换时可以配合 `cooldownGroup` 让新旧阶段的法术共享冷却，避免“半血瞬间无缝换招”。
+
+## 掉落规则
+
+`dropRules` 给真正会施法的生物追加掉落。规则按顺序匹配，**第一条命中的生效**；与 `variants` 相互独立。
+
+> **`dropRules` 必须写在文件根节点**，与 `variants` 同级。写在 variant 对象里不会生效。
+
+```json
+{
+  "dropRules": [
+    {
+      "select": { "tags": ["spellmob_boss", "dune"] },
+      "chance": 1.0,
+      "drops": [
+        { "item": "minecraft:gold_block", "count": 1 },
+        { "item": "minecraft:emerald", "min": 2, "max": 4, "looting": true },
+        { "item": "minecraft:enchanted_golden_apple", "chance": 0.15 }
+      ]
+    },
+    {
+      "select": { "tags": ["spellmob_boss"] },
+      "chance": 0.2,
+      "drops": [
+        { "lootTable": "minecraft:chests/desert_pyramid" }
+      ]
+    }
+  ]
+}
+```
+
+| 字段 | 默认 | 说明 |
+|---|---|---|
+| `select` | 必填 | 与 `variants.select` 相同的选择器 |
+| `chance` | `1.0` | 整条规则掷一次骰，未命中则整条不掉 |
+| `drops` | 必填 | 至少一条可用条目 |
+| `drops[].item` | 二选一 | 物品 id |
+| `drops[].lootTable` | 二选一 | 战利品表 id，适合附魔、随机装备等复杂池 |
+| `drops[].count` | `1` | 固定数量，与 `min`/`max` 二选一 |
+| `drops[].min` / `max` | `1` | 数量区间（含两端）；**字段名不是 `minCount`/`maxCount`** |
+| `drops[].chance` | `1.0` | 该条目独立掷一次骰 |
+| `drops[].looting` | `false` | 物品条目按抢夺等级追加 0~N 个；战利品表由原版掉落上下文处理 |
+| `drops[].requirePlayerKill` | `true` | 只算玩家击杀；`/kill` 等方式不会掉落，适合防刷怪塔 |
+
+注意事项：
+
+- 只有解析出**非空施法配置**的生物才会结算掉落；只写 `dropRules`、不写任何施法规则的文件不会让普通生物掉落。
+- 掉落规则在生物死亡时匹配。此时生命比例为 0，因此**不建议在 `dropRules.select` 里使用 `healthBelow`/`healthAbove`**；掉落筛选请优先使用 `name`、`nameRegex`、`tags` 或 `tamed`。
+- `lootTable` 条目使用 `LootContextParamSets.ENTITY`，会带上击杀者和抢夺上下文。
+- 数量超过单组上限时会自动拆成多组。
+
+## 内置内容
+
+jar 内置了六份示例文件（共七套配置），全部采用“标签限定”的方式：只有带有对应标签的生物才会施法，野生同类完全不受影响。
+
+| 实体 | 需要的标签 | 说明 |
+|---|---|---|
+| `minecraft:husk` | `husk_boss` + `spellmob_boss` | 沙海 Boss（12 种法术，Boss 表现，引导免打断） |
+| `minecraft:husk` | `husk_elite` | 沙海精英（另一套 12 种法术） |
+| `minecraft:drowned` | `spellmob_boss` + `spellmob_jack` | 雷系溺尸 Boss |
+| `minecraft:phantom` | `spellmob_boss` + `spellmob_phantom` | 雷系幻翼 Boss |
+| `twilightforest:naga` | `spellmob_boss` + `spellmob_naga` | 自然系娜迦（需要 Twilight Forest） |
+| `twilightforest:lich` | `spellmob_boss` + `spellmob_lich` | 巫妖（需要 Twilight Forest） |
+| `twilightforest:alpha_yeti` | `spellmob_boss` + `spellmob_yeti` | 冰系雪怪首领（需要 Twilight Forest） |
+
+召唤示例：
+
+```mcfunction
+/summon minecraft:husk ~ ~ ~5 {CustomName:'"沙海祭司"',CustomNameVisible:1b,PersistenceRequired:1b,Tags:["husk_boss","spellmob_boss"]}
+```
+
+内置定义会随模组 jar 加载；如果数据包里存在同一路径的文件，以数据包为准（数据包优先级更高）。Twilight Forest 的数据在未安装该模组时不会引用到任何实体，保持惰性。
+
+仓库的 `examples/` 还包含更多可直接安装的示例包：经典生物、Boss、引导法术测试、`kitchen_sink`、过滤器演示、驯服狼，以及 1.20.1/1.21.1 各自的双尸壳示例。`examples/full-reference.json` 是字段最全的参考文件，不是数据包。安装示例包时，把包含 `pack.mcmeta` 的整个目录放进 `datapacks/` 即可。
 
 ## 配置
 
-`config/spellmob-common.toml`（全局配置，所有存档共用一份；服务器在服务端根目录的 `config/`）：
+配置文件：`config/spellmob-common.toml`（COMMON 配置，所有存档共用一份；服务器在服务端根目录的 `config/`）。
 
 | 键 | 默认 | 说明 |
 |---|---|---|
-| `general.enabled` | `true` | 模组总开关 |
-| `general.debugLogging` | `false` | 调试日志 |
-| `balance.cooldownMultiplier` | `1.0` | 全局冷却倍率 |
-| `balance.maxRange` | `32.0` | 最大施法距离上限，JSON 的 `range` 会被截断 |
-| `balance.interruptChannelsOnDamage` | `true` | 引导型法术是否被伤害打断（普通吟唱仍由每条法术的 `interruptOnDamage` 控制） |
-| `filters.entityBlacklist` | `[]` | 不参与施法的实体 id 列表 |
-| `filters.dimensionBlacklist` | `[]` | 不生效的维度 id 列表 |
-| `protection.protectedTags` | `[]` | 名字受保护的 scoreboard tag：普通玩家不能覆盖这些生物已有的名字 |
+| `general.enabled` | `true` | 施法总开关 |
+| `general.debugLogging` | `false` | 打印施法、打断与 Goal 同步的调试日志 |
+| `balance.cooldownMultiplier` | `1.0` | 全局冷却倍率；`0` 会压到最短 1 tick |
+| `balance.maxRange` | `32.0` | `range` 的硬上限（1–128） |
+| `balance.interruptChannelsOnDamage` | `true` | 引导法术是否被伤害打断（普通吟唱仍由每条法术的 `interruptOnDamage` 控制） |
+| `filters.entityBlacklist` | `[]` | 永不施法的实体 id |
+| `filters.dimensionBlacklist` | `[]` | 禁用施法的维度 id |
+| `protection.protectedTags` | `[]` | 名字受保护的计分板标签；普通玩家不能用命名牌覆盖已有名字 |
 | `protection.allowOpsRename` | `true` | 是否允许权限等级 ≥2 的玩家改名受保护生物 |
 | `protection.channelImmuneTags` | `["spellmob_boss"]` | 带这些标签的生物，引导不会因受伤中断 |
 | `presentation.enabled` | `true` | 是否显示法阵与打断反馈 |
-| `presentation.points` | `24` | 普通圆环的点数，0 关闭；范围 0–128，小于 6 基本看不见，常用 8–48 |
-| `presentation.bossPoints` | `32` | Boss 圆环的点数，0 关闭 Boss 圆环；范围 0–128 |
-| `presentation.ringScale` | `1.0` | 法阵半径倍率，范围 0.25–4.0 |
-| `presentation.distance` | `24.0` | 只向这个距离内的玩家发粒子 |
-| `presentation.interruptFeedback` | `true` | 被打断时是否冒烟 + 熄灭音效 |
-| `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：更大的脚下外环 + 脉冲环 |
-| `presentation.bossExtras` | `true` | Boss 特效是否加上周期性脉冲环 |
-| `species.extraRules` | `[]` | 写在配置里的物种级规则，一行一条 JSON |
+| `presentation.points` | `24` | 普通圆环点数，0 关闭；范围 0–128 |
+| `presentation.bossPoints` | `32` | Boss 圆环点数，0 关闭；范围 0–128 |
+| `presentation.ringScale` | `1.0` | 法阵半径倍率（0.25–4.0） |
+| `presentation.distance` | `24.0` | 只向该距离内的玩家发送粒子（4–64） |
+| `presentation.interruptFeedback` | `true` | 被打断时是否冒烟并播放熄灭音效 |
+| `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 表现 |
+| `presentation.bossExtras` | `true` | Boss 表现是否附加额外效果（周期性/收尾冲击波等） |
+| `species.extraRules` | `[]` | 直接写在配置里的物种级规则，一行一条 JSON |
 
-### 物种规则写进配置（extraRules）
+> 修改配置后重启游戏/服务器（或使用会触发 Forge 配置重载的工具）。数据包修改后执行 `/reload`。
 
-不想给每个物种单独放一个 JSON 文件时，可以把物种级规则直接写进 `species.extraRules`，一行一条：
+### 把物种规则写进配置（`extraRules`）
+
+不想为每个物种单独放 JSON 文件时，可以在 `species.extraRules` 里一行写一条：
 
 ```toml
 [species]
@@ -390,59 +517,107 @@ extraRules = [
 ]
 ```
 
-* `entity` 必填，其余字段与数据包 JSON 完全一致（不支持 `variants`，个体定向仍然只走数据包）；
-* 单条解析失败只会丢弃该条并打一行警告，不影响其它条目；
-* **优先级**：同一物种只要数据包里有文件，就以数据包为准，配置里的同物种条目被忽略，并在日志里打一行 `Config rule for <id> ignored: the data pack already defines it`；
-* 改完配置后重启游戏/服务器生效（NeoForge 不会随 `/reload` 重读配置）；若 GUI 或其它工具触发了配置热重载，本模组会自动重新应用并重建 Goal；
-* 用 Configured 打开这份配置时，`extraRules` 就是一个字符串列表，可以逐条增删改。
+- `entity` 必填，其余字段与数据包里的施法对象一致；配置里**不支持 `variants`**，个体定向仍然只走数据包。
+- 同一物种同时存在数据包文件和配置条目时，**数据包优先**，配置条目会被忽略并在日志里说明。
+- 单条解析失败只丢弃该条，不影响其他条目。
 
 ### 名字锁
 
-把 `protection.protectedTags` 里配的 tag 打到生物身上，它的名字就被保护了：
+把 `protection.protectedTags` 里的标签打到生物身上，它的名字就会被保护：
 
-```text
-/tag @e[type=zombie,limit=1,sort=nearest] add sm_boss
+```mcfunction
+/tag @e[type=minecraft:zombie,limit=1,sort=nearest] add sm_boss
 ```
 
-之后普通玩家对该生物使用命名牌不会生效（已有名字不会被覆盖，命名牌不消耗），并收到一条 actionbar 提示；`protection.allowOpsRename = true`（默认）时权限等级 ≥2 的玩家仍可改名。没有名字的生物仍可被命名一次，保护的是"覆盖"。
+之后普通玩家对它使用命名牌不会覆盖已有名字，命名牌也不会被消耗；`protection.allowOpsRename = true`（默认）时权限等级 ≥2 的玩家仍然可以改名。没有名字的生物仍可被命名一次——“保护”的是覆盖行为。
 
-它只拦"玩家手动用命名牌"这一条路径；命令、NBT 编辑器，以及绕过玩家交互的自动化模组不受限制。所以真正决定"谁能施法"的始终是 `select` 里的 tag 条件，名字锁只负责保护显示名。
+名字锁只拦截玩家手动使用命名牌的路径；命令、NBT 编辑器和绕过玩家交互的自动化模组不受限制。真正决定“谁能施法”的始终是 `select` 条件，名字锁只负责保护显示名。
 
 ## 命令
 
+所有命令需要权限等级 2（管理员）。
+
 | 命令 | 说明 |
 |---|---|
-| `/spellmob list` | 列出已加载的实体类型与变体数量 |
-| `/spellmob info <目标>` | 显示该生物最终生效的配置、命中的变体、规则来源、剩余冷却与当前吟唱 |
-| `/spellmob resync [目标]` | 重建目标（或执行者自己）的施法 Goal |
-| `/spellmob validate` | 用当前 ISS 法术表复查所有已加载配置，列出缺失/被禁用的法术与被数据包遮蔽的配置项 |
+| `/spellmob list` | 列出已加载的实体类型、变体数量与规则来源 |
+| `/spellmob info <目标>` | 显示该生物命中的变体、最终施法配置、剩余冷却与当前吟唱 |
+| `/spellmob resync [目标]` | 重建目标（或执行者自己）的施法 Goal；改 tag 后使用 |
+| `/spellmob validate` | 用当前 ISS 法术表复查已加载配置，列出缺失/被禁用的法术与被数据包遮蔽的配置项 |
 
-需要权限等级 2（管理员）。
+> 加载阶段被丢弃的条目（例如拼错法术 id）只会出现在日志里，`/spellmob validate` 检查的是已经成功加载的定义。排错时两者一起看。
 
-## 与 1.x 的差异
+## 施法表现
 
-* 重写为单一施法状态机（capability 持有），删除原来"Goal + 延迟队列"两套并行逻辑；
-* `priority` 真正生效，施法期间占用 `MOVE` + `LOOK`，不再被原版近战 AI 饿死；
-* `POSITION` 目标不再把施法者自己当目标（修复 1.x 瞄准自己、传送方向恒定的 bug）；
-* 冷却、施法状态、打断改为按生物实例持久化（NBT），重载/重进存档后仍正确；
-* `/reload` 会重建已加载生物的 Goal，不再残留旧配置；
-* 目标判定改用 `MobType` / `Animal` / `Enemy` / 队伍关系，不再用硬编码名字表；
-* 新增 `onDeath` / `onKill` 触发器和 `sort` 目标排序（`NEAREST` / `FARTHEST` / 血量 / 随机）；
-* 新增血量阶段（`select.healthBelow` / `healthAbove`）、概率施法（`chance`）、共享冷却组（`cooldownGroup`）与吟唱打断（`interruptOnDamage`）；
-* 引导型（`CONTINUOUS`）法术按 ISS 的 10 tick 节奏重放 `onCast`，冷却在引导结束后才开始计；`repeatOnCast` 可对个别法术关掉重放；
-* 新增施法表现：学派配色的旋转法阵随读条变化，被打断时有烟与音效（纯服务端，客户端无需安装）；
-* 法术经 ISS 官方施法管线（`MagicData` + `onServerPreCast` + `onServerCastTick` + `onServerCastComplete`），不再直接调 `onCast(..., null, null)`。
+所有表现都由服务端发包，并且只发送给 `presentation.distance` 内的玩家。
 
-## 调试
+- **普通施法者**：脚下出现学派配色的旋转法阵，半径随读条进度呼吸；每 3 tick 刷新一次，并在读条后段冒出上升光点。法术颜色取自 ISS 的学派 `getTargetingColor()`。
+- **Boss 施法者**：脚下额外一圈更大的同色外环，并周期性释放冲击波；读条结束时有更大的收尾冲击波。带 `presentation.bossTags`（默认 `spellmob_boss`）的生物自动获得 Boss 表现。
+- **打断反馈**：目标丢失、施法者死亡或法术回调抛异常时，冒烟并播放熄灭音效；因卸载、数据包重载或改名导致的静默取消不会触发。
+- **可关闭**：`presentation.enabled = false` 关闭全部粒子与打断反馈；`points = 0` 关闭普通圆环；`bossPoints = 0` 关闭 Boss 圆环；`bossExtras = false` 关闭 Boss 的额外冲击波效果。
 
-* 打开 `debugLogging` 后，`logs/latest.log` 会打印每条配置的解析结果、施法开始/完成/打断原因；
-* 配置写错时会在加载阶段打印 `[SpellMob] <文件>: <原因>`，并只丢弃出错的单条法术，不会让整个文件失效；
-* 修改数据包后执行 `/reload` 即可，已加载的生物会立即获得新配置。
+性能提示：法阵由一个个独立的粒子点组成，每个点一次发包。Boss 数量多或玩家人数多时，可以降低 `points` / `bossPoints` / `distance`，或适当增大 `checkInterval`。关闭法阵不会影响施法逻辑。
 
-## 构建
+## 常见问题
+
+**为什么野生生物不施法？**
+内置示例全部使用标签限定（例如 `spellmob_boss`）。给生物打上对应标签，或使用 `variants.select` 按名字/tag 匹配，才会命中配置。也可以用 `/spellmob info` 查看它命中了哪个变体。
+
+**改了数据包但没生效？**
+确认路径是 `data/<namespace>/spell_casters/<entity_id>.json`、`pack.mcmeta` 的 `pack_format` 与游戏版本匹配，然后执行 `/reload`。用 `/spellmob list` 确认定义已加载；加载失败的具体原因看日志里的 `[SpellMob]` 行。
+
+**为什么某个法术不放？**
+先跑 `/spellmob validate`。常见原因是法术 id 拼错、ISS 版本不包含该法术、该法术在 ISS 配置里被禁用，或者 `level`/`range`/`conditions` 不满足。加载阶段被丢弃的条目只会出现在日志里。
+
+**为什么掉落不触发？**
+确认 `dropRules` 写在文件根节点；生物解析出的施法配置非空；`select` 在死亡时能匹配（血量比例为 0，不建议用血量条件）；如果用了默认的 `requirePlayerKill`，需要用玩家击杀而不是 `/kill`。
+
+**客户端需要安装 SpellMob 吗？**
+不需要。SpellMob 的逻辑和粒子发包都在服务端；客户端需要安装 Iron's Spellbooks，因为法术、音效和粒子资源来自 ISS。单人游戏需要把 SpellMob 放进客户端 `mods/`，因为它同时是内置服务端。
+
+**支持 Fabric 吗？**
+目前只提供 Forge 1.20.1 与 NeoForge 1.21.1 版本。
+
+**会给模组生物用吗？**
+可以。把文件放到对应模组的命名空间下，例如 `data/irons_spellbooks/spell_casters/necromancer.json` 对应 `irons_spellbooks:necromancer`，然后按该生物的实体 id 配置即可。
+
+**Boss 用自定义标签可以吗？**
+可以，但记得同时修改 `presentation.bossTags`（Boss 表现）和 `protection.channelImmuneTags`（引导免打断），否则只有其中一个生效。
+
+**服务器装了，客户端没装，能进服吗？**
+SpellMob 不注册网络通道，也不要求客户端安装；客户端只要满足 ISS 的依赖即可。不过客户端必须安装 ISS，否则法术资源缺失。
+
+## 从源码构建
+
+前置：JDK 17（1.20.1 Forge）或 JDK 21（1.21.1 NeoForge）。
 
 ```bash
+# 1.20.1 / Forge
 JAVA_HOME=/path/to/jdk-17 ./gradlew build
+
+# 1.21.1 / NeoForge
+JAVA_HOME=/path/to/jdk-21 ./gradlew build
 ```
 
-产物：`build/libs/spellmob-2.5.0.jar`。
+产物：`build/libs/spellmob-<version>.jar`。
+
+- 首次构建需要联网，从 `https://code.redspace.io/releases` 解析 Iron's Spellbooks 依赖。
+- 开发运行配置：`./gradlew runClient`、`./gradlew runServer`、`./gradlew runGameTestServer`（以对应分支的 `build.gradle` 为准）。
+- 源码结构：
+  - `src/main/java/spellmob/capability`：每生物的施法状态、冷却与当前施法；
+  - `src/main/java/spellmob/data`：JSON 解析、变体、目标、掉落与注册表；
+  - `src/main/java/spellmob/events`：Forge/NeoForge 事件与命令；
+  - `src/main/java/spellmob/goal`：周期施法 Goal 与 Goal 同步；
+  - `src/main/java/spellmob/presentation`：服务端粒子表现；
+  - `src/main/resources/data/...`：内置示例定义；
+  - `examples/`：可直接安装的数据包示例；
+  - `docs/`：中英文详细指南。
+
+## 贡献与许可
+
+- **问题反馈**：请在仓库的 Issues 页面提交，并附上游戏版本、加载器版本、ISS 版本、`/spellmob validate` 输出和相关日志。数据包问题请附最小复现包。
+- **Pull Request**：保持数据驱动和纯服务端设计；新增字段请同步更新 README、`docs/` 与示例，并尽量补充解析器测试。
+- **许可**：MIT，详见 [LICENSE](LICENSE)。
+- **作者**：GAIFAN404。
+- **致谢**：Iron's Spellbooks（Redspace）提供法术与施法管线；Minecraft Forge / NeoForge 提供加载器；Twilight Forest 提供内置示例的实体兼容目标。
+
+> SpellMob 不是 Iron's Spellbooks 的官方附属模组。遇到法术本身的问题，请先确认在 ISS 正常使用时也存在，再反馈到对应项目。

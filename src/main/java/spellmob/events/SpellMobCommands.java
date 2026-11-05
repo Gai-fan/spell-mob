@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -39,6 +40,13 @@ import spellmob.goal.CastGoalSync;
  */
 @EventBusSubscriber(modid = SpellMob.MOD_ID)
 public final class SpellMobCommands {
+
+    /**
+     * Spell id fragments that usually belong to projectile spells. A {@code POSITION} target on one
+     * of those only turns the caster, so {@code validate} points it out.
+     */
+    private static final Pattern PROJECTILE_SPELL = Pattern.compile(
+            "missile|bolt|ball|arrow|icicle|lance|ray|skull|boom|blast|spear|shard|orb|beam|shot|dart|spike");
 
     private SpellMobCommands() {
     }
@@ -183,21 +191,39 @@ public final class SpellMobCommands {
                 source.sendSuccess(() -> Component.literal("  " + message).withStyle(ChatFormatting.RED), false);
             }
         }
+        int warnings = 0;
+        for (SpellCastDefinition definition : definitions) {
+            if (!definition.target().isPosition() || !definition.target().lineOfSight()) {
+                continue;
+            }
+            if (!PROJECTILE_SPELL.matcher(definition.spellId().getPath()).find()) {
+                continue;
+            }
+            warnings++;
+            String message = definition.where() + ": " + definition.spellId()
+                    + " is a projectile; a POSITION target only changes the direction it is fired in";
+            source.sendSuccess(() -> Component.literal("  " + message).withStyle(ChatFormatting.YELLOW), false);
+        }
         for (ResourceLocation id : SpellCasterRegistry.shadowed()) {
             source.sendSuccess(() -> Component.literal("  " + id
                     + ": config rule ignored, a data pack defines it").withStyle(ChatFormatting.YELLOW), false);
         }
 
         int checked = definitions.size();
-        if (problems == 0) {
+        if (problems == 0 && warnings == 0) {
             source.sendSuccess(() -> Component.literal("All " + checked + " cast definition(s) are valid")
                     .withStyle(ChatFormatting.GREEN), false);
+        } else if (problems == 0) {
+            int found = warnings;
+            source.sendSuccess(() -> Component.literal("All " + checked + " cast definition(s) are valid, "
+                    + found + " warning(s)").withStyle(ChatFormatting.YELLOW), false);
         } else {
-            int found = problems;
-            source.sendSuccess(() -> Component.literal(found + " problem(s) in " + checked + " cast definition(s)")
-                    .withStyle(ChatFormatting.RED), false);
+            int broken = problems;
+            int hinted = warnings;
+            source.sendSuccess(() -> Component.literal(broken + " problem(s) and " + hinted + " warning(s) in "
+                    + checked + " cast definition(s)").withStyle(ChatFormatting.RED), false);
         }
-        return problems;
+        return problems + warnings;
     }
 
     private static void collect(SpellCasterData data, List<SpellCastDefinition> output) {
