@@ -52,10 +52,7 @@
           "cooldown": 160,
           "priority": 1,
           "range": 20,
-          "target": {
-            "type": "POSITION",
-            "positionMode": "TARGET_ENTITY"
-          }
+          "target": "ATTACK_TARGET"
         },
         {
           "spell": "irons_spellbooks:cone_of_cold",

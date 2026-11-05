@@ -133,7 +133,7 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         if (element.isJsonPrimitive()) {
             TargetType type = requireType(element.getAsString(), where);
             return new TargetSpec(type, true, PositionMode.RELATIVE, Vec3.ZERO, TargetSort.NEAREST,
-                    TargetFilters.NONE);
+                    TargetFilters.NONE, PlacementSpec.NONE);
         }
         if (!element.isJsonObject()) {
             throw new IllegalArgumentException(where + ": 'target' must be a string or an object");
@@ -163,7 +163,21 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
                 mode,
                 parseOffset(object.get("relativeOffset"), where),
                 sort,
-                parseFilters(object, where));
+                parseFilters(object, where),
+                parsePlacement(object.get("placement"), where));
+    }
+
+    private static PlacementSpec parsePlacement(JsonElement element, String where) {
+        if (element == null || element.isJsonNull()) {
+            return PlacementSpec.NONE;
+        }
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException(where + ": 'placement' must be an object");
+        }
+        JsonObject object = element.getAsJsonObject();
+        return new PlacementSpec(
+                JsonHelper.optBoolean(object, "avoidFluid", false),
+                JsonHelper.optBoolean(object, "avoidLava", false));
     }
 
     private static Vec3 parseOffset(JsonElement element, String where) {

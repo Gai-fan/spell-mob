@@ -163,7 +163,17 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 | `OWNER` | The owner of a tamed mob. |
 | `NEAREST_ALLY` | Nearest mob of the same type, or on the same team. |
 | `RANDOM_HOSTILE` | A random hostile in range. |
-| `POSITION` | A point in the world — see position modes. |
+| `POSITION` | A point in the world — see aim modes. |
+
+> ⚠️ **`SELF` means "the target is me".** A caster can always find itself, so a `SELF` goal fires as soon as its cooldown is up, whether or not any enemy is around.
+> If you want "only summon/heal while fighting", change that line's `target` to `ATTACK_TARGET`:
+
+```json
+"goals": [
+  { "spell": "irons_spellbooks:heal", "cooldown": 400, "target": "SELF" },
+  { "spell": "irons_spellbooks:summon_vex", "cooldown": 400, "target": "ATTACK_TARGET" }
+]
+```
 
 ### Target object fields
 
@@ -174,7 +184,8 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 | `lineOfSight` | `true` | Entity targets must be visible (ignored for `POSITION`). |
 | `maxHealthPercent` | `1.0` | Only accept targets at or below this health fraction; same as `filters.maxHealthPercent`. |
 | `positionMode` | `RELATIVE` | `POSITION` only — see below. |
-| `relativeOffset` | `[0,0,0]` | `POSITION` + `RELATIVE` only. |
+| `relativeOffset` | `[0,0,0]` | `POSITION` only; `RELATIVE` uses all three axes, `BEHIND_TARGET` uses `x` (distance) and `y` (vertical offset). |
+| `placement` | empty | `POSITION` only — safety checks for the computed point, see below. |
 | `filters` | empty | Target filters, see below. |
 
 #### Target filters
@@ -207,15 +218,51 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 Filters run after a candidate is resolved and before the cast starts; `POSITION` targets ignore them.
 
 
-### Position modes (`POSITION` only)
+### Aim modes (`POSITION` only)
 
-| Mode | Where it lands |
+> **Get this straight first: `POSITION` is not a landing spot — it only decides where the caster looks.**
+>
+> Iron's Spells has no coordinate parameter in its cast API. Projectiles always spawn at the caster's
+> eye/body and fly along its current look direction. The point resolved here is fed to `lookAt`;
+> it does not move where the spell spawns.
+>
+> - Pure projectiles (icicle, magic missile, fireball, rays): direction only. It is only useful when
+>   there is no entity target at all, and it **cannot hit through walls**.
+> - Spells that find their landing spot by raycast (teleport, magma bomb, black hole, ice block,
+>   portal): genuinely affected, because the ray origin and direction change.
+> - Self-casts / buffs / summons: completely unaffected.
+>
+> If you want "keep hitting the target", use an entity target such as `ATTACK_TARGET` or
+> `NEAREST_HOSTILE` — `POSITION + TARGET_ENTITY` throws away line-of-sight checks and `filters`.
+
+| Mode | Where it aims |
 |---|---|
 | `RELATIVE` | Caster's position + `relativeOffset`. |
 | `EYES_LOOK` | Eye position + look direction × `range`. |
-| `FEET_LOOK` | Feet position + look direction × `range`. |
+| `FEET_LOOK` | Feet position + look direction × `range` (a different ray origin than `EYES_LOOK`). |
 | `TARGET_ENTITY` | The target's position; if there is no target the cast is skipped. |
+| `BEHIND_TARGET` | Behind the target: `relativeOffset.x` is the distance (default `2` blocks) and `relativeOffset.y` the vertical offset. Lets a teleport land behind the player instead of on top of them. |
 | `RANDOM_IN_RANGE` | A random point within `range` blocks. |
+
+#### Placement checks
+
+`RANDOM_IN_RANGE` and `BEHIND_TARGET` can reject points that land in water or lava:
+
+```json
+"target": {
+  "type": "POSITION",
+  "positionMode": "RANDOM_IN_RANGE",
+  "placement": { "avoidFluid": true, "avoidLava": true }
+}
+```
+
+| Key | Default | Notes |
+|---|---|---|
+| `avoidFluid` | `false` | Reject any point inside a liquid (water or lava). |
+| `avoidLava` | `false` | Reject lava only; water is still allowed. |
+
+`RANDOM_IN_RANGE` retries up to 8 times and gives up the cast when every point is rejected;
+`BEHIND_TARGET` falls back to the target's own position.
 
 ## Variants
 
@@ -268,6 +315,12 @@ Rules:
 
 `dropRules` gives loot to the mobs that actually cast. Rules are only evaluated for a mob whose casting config resolves to something non-empty; ordinary mobs are untouched.
 
+> ⚠️ **`dropRules` must be a root-level array, and only the first matching rule is used.**
+>
+> - Putting it inside a `variants` entry, or inside `goals`, does nothing — the parser only reads the outermost `dropRules` of the file.
+> - Rules are evaluated top to bottom; the **first `select` that matches wins and every later rule is ignored**. Put specific rules (a boss with its own tag) first and the fallback last.
+> - No `dropRules`, or no matching rule, means no extra loot.
+
 ```json
 "dropRules": [
   {
@@ -281,7 +334,7 @@ Rules:
 ]
 ```
 
-- Only the **first matching rule** is used.
+- Only the **first matching rule** is used (again: position matters).
 - Rule-level `chance` rolls once; entry-level `chance` rolls per entry.
 - Each entry is either an `item` or a `lootTable`, never both.
 - `count` for a fixed amount, or `minCount` / `maxCount` for a range.
@@ -290,6 +343,12 @@ Rules:
 ## Configuration
 
 The config lives at `config/spellmob-common.toml` (COMMON type — one file for the whole installation, not per world).
+
+It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configured** can read it and edit it:
+
+- Ordinary values (switches, cooldown multiplier, blacklists, particle settings) apply immediately — they are read on use, never cached.
+- The `[species]` rule text (`extraRules`, `spawnEgg`, …) is parsed into rule objects at startup; after editing it run `/spellmob resync`, or restart.
+- Data packs always win over a config rule for the same entity: if a data pack defines it, the config rule is ignored (`/spellmob info` shows the source, and a line is logged).
 
 | Section | Key | Default | Meaning |
 |---|---|---|---|

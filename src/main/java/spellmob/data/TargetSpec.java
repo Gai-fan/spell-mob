@@ -8,12 +8,14 @@ import net.minecraft.world.phys.Vec3;
  * @param type             target type, never null
  * @param lineOfSight      whether a clear line of sight is required
  * @param positionMode     how the aim point is computed for {@link TargetType#POSITION}
- * @param relativeOffset   offset used by {@link PositionMode#RELATIVE}
+ * @param relativeOffset   offset used by {@link PositionMode#RELATIVE} and
+ *                         {@link PositionMode#BEHIND_TARGET}
  * @param sort             how several valid candidates are ranked, defaults to {@link TargetSort#NEAREST}
  * @param filters          extra restrictions a candidate has to pass, never null
+ * @param placement        safety checks for computed {@link TargetType#POSITION} points, never null
  */
 public record TargetSpec(TargetType type, boolean lineOfSight, PositionMode positionMode, Vec3 relativeOffset,
-                         TargetSort sort, TargetFilters filters) {
+                         TargetSort sort, TargetFilters filters, PlacementSpec placement) {
 
     public TargetSpec {
         if (type == null) {
@@ -29,12 +31,13 @@ public record TargetSpec(TargetType type, boolean lineOfSight, PositionMode posi
             sort = TargetSort.NEAREST;
         }
         filters = filters == null ? TargetFilters.NONE : filters;
+        placement = placement == null ? PlacementSpec.NONE : placement;
     }
 
     /** @return the default spec used when json omits {@code target} */
     public static TargetSpec attackTarget() {
         return new TargetSpec(TargetType.ATTACK_TARGET, true, PositionMode.RELATIVE, Vec3.ZERO,
-                TargetSort.NEAREST, TargetFilters.NONE);
+                TargetSort.NEAREST, TargetFilters.NONE, PlacementSpec.NONE);
     }
 
     public boolean isPosition() {

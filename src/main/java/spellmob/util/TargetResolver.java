@@ -3,6 +3,7 @@ package spellmob.util;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+import spellmob.data.PlacementSpec;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.TargetSort;
 import spellmob.data.TargetSpec;
@@ -25,8 +27,14 @@ import spellmob.data.TargetType;
  */
 public final class TargetResolver {
 
-    private TargetResolver() {
-    }
+    /**
+     * Distance used by {@link spellmob.data.PositionMode#BEHIND_TARGET} when the json does not
+     * configure one through {@code relativeOffset.x}.
+     */
+    private static final double DEFAULT_BEHIND_DISTANCE = 2.0D;
+
+    /** How many random points to try before giving up on a placement check. */
+    private static final int PLACEMENT_ATTEMPTS = 8;
 
     /**
      * Result of a target lookup. Exactly one of the two fields is set, except for {@link TargetType#POSITION}
@@ -174,6 +182,8 @@ public final class TargetResolver {
                                               @Nullable LivingEntity preferred) {
         TargetSpec spec = definition.target();
         double range = definition.effectiveRange();
+        PlacementSpec placement = spec.placement();
+        ServerLevel level = mob.level() instanceof ServerLevel serverLevel ? serverLevel : null;
         return switch (spec.positionMode()) {
             case RELATIVE -> mob.position().add(spec.relativeOffset());
             case EYES_LOOK -> mob.getEyePosition().add(mob.getLookAngle().scale(range));
@@ -182,12 +192,53 @@ public final class TargetResolver {
                 LivingEntity target = preferred != null && preferred.isAlive() ? preferred : mob.getTarget();
                 yield target != null ? target.position() : null;
             }
-            case RANDOM_IN_RANGE -> {
-                RandomSource random = mob.getRandom();
-                double angle = random.nextDouble() * Math.PI * 2.0D;
-                double distance = Math.sqrt(random.nextDouble()) * range;
-                yield mob.position().add(Math.cos(angle) * distance, 0.0D, Math.sin(angle) * distance);
-            }
+            case BEHIND_TARGET -> behindTarget(mob, preferred, spec, level, placement);
+            case RANDOM_IN_RANGE -> randomPointInRange(mob, range, level, placement);
         };
+    }
+
+    /**
+     * Computes the point behind the target entity.
+     *
+     * <p>Falls back to the target's own position when the computed point is rejected by the
+     * placement checks, so a caster never loses its aim entirely.</p>
+     */
+    private static @Nullable Vec3 behindTarget(Mob mob, @Nullable LivingEntity preferred, TargetSpec spec,
+                                               @Nullable ServerLevel level, PlacementSpec placement) {
+        LivingEntity target = preferred != null && preferred.isAlive() ? preferred : mob.getTarget();
+        if (target == null) {
+            return null;
+        }
+        double distance = Math.abs(spec.relativeOffset().x);
+        if (distance < 0.5D) {
+            distance = DEFAULT_BEHIND_DISTANCE;
+        }
+        double yaw = Math.toRadians(target.getYRot());
+        Vec3 direction = new Vec3(-Math.sin(yaw), 0.0D, Math.cos(yaw));
+        Vec3 point = target.position().subtract(direction.scale(distance))
+                .add(0.0D, spec.relativeOffset().y, 0.0D);
+        if (level != null && !placement.isSafe(level, point)) {
+            return target.position();
+        }
+        return point;
+    }
+
+    /**
+     * Picks a random point inside {@code range}, retrying when the placement checks reject it.
+     *
+     * @return the point, or null when every attempt landed in an avoided fluid
+     */
+    private static @Nullable Vec3 randomPointInRange(Mob mob, double range, @Nullable ServerLevel level,
+                                                     PlacementSpec placement) {
+        RandomSource random = mob.getRandom();
+        for (int attempt = 0; attempt < PLACEMENT_ATTEMPTS; attempt++) {
+            double angle = random.nextDouble() * Math.PI * 2.0D;
+            double distance = Math.sqrt(random.nextDouble()) * range;
+            Vec3 point = mob.position().add(Math.cos(angle) * distance, 0.0D, Math.sin(angle) * distance);
+            if (level == null || placement.isSafe(level, point)) {
+                return point;
+            }
+        }
+        return null;
     }
 }
