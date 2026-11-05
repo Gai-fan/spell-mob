@@ -90,7 +90,7 @@ public final class TargetResolver {
     }
 
     private static boolean isTargetablePlayer(LivingEntity candidate) {
-        return candidate instanceof Player player && !player.isCreative() && !player.isSpectator();
+        return candidate instanceof Player player && !player.isSpectator();
     }
 
     private static boolean isHostile(Mob mob, LivingEntity candidate) {
@@ -98,7 +98,7 @@ public final class TargetResolver {
             return false;
         }
         if (candidate instanceof Player player) {
-            return !player.isCreative() && !player.isSpectator();
+            return !player.isSpectator();
         }
         if (mob.isAlliedTo(candidate) || candidate.getType() == mob.getType()) {
             return false;
@@ -121,9 +121,6 @@ public final class TargetResolver {
 
     private static boolean isValid(Mob mob, SpellCastDefinition definition, LivingEntity target) {
         if (target == mob || !target.isAlive() || target.isRemoved() || target.isSpectator()) {
-            return false;
-        }
-        if (target instanceof Player player && (player.isCreative() || player.isSpectator())) {
             return false;
         }
         double range = definition.effectiveRange();

@@ -76,7 +76,7 @@
           "target": "ATTACK_TARGET"
         },
         {
-          "spell": "irons_spellbooks:thunder_step",
+          "spell": "irons_spellbooks:charge",
           "level": 3,
           "cooldown": 240,
           "priority": 3,
@@ -93,7 +93,7 @@
         }
       ],
       "onHurt": {
-        "spell": "irons_spellbooks:thunder_step",
+        "spell": "irons_spellbooks:charge",
         "level": 3,
         "cooldown": 200,
         "priority": 0,

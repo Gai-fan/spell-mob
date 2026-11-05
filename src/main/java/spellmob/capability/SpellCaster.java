@@ -358,10 +358,20 @@ public final class SpellCaster implements ISpellCaster {
     private boolean start(SpellCastDefinition definition, @Nullable LivingEntity target, @Nullable Vec3 position,
                           boolean instant, boolean forced) {
         if (forced) {
-            // The caster is dying, so the normal readiness checks (alive, cooldown, blacklists) do
-            // not apply. Still refuse to interrupt an existing cast or start while disabled.
-            if (resolving || active != null || !SpellMobConfig.enabled()) {
+            // The caster is dying, so the alive and cooldown checks do not apply. The blacklist and
+            // the master switch still do, and a channel already in flight must not swallow the
+            // death spell: it is closed here and the death spell then starts normally.
+            if (resolving || !SpellMobConfig.enabled()) {
                 return false;
+            }
+            ServerLevel forcedLevel = level();
+            if (forcedLevel == null
+                    || SpellMobConfig.isEntityBlacklisted(entityId)
+                    || SpellMobConfig.isDimensionBlacklisted(forcedLevel.dimension().location())) {
+                return false;
+            }
+            if (active != null) {
+                cancel(CancelReason.CASTER_DIED);
             }
         } else if (!isReady(definition)) {
             return false;
@@ -535,21 +545,6 @@ public final class SpellCaster implements ISpellCaster {
     private static String cooldownKey(SpellCastDefinition definition) {
         String group = definition.cooldownGroup();
         return group == null ? definition.spellId().toString() : "group:" + group;
-    }
-
-    @Override
-    public void clear() {
-        cooldowns.clear();
-        if (this.magicData != null) {
-            this.magicData.resetCastingState();
-        }
-        this.active = null;
-        this.retryAtTick = 0;
-        this.resolving = false;
-        this.lastHealth = -1.0F;
-        this.lastVariantIndex = -1;
-        this.variantInitialized = false;
-        this.variantResyncPending = false;
     }
 
     private @Nullable ServerLevel level() {

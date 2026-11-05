@@ -7,6 +7,18 @@
 
 ---
 
+## [2.2.8] — 2026-11-05
+
+### 修复
+- 施法途中死亡时死亡法术会被吞掉：`startForced` 遇到 `active != null` 直接返回，引导中的 Boss 被打死就什么都不放。现在先用 `CASTER_DIED` 收尾当前施法，再正常释放死亡法术。
+- 强制施法（`onDeath` / `onKill`）会绕过 `entityBlacklist` 与 `dimensionBlacklist`，与配置里"永不施法"的约定冲突；现在强制路径同样检查这两个名单。
+
+### 变更
+- 创造模式玩家不再被硬性排除：索敌与候选校验里删掉了无条件的 `isCreative()` 判断，改由 `target.filters.ignoreCreative`（默认 `true`）控制；旁观者仍然始终排除。
+- 内置示例 `minecraft:drowned` 里的 `irons_spellbooks:thunder_step` 并未注册，两处改用已注册的 `irons_spellbooks:charge`。
+- 移除无人调用的 `ISpellCaster.clear()` / `SpellCaster.clear()`。
+- 修正过时注释与提示：`cooldownMultiplier` 的 0 值说明、`PositionMode.TARGET_ENTITY` 的兜底描述、`emitBossRing` 的粒子说明、`ConfigRuleLoader` 的键提示、husk 示例里的"竖立六芒星"。
+
 ## [2.2.7] — 2026-11-05
 
 ### 修复

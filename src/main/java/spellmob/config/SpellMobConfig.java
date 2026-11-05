@@ -50,8 +50,8 @@ public final class SpellMobConfig {
 
         builder.comment("Balance knobs applied on top of the datapack values.",
                         "（在数据包数值之上叠加的平衡参数）").push("balance");
-        COOLDOWN_MULTIPLIER = builder.comment("Multiplier applied to every cooldown (0 = never on cooldown).",
-                        "（所有冷却的倍率，0 表示永不冷却）")
+        COOLDOWN_MULTIPLIER = builder.comment("Multiplier applied to every cooldown (0 = no extra length, still at least one tick).",
+                        "（所有冷却的倍率，0 表示不额外延长，仍至少 1 tick）")
                 .defineInRange("cooldownMultiplier", 1.0D, 0.0D, 100.0D);
         MAX_RANGE = builder.comment("Upper bound for datapack 'range' values, in blocks.",
                         "（数据包里 range 的上限，单位：格）")

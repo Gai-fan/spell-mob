@@ -235,13 +235,13 @@ public final class CastingPresentation {
     }
 
     /**
-     * Boss ring built from Iron's Spellbooks ring smoke, which is wider and softer than dust.
+     * Boss ring drawn with the school colour, wider and softer than the normal ring.
      *
      * @param level  the server level
      * @param mob    the caster
      * @param radius ring radius in blocks
      * @param phase  rotation offset in radians
-     * @param points number of smoke puffs on the ring
+     * @param points number of dust points on the ring
      */
     private static void emitBossRing(ServerLevel level, Mob mob, Vector3f color, double radius, float phase, int points) {
         if (points <= 0) {

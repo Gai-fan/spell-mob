@@ -11,7 +11,7 @@ public enum PositionMode {
     EYES_LOOK,
     /** Range blocks along the caster's view direction, starting at the feet. */
     FEET_LOOK,
-    /** The position of the current target entity (falls back to the caster). */
+    /** The position of the current target entity; skipped when there is no target. */
     TARGET_ENTITY,
     /** Random point within range blocks around the caster. */
     RANDOM_IN_RANGE;
