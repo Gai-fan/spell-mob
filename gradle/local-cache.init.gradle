@@ -1,0 +1,17 @@
+// Fallback for environments without access to maven.neoforged.net:
+// the NeoForge artifacts are copied from the Gradle cache into build/local-maven.
+def localRepo = "file:///D:/mc.mod.test/thirdmod/spell_mob/build/local-maven"
+
+settingsEvaluated { settings ->
+    settings.pluginManagement.repositories.maven {
+        url = localRepo
+        allowInsecureProtocol = true
+    }
+}
+
+allprojects {
+    repositories.maven {
+        url = localRepo
+        allowInsecureProtocol = true
+    }
+}

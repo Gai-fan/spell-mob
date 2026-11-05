@@ -4,7 +4,6 @@ import io.redspace.ironsspellbooks.api.registry.SchoolRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.SchoolType;
 import io.redspace.ironsspellbooks.particle.BlastwaveParticleOptions;
-import net.minecraft.core.particles.ColorParticleOption;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -45,8 +44,7 @@ public final class CastingPresentation {
     /** Boss circles are denser, so they emit a little less often than the plain dust ring. */
     private static final int BOSS_EMIT_INTERVAL_TICKS = 4;
 
-    /** Ticks of one outward pulse cycle inside the vertical sigil. */
-    private static final int SIGIL_PULSE_PERIOD = 8;
+    /** Ticks between two emissions of the vertical hexagram in front of the caster. */
 
     /**
      * Fallback colour used when a spell has no school or the school has no usable colour.
@@ -81,10 +79,8 @@ public final class CastingPresentation {
             }
             Vector3f color = colorOf(spell);
             if (SpellMobConfig.isBossCaster(mob)) {
-                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F,
-                        Math.max(4, SpellMobConfig.bossPoints()));
+                emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.35D, 0.0F, bossPoints());
                 if (SpellMobConfig.bossExtras()) {
-                    emitVerticalSigil(level, mob, spell, color, 0.0D);
                     emitBlastwave(level, mob, color, 0.6F);
                 }
             } else {
@@ -125,14 +121,10 @@ public final class CastingPresentation {
             double radius = ringRadius(mob, (float) Math.sin(Math.PI * progress));
             if (boss) {
                 if (ringTick) {
-                    emitBossRing(level, mob, color, radius * 1.35D, ticks * 0.22F,
-                            Math.max(3, SpellMobConfig.bossPoints() * 3 / 4));
+                    emitBossRing(level, mob, color, radius * 1.35D, ticks * 0.22F, bossPoints());
                 }
-                if (bossTick && SpellMobConfig.bossExtras()) {
-                    emitVerticalSigil(level, mob, spell, color, ticks);
-                    if (ticks % 20 == 0) {
-                        emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
-                    }
+                if (bossTick && SpellMobConfig.bossExtras() && ticks % 20 == 0) {
+                    emitBlastwave(level, mob, color, 0.35F + progress * 0.9F);
                 }
             } else {
                 emitRing(level, mob, color, radius, ticks * 0.35F);
@@ -165,9 +157,7 @@ public final class CastingPresentation {
             }
             Vector3f color = colorOf(spell);
             emitBlastwave(level, mob, color, 1.8F);
-            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F,
-                    Math.max(4, SpellMobConfig.bossPoints() * 5 / 4));
-            emitSigilBurst(level, mob, spell, color, 1.0D);
+            emitBossRing(level, mob, color, ringRadius(mob, 0.0F) * 1.9D, 0.0F, bossPoints());
         } catch (Throwable exception) {
             Logs.debug("Casting presentation failed on finish: {}", exception.getMessage());
         }
@@ -214,7 +204,7 @@ public final class CastingPresentation {
         if (points <= 0) {
             return;
         }
-        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.6F);
+        DustParticleOptions dust = new DustParticleOptions(new Vector3f(color), 1.2F);
         double centerX = mob.getX();
         double centerY = mob.getY() + 0.06D;
         double centerZ = mob.getZ();
@@ -282,130 +272,6 @@ public final class CastingPresentation {
     }
 
     /**
-     * Draws one expanding dust ring at the caster's feet. This is the boss pulse: the same kind of
-     * ring as the normal casting circle, only brighter and farther out.
-     *
-     * @param level  the server level
-     * @param mob    the caster
-     * @param color  the school colour
-     * @param radius ring radius in blocks
-     * @param points number of dust dots
-     */
-    /**
-     * Draws the vertical sigil in front of a boss caster: one static school coloured ring plus two
-     * outward pulses that keep expanding while the cast lasts.
-     *
-     * <p>The plane comes from the caster's look direction so the ring always faces its target, and
-     * the center is the spell origin (eye height, slightly in front of the head) where projectiles
-     * actually spawn, so the spell looks like it flies out of the ring.</p>
-     *
-     * @param mob     the caster
-     * @param spell   the spell being cast, used to pick the school particle
-     * @param colour  the resolved school colour
-     * @param elapsed ticks since the cast started, drives the pulse animation
-     */
-    private static void emitVerticalSigil(ServerLevel level, Mob mob, AbstractSpell spell, Vector3f colour, double elapsed) {
-        SigilFrame frame = sigilFrame(mob);
-        if (frame == null) {
-            return;
-        }
-        int points = 36;
-        for (int index = 0; index < points; index++) {
-            double angle = Math.PI * 2.0D * index / points;
-            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius()));
-        }
-        for (int wave = 0; wave < 2; wave++) {
-            double phase = (((elapsed + wave * (SIGIL_PULSE_PERIOD / 2.0D)) % SIGIL_PULSE_PERIOD) + SIGIL_PULSE_PERIOD)
-                    % SIGIL_PULSE_PERIOD / SIGIL_PULSE_PERIOD;
-            double radius = frame.radius() * (0.45D + 0.50D * phase);
-            int wavePoints = Math.max(8, (int) Math.round(points * (0.85D - 0.45D * phase)));
-            for (int index = 0; index < wavePoints; index++) {
-                double angle = Math.PI * 2.0D * index / wavePoints;
-                sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), radius));
-            }
-        }
-    }
-
-    /** Expands the sigil outward once when a boss cast finishes. */
-    private static void emitSigilBurst(ServerLevel level, Mob mob, AbstractSpell spell, Vector3f colour, double scale) {
-        SigilFrame frame = sigilFrame(mob);
-        if (frame == null) {
-            return;
-        }
-        int points = 40;
-        for (int index = 0; index < points; index++) {
-            double angle = Math.PI * 2.0D * index / points;
-            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale));
-        }
-        int wavePoints = 24;
-        for (int index = 0; index < wavePoints; index++) {
-            double angle = Math.PI * 2.0D * index / wavePoints;
-            sendColored(level, colour, frame.point(Math.cos(angle), Math.sin(angle), frame.radius() * scale * 0.90D));
-        }
-    }
-
-    /**
-     * Builds the vertical plane of the sigil from the caster's look direction.
-     *
-     * @return the frame, or null when the look vector is degenerate
-     */
-    private static @Nullable SigilFrame sigilFrame(Mob mob) {
-        Vec3 forward = mob.getLookAngle();
-        if (forward.lengthSqr() < 1.0E-6D) {
-            return null;
-        }
-        forward = forward.normalize();
-        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
-        if (right.lengthSqr() < 1.0E-6D) {
-            right = new Vec3(1.0D, 0.0D, 0.0D).cross(forward);
-        }
-        if (right.lengthSqr() < 1.0E-6D) {
-            return null;
-        }
-        right = right.normalize();
-        Vec3 up = right.cross(forward).normalize();
-        double radius = 0.75D;
-        Vec3 center = mob.getEyePosition().add(forward.scale(0.45D + radius * 0.15D));
-        return new SigilFrame(center, right, up, radius);
-    }
-
-    /**
-     * Sends one school coloured {@code entity_effect} particle.
-     *
-     * <p>1.21.1 exposes {@link ColorParticleOption}, so the colour rides inside the particle
-     * options instead of the velocity fields. The client spawns a single swirl tinted exactly like
-     * the school, which keeps the sigil and the ground rings the same colour.</p>
-     *
-     * @param level    the server level
-     * @param colour   the school colour, components in {@code 0..1}
-     * @param position where the particle spawns
-     */
-    private static void sendColored(ServerLevel level, Vector3f colour, Vec3 position) {
-        ParticleOptions particle = ColorParticleOption.create(ParticleTypes.ENTITY_EFFECT, packColour(colour));
-        double limitSqr = limitSqr();
-        for (ServerPlayer player : level.players()) {
-            if (player.distanceToSqr(position.x, position.y, position.z) <= limitSqr) {
-                level.sendParticles(player, particle, false, position.x, position.y, position.z, 0, 0.0D, 0.0D, 0.0D, 0.0D);
-            }
-        }
-    }
-
-    private static int packColour(Vector3f colour) {
-        int red = Math.round(Math.max(0.0F, Math.min(1.0F, colour.x())) * 255.0F);
-        int green = Math.round(Math.max(0.0F, Math.min(1.0F, colour.y())) * 255.0F);
-        int blue = Math.round(Math.max(0.0F, Math.min(1.0F, colour.z())) * 255.0F);
-        return (red << 16) | (green << 8) | blue;
-    }
-
-    /** Precomputed plane of the vertical sigil: center plus two orthonormal axes. */
-    private record SigilFrame(Vec3 center, Vec3 right, Vec3 up, double radius) {
-
-        Vec3 point(double cos, double sin, double radius) {
-            return center.add(right.scale(cos * radius)).add(up.scale(sin * radius));
-        }
-    }
-
-    /**
      * Expanding shockwave ring, used for the periodic pulse and the finishing blast.
      *
      * @param level the server level
@@ -434,10 +300,6 @@ public final class CastingPresentation {
         }
     }
 
-    private static void send(ServerLevel level, ParticleOptions particle, Vec3 position) {
-        send(level, particle, position.x, position.y, position.z);
-    }
-
     private static double ringRadius(Mob mob, float pulse) {
         double base = 0.5D + mob.getBbWidth() * 0.85D;
         return base * SpellMobConfig.ringScale() * (0.8D + 0.45D * pulse);
@@ -445,6 +307,10 @@ public final class CastingPresentation {
 
     private static int points() {
         return Math.max(0, Math.min(128, SpellMobConfig.presentationPoints()));
+    }
+
+    private static int bossPoints() {
+        return Math.max(0, Math.min(128, SpellMobConfig.bossPoints()));
     }
 
     private static double limitSqr() {
