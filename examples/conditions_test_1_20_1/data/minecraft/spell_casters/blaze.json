@@ -1,0 +1,19 @@
+{
+  "variants": [
+    {
+      "select": { "name": "test-blaze" },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magma_bomb",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 2,
+          "range": 16,
+          "conditions": {
+            "self": { "inLava": true, "onFire": true }
+          }
+        }
+      ]
+    }
+  ]
+}

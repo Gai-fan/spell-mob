@@ -1,0 +1,22 @@
+{
+  "variants": [
+    {
+      "select": { "name": "test-giant" },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:wither_skull",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 2,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "dimension": ["twilightforest:twilight_forest"],
+              "time": ["night"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
