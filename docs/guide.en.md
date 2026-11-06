@@ -86,7 +86,7 @@ Every cast object — inside `goals`, `onHurt`, `onTarget`, `onDeath`, `onKill`,
 | `interruptOnDamage` | bool | `false` | Normal casts only. Channeled spells use the global switch instead. |
 | `repeatOnCast` | bool | `true` | Channeled (CONTINUOUS) spells only: re-run `onCast` every 10 ticks, like ISS's own casters. |
 | `target` | string or object | `ATTACK_TARGET` | See [Targets](#targets). |
-| `conditions` | object | — | `healthBelow`, `healthAbove`, `minTargetDistance`, `maxTargetDistance`. |
+| `conditions` | object | — | Health, target distance, plus the `world` and `self` groups below. |
 
 ### Conditions
 
@@ -109,6 +109,38 @@ Conditions can also be grouped by source; the flat form keeps working (flat keys
 ```
 
 Distance conditions are skipped for position casts (they have no entity target).
+
+### World and caster conditions
+
+`conditions.world` looks at the level, `conditions.self` looks at the caster itself (next to `healthBelow`). Both are optional and are also checked by forced casts such as `onDeath`.
+
+| Key | Value | Meaning |
+|---|---|---|
+| `world.time` | `"day"`, `"night"`, `"dawn"`, `"dusk"`, or an array | World time. Dimensions without a sky (the Nether, the End) never match; use `world.dimension` there. |
+| `world.weather` | `"clear"`, `"rain"`, `"thunder"`, or an array | Weather. |
+| `world.moonPhase` | `0`-`7`, or an array | Moon phase, `0` is a full moon, one step per day. |
+| `world.dimension` | dimension id or array | Any dimension, including modded ones such as `"twilightforest:twilight_forest"`. |
+| `world.difficulty` | `"peaceful"`, `"easy"`, `"normal"`, `"hard"` | World difficulty. |
+| `world.minDay` | integer | Minimum world age in days. |
+| `self.onFire` | `true` / `false` | Whether the caster must be burning. |
+| `self.inWater` | `true` / `false` | Whether the caster must be in water. |
+| `self.inLava` | `true` / `false` | Whether the caster must be in lava. |
+| `self.frozen` | `true` / `false` | Whether the caster must be frozen (powder snow). |
+
+`true` means "must be", `false` means "must not be", and leaving the key out means "don't care".
+
+```json
+"conditions": {
+  "world": {
+    "time": ["night", "dusk"],
+    "weather": ["thunder"],
+    "dimension": ["minecraft:overworld", "twilightforest:twilight_forest"],
+    "minDay": 3
+  },
+  "self": { "onFire": false, "inWater": false },
+  "target": { "maxTargetDistance": 16 }
+}
+```
 
 ## Triggers
 

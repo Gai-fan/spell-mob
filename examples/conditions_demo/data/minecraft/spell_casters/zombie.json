@@ -1,0 +1,89 @@
+{
+  "variants": [
+    {
+      "select": { "tags": ["spellmob_demo_night"] },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 2,
+          "range": 16,
+          "conditions": {
+            "world": { "time": ["night", "dusk"] }
+          }
+        }
+      ]
+    },
+    {
+      "select": { "tags": ["spellmob_demo_storm"] },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 3,
+          "cooldown": 140,
+          "priority": 2,
+          "range": 24,
+          "conditions": {
+            "world": { "weather": ["thunder"] }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 2,
+          "cooldown": 200,
+          "priority": 3,
+          "range": 16,
+          "conditions": {
+            "world": { "weather": ["thunder"] }
+          }
+        }
+      ]
+    },
+    {
+      "select": { "tags": ["spellmob_demo_wet"] },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 2,
+          "range": 16,
+          "conditions": {
+            "self": { "inWater": true }
+          }
+        }
+      ]
+    },
+    {
+      "select": { "tags": ["spellmob_demo_moon"] },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 2,
+          "cooldown": 400,
+          "priority": 2,
+          "range": 16,
+          "conditions": {
+            "world": { "time": ["night"], "moonPhase": [0] }
+          }
+        }
+      ]
+    },
+    {
+      "select": { "tags": ["spellmob_demo_burning"] },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 2,
+          "cooldown": 120,
+          "priority": 2,
+          "range": 20,
+          "conditions": {
+            "self": { "onFire": true }
+          }
+        }
+      ]
+    }
+  ]
+}
