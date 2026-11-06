@@ -345,13 +345,20 @@ Rules:
 
 ## Drops
 
-`dropRules` gives loot to the mobs that actually cast. Rules are only evaluated for a mob whose casting config resolves to something non-empty; ordinary mobs are untouched.
+`dropRules` gives loot to casting mobs, and also lets a definition carry loot only (a “loot variant” that never casts).
 
-> ⚠️ **`dropRules` must be a root-level array, and only the first matching rule is used.**
+It may appear in two places:
+
+- **At the root of the file**: applies to every mob that resolves to the definition.
+- **Inside a `variants` entry**: applies only while that variant matches; the variant that matched when the mob died decides which rules are used.
+
+All rules whose `select` matches are rolled — from the matched variant first, then the root ones. Rules no longer stop after the first hit, so “always drop gold” and “20% chance of a loot table” can be two rules, even with the same `select`.
+
+> ⚠️ Notes
 >
-> - Putting it inside a `variants` entry, or inside `goals`, does nothing — the parser only reads the outermost `dropRules` of the file.
-> - Rules are evaluated top to bottom; the **first `select` that matches wins and every later rule is ignored**. Put specific rules (a boss with its own tag) first and the fallback last.
-> - No `dropRules`, or no matching rule, means no extra loot.
+> - Rules no longer shadow each other: overlapping rules stack their loot. Put the conditions in `select` instead of relying on “the first hit skips the rest”.
+> - A definition with only `dropRules` and no `goals` is valid: the mob casts nothing and still drops loot.
+> - If several variants share the same loot, put the rules at the root instead of repeating them.
 
 ```json
 "dropRules": [
@@ -359,17 +366,36 @@ Rules:
     "select": { "tags": ["spellmob_boss"] },
     "chance": 1.0,
     "drops": [
-      { "item": "minecraft:emerald", "minCount": 2, "maxCount": 4, "looting": true },
-      { "lootTable": "minecraft:chests/desert_pyramid", "chance": 0.2 }
+      { "item": "minecraft:gold_block", "min": 3, "max": 6, "looting": true }
+    ]
+  },
+  {
+    "select": { "tags": ["spellmob_boss"] },
+    "chance": 0.2,
+    "drops": [
+      { "lootTable": "minecraft:chests/desert_pyramid" }
     ]
   }
 ]
 ```
 
-- Only the **first matching rule** is used (again: position matters).
-- Rule-level `chance` rolls once; entry-level `chance` rolls per entry.
+Inside a variant the structure is identical:
+
+```json
+"variants": [
+  {
+    "select": { "tags": ["spellmob_boss"] },
+    "goals": [ ... ],
+    "dropRules": [
+      { "select": { "tags": ["spellmob_boss"] }, "chance": 1.0, "drops": [ ... ] }
+    ]
+  }
+]
+```
+
+- Rule-level `chance` rolls once per rule; entry-level `chance` rolls per entry.
 - Each entry is either an `item` or a `lootTable`, never both.
-- `count` for a fixed amount, or `minCount` / `maxCount` for a range.
+- `count` for a fixed amount, or `min` / `max` for a range.
 - `requirePlayerKill` defaults to `true`, so mob farms and entity cramming do not drop loot.
 
 ## Configuration

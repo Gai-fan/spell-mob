@@ -165,7 +165,7 @@ my_spellmob_pack/
 | `onDeath` | object | 死亡时触发，强制瞬发 |
 | `onKill` | object | 击杀生物后触发，走正常就绪检查 |
 | `variants` | array | 个体/阶段规则，按顺序匹配，第一个命中的生效 |
-| `dropRules` | array | 掉落规则；**必须写在文件根节点**，不能写在 variant 里 |
+| `dropRules` | array | 掉落规则；写在根节点对整族生效，写进 variant 只在该变体命中时生效 |
 
 以 `_` 开头的键可以当注释使用；未知键会被忽略。
 
@@ -433,9 +433,9 @@ my_spellmob_pack/
 
 ## 掉落规则
 
-`dropRules` 给真正会施法的生物追加掉落。规则按顺序匹配，**第一条命中的生效**；与 `variants` 相互独立。
+`dropRules` 给会施法的生物追加掉落，也可以只写掉落、不写任何施法规则（“战利品变体”）。
 
-> **`dropRules` 必须写在文件根节点**，与 `variants` 同级。写在 variant 对象里不会生效。
+规则可以写在**文件根节点**（对该实体的所有生物生效），也可以写在 **`variants` 的某个变体里**（只在该变体命中时生效，死亡时命中哪个变体就用哪个变体的规则）。两处、以及同一处的多条规则，**所有 `select` 命中的都会结算**，不再“第一条命中就忽略后面的”。
 
 ```json
 {
@@ -475,8 +475,10 @@ my_spellmob_pack/
 
 注意事项：
 
-- 只有解析出**非空施法配置**的生物才会结算掉落；只写 `dropRules`、不写任何施法规则的文件不会让普通生物掉落。
+- 多条规则可以共用同一个 `select`：它们会各自掷骰、掉落叠加，不再互相覆盖。
+- 只解析出**空施法配置**也可以掉落：文件里只写 `dropRules`、不写 `goals` 是合法的，只是这只怪不施法。
 - 掉落规则在生物死亡时匹配。此时生命比例为 0，因此**不建议在 `dropRules.select` 里使用 `healthBelow`/`healthAbove`**；掉落筛选请优先使用 `name`、`nameRegex`、`tags` 或 `tamed`。
+- 数量字段是 `count` 或 `min` / `max`（**不是 `minCount`/`maxCount`**）。
 - `lootTable` 条目使用 `LootContextParamSets.ENTITY`，会带上击杀者和抢夺上下文。
 - 数量超过单组上限时会自动拆成多组。
 
@@ -605,7 +607,7 @@ extraRules = [
 先跑 `/spellmob validate`。常见原因是法术 id 拼错、ISS 版本不包含该法术、该法术在 ISS 配置里被禁用，或者 `level`/`range`/`conditions` 不满足。加载阶段被丢弃的条目只会出现在日志里。
 
 **为什么掉落不触发？**
-确认 `dropRules` 写在文件根节点；生物解析出的施法配置非空；`select` 在死亡时能匹配（血量比例为 0，不建议用血量条件）；如果用了默认的 `requirePlayerKill`，需要用玩家击杀而不是 `/kill`。
+确认 `dropRules` 写在根节点或命中的 variant 里；`select` 在死亡时能匹配（血量比例为 0，不建议用血量条件）；如果用了默认的 `requirePlayerKill`，需要用玩家击杀而不是 `/kill`。
 
 **客户端需要安装 SpellMob 吗？**
 不需要。SpellMob 的逻辑和粒子发包都在服务端；客户端需要安装 Iron's Spellbooks，因为法术、音效和粒子资源来自 ISS。单人游戏需要把 SpellMob 放进客户端 `mods/`，因为它同时是内置服务端。

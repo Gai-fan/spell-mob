@@ -68,9 +68,31 @@ tasks.withType(JavaCompile).configureEach {
 
 jar {
     archiveBaseName = mod_id
+    // Forge and NeoForge share this working tree, so build/libs must never hold two files with the
+    // same name: a NeoForge jar uploaded as the Forge artifact crashes every Forge client.
+    archiveClassifier = 'forge'
     manifest {
         attributes('Implementation-Version': project.version)
     }
+}
+
+tasks.register('verifyJar') {
+    dependsOn tasks.named('jar')
+    doLast {
+        File file = tasks.named('jar').get().archiveFile.get().asFile
+        new java.util.zip.ZipFile(file).withCloseable { zip ->
+            if (zip.getEntry('META-INF/mods.toml') == null) {
+                throw new GradleException("${file.name} has no META-INF/mods.toml; it is not a Forge artifact. Run 'gradlew clean' before building this branch.")
+            }
+            if (zip.getEntry('META-INF/neoforge.mods.toml') != null) {
+                throw new GradleException("${file.name} contains META-INF/neoforge.mods.toml; it was built for NeoForge. Run 'gradlew clean' before building this branch.")
+            }
+        }
+    }
+}
+
+tasks.named('build') {
+    dependsOn 'verifyJar'
 }
 
 idea {
