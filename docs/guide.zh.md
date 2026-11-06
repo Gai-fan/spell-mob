@@ -86,7 +86,7 @@ saves/<世界>/datapacks/我的法术/
 | `interruptOnDamage` | 布尔 | `false` | 只对普通读条生效；引导法术看全局开关。 |
 | `repeatOnCast` | 布尔 | `true` | 只对引导（CONTINUOUS）法术生效：每 10 tick 重放一次 `onCast`，与 ISS 自己的施法怪一致。 |
 | `target` | 字符串或对象 | `ATTACK_TARGET` | 见[目标](#目标)。 |
-| `conditions` | 对象 | — | `healthBelow`、`healthAbove`、`minTargetDistance`、`maxTargetDistance`。 |
+| `conditions` | 对象 | — | 血量、目标距离，以及 `world` / `self` 两组世界与施法者条件。 |
 
 ### 条件
 
@@ -109,6 +109,38 @@ saves/<世界>/datapacks/我的法术/
 ```
 
 位置类施法（没有实体目标）会跳过距离判定。
+
+### 世界与施法者条件
+
+`conditions.world` 看世界状态，`conditions.self` 看施法者自身的状态（和 `healthBelow` 写在同一个对象里）。两组都可选，写了才判定；`onDeath` 这类强制施法同样要过这两组条件。
+
+| 键 | 取值 | 含义 |
+|---|---|---|
+| `world.time` | `"day"` / `"night"` / `"dawn"` / `"dusk"`，或数组 | 世界时间。下界、末地这类没有天空的维度永远不满足时间条件，请改用 `world.dimension`。 |
+| `world.weather` | `"clear"` / `"rain"` / `"thunder"`，或数组 | 天气。 |
+| `world.moonPhase` | `0`–`7`，或数组 | 月相，`0` 是满月，每过一天加 1。 |
+| `world.dimension` | 维度 id 或数组 | 支持任意维度，包括模组维度，例如 `"twilightforest:twilight_forest"`。 |
+| `world.difficulty` | `"peaceful"` / `"easy"` / `"normal"` / `"hard"` | 世界难度。 |
+| `world.minDay` | 整数 | 世界至少过了这么多天。 |
+| `self.onFire` | `true` / `false` | 施法者是否必须着火。 |
+| `self.inWater` | `true` / `false` | 是否必须在水里。 |
+| `self.inLava` | `true` / `false` | 是否必须在岩浆里。 |
+| `self.frozen` | `true` / `false` | 是否必须处于冰冻（细雪）状态。 |
+
+`true` 表示“必须满足”，`false` 表示“必须不满足”，不写表示不关心。
+
+```json
+"conditions": {
+  "world": {
+    "time": ["night", "dusk"],
+    "weather": ["thunder"],
+    "dimension": ["minecraft:overworld", "twilightforest:twilight_forest"],
+    "minDay": 3
+  },
+  "self": { "onFire": false, "inWater": false },
+  "target": { "maxTargetDistance": 16 }
+}
+```
 
 ## 触发器
 

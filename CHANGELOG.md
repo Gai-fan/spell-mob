@@ -7,6 +7,21 @@
 
 ---
 
+## [2.0.6] — 2026-11-06
+
+### 新增
+
+- **`conditions.world`**：世界时间（`day` / `night` / `dawn` / `dusk`）、天气（`clear` / `rain` / `thunder`）、月相（`0`–`7`）、维度（支持模组维度，如 `twilightforest:twilight_forest`）、难度、世界天数下限（`minDay`）。
+- **`conditions.self`**：`onFire`、`inWater`、`inLava`、`frozen` 四类施法者状态，`true` 表示必须满足、`false` 表示必须不满足、不写表示不关心。
+- 示例数据包 `examples/conditions_demo`（1.20.1，1.21.1 只需把 `pack_format` 改成 48）。
+
+### 说明
+
+- 世界条件只在起手前判定一次，不影响性能；`onDeath` 等强制施法同样受这些条件约束。
+- 没有天空的维度（下界、末地）永远不会满足 `world.time`，请改用 `world.dimension`。
+
+---
+
 ## [2.0.5] — 2026-11-06
 
 ### 新增

@@ -6,9 +6,14 @@ import com.google.gson.JsonObject;
 import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import spellmob.config.SpellMobConfig;
@@ -256,6 +261,9 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         return values;
     }
 
+    private static final Set<String> WORLD_KEYS = Set.of(
+            "time", "timeOfDay", "weather", "moonPhase", "dimension", "difficulty", "minDay");
+
     private static CastConditions parseConditions(JsonObject json, String where) {
         JsonElement element = json.get("conditions");
         if (element == null || element.isJsonNull()) {
@@ -278,7 +286,138 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
                 ? JsonHelper.optDouble(object, "maxTargetDistance", Double.MAX_VALUE)
                 : target != null ? JsonHelper.optDouble(target, "maxTargetDistance", Double.MAX_VALUE)
                 : Double.MAX_VALUE;
-        return new CastConditions(healthBelow, healthAbove, minDistance, maxDistance);
+        WorldConditions world = parseWorld(readObject(object, "world"), where);
+        return new CastConditions(healthBelow, healthAbove, minDistance, maxDistance, world, parseSelf(self));
+    }
+
+    private static WorldConditions parseWorld(@Nullable JsonObject object, String where) {
+        if (object == null) {
+            return WorldConditions.NONE;
+        }
+        for (String key : object.keySet()) {
+            if (!WORLD_KEYS.contains(key)) {
+                throw new IllegalArgumentException(where + ": unknown 'world' condition '" + key + "'");
+            }
+        }
+        Set<WorldConditions.TimeOfDay> time = null;
+        JsonElement timeElement = object.has("time") ? object.get("time") : object.get("timeOfDay");
+        if (timeElement != null && !timeElement.isJsonNull()) {
+            time = EnumSet.noneOf(WorldConditions.TimeOfDay.class);
+            for (String raw : readStringList(timeElement, where + ": 'world.time'")) {
+                switch (raw.toLowerCase(Locale.ROOT)) {
+                    case "dawn" -> time.add(WorldConditions.TimeOfDay.DAWN);
+                    case "day" -> time.add(WorldConditions.TimeOfDay.DAY);
+                    case "dusk" -> time.add(WorldConditions.TimeOfDay.DUSK);
+                    case "night" -> time.add(WorldConditions.TimeOfDay.NIGHT);
+                    default -> throw new IllegalArgumentException(where + ": unknown time of day '" + raw + "'");
+                }
+            }
+        }
+        Set<WorldConditions.Weather> weather = null;
+        if (object.has("weather")) {
+            weather = EnumSet.noneOf(WorldConditions.Weather.class);
+            for (String raw : readStringList(object.get("weather"), where + ": 'world.weather'")) {
+                switch (raw.toLowerCase(Locale.ROOT)) {
+                    case "clear", "sunny" -> weather.add(WorldConditions.Weather.CLEAR);
+                    case "rain", "raining" -> weather.add(WorldConditions.Weather.RAIN);
+                    case "thunder", "thunderstorm" -> weather.add(WorldConditions.Weather.THUNDER);
+                    default -> throw new IllegalArgumentException(where + ": unknown weather '" + raw + "'");
+                }
+            }
+        }
+        Set<Integer> moonPhase = null;
+        if (object.has("moonPhase")) {
+            moonPhase = new LinkedHashSet<>();
+            for (int phase : readIntList(object.get("moonPhase"), where + ": 'world.moonPhase'")) {
+                if (phase < 0 || phase > 7) {
+                    throw new IllegalArgumentException(where + ": moon phase must be 0..7, got " + phase);
+                }
+                moonPhase.add(phase);
+            }
+        }
+        Set<ResourceLocation> dimensions = null;
+        if (object.has("dimension")) {
+            dimensions = new LinkedHashSet<>();
+            for (String raw : readStringList(object.get("dimension"), where + ": 'world.dimension'")) {
+                ResourceLocation id = ResourceLocation.tryParse(raw);
+                if (id == null) {
+                    throw new IllegalArgumentException(where + ": invalid dimension id '" + raw + "'");
+                }
+                dimensions.add(id);
+            }
+        }
+        Set<Difficulty> difficulty = null;
+        if (object.has("difficulty")) {
+            difficulty = EnumSet.noneOf(Difficulty.class);
+            for (String raw : readStringList(object.get("difficulty"), where + ": 'world.difficulty'")) {
+                switch (raw.toLowerCase(Locale.ROOT)) {
+                    case "peaceful" -> difficulty.add(Difficulty.PEACEFUL);
+                    case "easy" -> difficulty.add(Difficulty.EASY);
+                    case "normal" -> difficulty.add(Difficulty.NORMAL);
+                    case "hard" -> difficulty.add(Difficulty.HARD);
+                    default -> throw new IllegalArgumentException(where + ": unknown difficulty '" + raw + "'");
+                }
+            }
+        }
+        return new WorldConditions(time, weather, moonPhase, dimensions, difficulty,
+                JsonHelper.optInt(object, "minDay", 0));
+    }
+
+    private static SelfConditions parseSelf(@Nullable JsonObject self) {
+        if (self == null) {
+            return SelfConditions.NONE;
+        }
+        return new SelfConditions(readFlag(self, "onFire"), readFlag(self, "inWater"),
+                readFlag(self, "inLava"), readFlag(self, "frozen"));
+    }
+
+    @Nullable
+    private static Boolean readFlag(JsonObject object, String key) {
+        JsonElement element = object.get(key);
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        try {
+            return element.getAsBoolean();
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("'" + key + "' must be a boolean");
+        }
+    }
+
+    private static List<String> readStringList(JsonElement element, String what) {
+        List<String> values = new ArrayList<>();
+        if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+            values.add(element.getAsString());
+            return values;
+        }
+        if (!element.isJsonArray()) {
+            throw new IllegalArgumentException(what + " must be a string or an array of strings");
+        }
+        for (JsonElement child : element.getAsJsonArray()) {
+            if (!child.isJsonPrimitive() || !child.getAsJsonPrimitive().isString()) {
+                throw new IllegalArgumentException(what + " must contain strings only");
+            }
+            values.add(child.getAsString());
+        }
+        return values;
+    }
+
+    private static List<Integer> readIntList(JsonElement element, String what) {
+        List<Integer> values = new ArrayList<>();
+        if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isNumber()) {
+            values.add(element.getAsInt());
+            return values;
+        }
+        if (!element.isJsonArray()) {
+            throw new IllegalArgumentException(what + " must be an integer or an array of integers");
+        }
+        for (JsonElement child : element.getAsJsonArray()) {
+            if (!child.isJsonPrimitive() || !child.getAsJsonPrimitive().isNumber()) {
+                throw new IllegalArgumentException(what + " must contain integers only");
+            }
+            values.add(child.getAsInt());
+        }
+        return values;
     }
 
     @Nullable

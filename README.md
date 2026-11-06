@@ -359,6 +359,31 @@ my_spellmob_pack/
 }
 ```
 
+#### 世界与施法者条件
+
+`conditions.world` 看世界状态，`conditions.self` 看施法者自身状态。两组都可选，`onDeath` 这类强制施法也要过这两组判定。
+
+| 字段 | 取值 | 说明 |
+|---|---|---|
+| `world.time` | `day` / `night` / `dawn` / `dusk`，或数组 | 世界时间；无天空的维度（下界、末地）永远不满足 |
+| `world.weather` | `clear` / `rain` / `thunder`，或数组 | 天气 |
+| `world.moonPhase` | `0`–`7`，或数组 | 月相，`0` 为满月，每天加 1 |
+| `world.dimension` | 维度 id 或数组 | 支持模组维度，如 `twilightforest:twilight_forest` |
+| `world.difficulty` | `peaceful` / `easy` / `normal` / `hard` | 世界难度 |
+| `world.minDay` | 整数 | 世界天数下限 |
+| `self.onFire` / `self.inWater` / `self.inLava` / `self.frozen` | `true` / `false` | `true` 表示必须处于该状态，`false` 表示必须不处于 |
+
+```json
+"conditions": {
+  "world": {
+    "time": ["night", "dusk"],
+    "weather": ["thunder"],
+    "dimension": ["minecraft:overworld", "twilightforest:twilight_forest"]
+  },
+  "self": { "onFire": false, "inWater": false }
+}
+```
+
 ## 变体与阶段
 
 `variants` 让同一物种的个别生物拥有不同配置。数组按顺序匹配，**第一个命中的生效**：
