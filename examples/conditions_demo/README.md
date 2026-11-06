@@ -36,10 +36,12 @@
 # 着火时的火球
 /summon minecraft:zombie ~ ~ ~ {Tags:["spellmob_demo_burning"]}
 
-# 满月的夜晚（满月 = 世界天数为 8 的倍数）
+# 满月的夜晚（满月 = 世界天数是 8 的倍数：第 0、8、16… 天）
 /summon minecraft:zombie ~ ~ ~ {Tags:["spellmob_demo_moon"]}
 /time set 18000
 ```
+
+满月出现在世界天数能被 8 整除的那一天；用 `/time add 24000` 一天天推进，凑到 8 的倍数后再 `/time set 18000` 入夜，`/time query gametime` 可以看当前总时间。
 
 僵尸需要有一个玩家目标才会起手；站远一点等它出手即可。看不到效果时先跑 `/spellmob validate`，再用 `/spellmob info` 看选中的变体和来源。
 
