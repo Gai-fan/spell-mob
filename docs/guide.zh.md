@@ -340,13 +340,20 @@ saves/<世界>/datapacks/我的法术/
 
 ## 掉落
 
-`dropRules` 让真正会施法的生物额外掉落。只有当前解析出非空施法配置的生物才会结算，普通生物不受影响。
+`dropRules` 给会施法的生物追加掉落，也可以用来做“只掉东西、不施法”的战利品变体。
 
-> ⚠️ **`dropRules` 只能是根节点上的一个数组，且只使用第一条命中的规则。**
+`dropRules` 可以写两个地方：
+
+- **文件根节点**：对所有解析到这份定义文件的生物生效。
+- **`variants` 的某个变体里**：只在该变体命中时生效；生物死亡时命中哪个变体，就用哪个变体的规则。
+
+两处、以及同一处的多条规则，**所有 `select` 命中的规则都会结算**，不再“第一条命中后忽略后面的”。所以可以把“必掉的金块”和“20% 概率的战利品表”拆成两条规则，也可以让两条规则共用同一个 `select`。
+
+> ⚠️ 注意
 >
-> - 把它写在 `variants` 的某个变体里、或者写进 `goals` 里，都不会生效——解析器只认文件最外层的 `dropRules`。
-> - 数组里从上往下匹配，**第一条 `select` 命中的规则生效，后面的全部忽略**。所以具体的规则（比如带专属标签的 Boss）放前面，兜底的放最后。
-> - 没有 `dropRules`，或者没有一条命中，就不掉额外物品。
+> - 规则不再互相覆盖：多条规则同时命中时掉落会叠加。写兜底规则时，把条件都写进 `select`，不要依赖“前面的命中就跳过后面”。
+> - 只写 `dropRules`、不写 `goals` 是合法的：生物不施法，但照常掉东西。
+> - 多个变体共用同一批掉落时，直接写在根节点更省事。
 
 ```json
 "dropRules": [
@@ -354,17 +361,36 @@ saves/<世界>/datapacks/我的法术/
     "select": { "tags": ["spellmob_boss"] },
     "chance": 1.0,
     "drops": [
-      { "item": "minecraft:emerald", "minCount": 2, "maxCount": 4, "looting": true },
-      { "lootTable": "minecraft:chests/desert_pyramid", "chance": 0.2 }
+      { "item": "minecraft:gold_block", "min": 3, "max": 6, "looting": true }
+    ]
+  },
+  {
+    "select": { "tags": ["spellmob_boss"] },
+    "chance": 0.2,
+    "drops": [
+      { "lootTable": "minecraft:chests/desert_pyramid" }
     ]
   }
 ]
 ```
 
-- 只使用**第一条命中的规则**（同上）。
-- 规则级 `chance` 掷一次，条目级 `chance` 逐条掷。
+写在变体里时，结构与根节点完全相同：
+
+```json
+"variants": [
+  {
+    "select": { "tags": ["spellmob_boss"] },
+    "goals": [ ... ],
+    "dropRules": [
+      { "select": { "tags": ["spellmob_boss"] }, "chance": 1.0, "drops": [ ... ] }
+    ]
+  }
+]
+```
+
+- 规则级 `chance` 每条规则各掷一次，条目级 `chance` 逐条掷。
 - 每个条目二选一：`item` 或 `lootTable`。
-- 固定数量用 `count`，区间用 `minCount` / `maxCount`。
+- 固定数量用 `count`，区间用 `min` / `max`（不是 `minCount`/`maxCount`）。
 - `requirePlayerKill` 默认 `true`，刷怪塔与挤压击杀不会掉落。
 
 ## 配置

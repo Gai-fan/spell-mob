@@ -215,9 +215,9 @@ public final class CasterEvents {
     /**
      * Rolls the {@code dropRules} of a dying caster.
      *
-     * <p>Only mobs that resolve to a non empty casting configuration drop anything, so the file
-     * cannot be used to give plain mobs loot; that is what vanilla loot tables are for. Rules are
-     * evaluated in order and the first match wins, matching the {@code variants} semantics.</p>
+     * <p>Every rule that matches the mob is rolled: the matched variant's own rules plus the
+     * species wide ones. A definition that only carries {@code dropRules} still drops loot even
+     * though it does not cast anything, which is useful for plain "loot variant" mobs.</p>
      */
     @SubscribeEvent
     public static void onLivingDrops(LivingDropsEvent event) {
@@ -229,28 +229,29 @@ public final class CasterEvents {
         if (rules == null) {
             return;
         }
-        SpellCasterData data = rules.resolve(mob);
-        if (data == null || data.isEmpty()) {
-            return;
-        }
-        DropRule rule = rules.dropRule(mob);
-        if (rule == null || mob.getRandom().nextDouble() >= rule.chance()) {
+        List<DropRule> dropRules = rules.dropRulesFor(mob);
+        if (dropRules.isEmpty()) {
             return;
         }
         Player killer = event.getSource().getEntity() instanceof Player player ? player : null;
-        for (DropEntry drop : rule.drops()) {
-            if (drop.requirePlayerKill() && killer == null) {
+        for (DropRule rule : dropRules) {
+            if (mob.getRandom().nextDouble() >= rule.chance()) {
                 continue;
             }
-            if (!drop.rolls(mob.getRandom())) {
-                continue;
-            }
-            for (ItemStack stack : drop.createStacks(mob, killer, lootingLevel(killer))) {
-                if (stack.isEmpty()) {
+            for (DropEntry drop : rule.drops()) {
+                if (drop.requirePlayerKill() && killer == null) {
                     continue;
                 }
-                event.getDrops().add(new ItemEntity(mob.level(), mob.getX(), mob.getY() + 0.5D,
-                        mob.getZ(), stack));
+                if (!drop.rolls(mob.getRandom())) {
+                    continue;
+                }
+                for (ItemStack stack : drop.createStacks(mob, killer, lootingLevel(killer))) {
+                    if (stack.isEmpty()) {
+                        continue;
+                    }
+                    event.getDrops().add(new ItemEntity(mob.level(), mob.getX(), mob.getY() + 0.5D,
+                            mob.getZ(), stack));
+                }
             }
         }
     }

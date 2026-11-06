@@ -19,7 +19,9 @@ import spellmob.util.Logs;
  *
  * @param fallback  the configuration every mob of the type gets when no variant matches
  * @param variants  individual rules, evaluated in order, first match wins
- * @param dropRules loot rules, evaluated in order, first match wins; independent of the variants
+ * @param dropRules species wide loot rules; the matched variant may add its own, and every rule
+ *                  whose selector matches the dying mob is rolled (they no longer replace each
+ *                  other, so two rules can share a selector)
  * @param source    where the rules come from, shown by {@code /spellmob info}
  */
 public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant> variants,
@@ -79,28 +81,40 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
                 }
             }
         }
+        List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
+        return new SpellCasterRules(fallback, variants, dropRules, SOURCE_DATA_PACK);
+    }
+
+    /**
+     * Parses a {@code dropRules} array.
+     *
+     * @param element the array element, may be {@code null} when the key is absent
+     * @param where   path prefix for log messages
+     * @return the parsed rules, empty when the key is absent
+     */
+    private static List<DropRule> parseDropRules(JsonElement element, String where) {
         List<DropRule> dropRules = new ArrayList<>();
-        JsonElement dropRulesElement = json.get("dropRules");
-        if (dropRulesElement != null && !dropRulesElement.isJsonNull()) {
-            if (!dropRulesElement.isJsonArray()) {
-                throw new IllegalArgumentException(where + ": 'dropRules' must be an array");
+        if (element == null || element.isJsonNull()) {
+            return dropRules;
+        }
+        if (!element.isJsonArray()) {
+            throw new IllegalArgumentException(where + ": must be an array");
+        }
+        JsonArray dropArray = element.getAsJsonArray();
+        for (int index = 0; index < dropArray.size(); index++) {
+            JsonElement entry = dropArray.get(index);
+            String entryWhere = where + "[" + index + "]";
+            if (entry == null || !entry.isJsonObject()) {
+                Logs.warn("{}: entry is not an object, skipping", entryWhere);
+                continue;
             }
-            JsonArray dropArray = dropRulesElement.getAsJsonArray();
-            for (int index = 0; index < dropArray.size(); index++) {
-                JsonElement element = dropArray.get(index);
-                String entryWhere = where + "/dropRules[" + index + "]";
-                if (element == null || !element.isJsonObject()) {
-                    Logs.warn("{}: entry is not an object, skipping", entryWhere);
-                    continue;
-                }
-                try {
-                    dropRules.add(DropRule.parse(element.getAsJsonObject(), entryWhere));
-                } catch (RuntimeException exception) {
-                    Logs.warn("{}: {}", entryWhere, exception.getMessage());
-                }
+            try {
+                dropRules.add(DropRule.parse(entry.getAsJsonObject(), entryWhere));
+            } catch (RuntimeException exception) {
+                Logs.warn("{}: {}", entryWhere, exception.getMessage());
             }
         }
-        return new SpellCasterRules(fallback, variants, dropRules, SOURCE_DATA_PACK);
+        return dropRules;
     }
 
     private static SpellCasterVariant parseVariant(JsonObject json, String where) {
@@ -111,7 +125,9 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         VariantSelector selector = VariantSelector.parse(selectElement.getAsJsonObject(), where + "/select");
         boolean override = JsonHelper.optBoolean(json, "override", true);
         SpellCasterData data = SpellCasterData.parse(json, where);
-        return new SpellCasterVariant(selector, override, data == null ? SpellCasterData.EMPTY : data);
+        List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
+        return new SpellCasterVariant(selector, override, data == null ? SpellCasterData.EMPTY : data,
+                dropRules);
     }
 
     /**
@@ -150,21 +166,31 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     }
 
     /**
-     * Finds the first drop rule that matches the mob.
+     * Collects every drop rule that matches the mob.
      *
-     * <p>Rules are independent of the casting variants, so a boss that switched to a lower health
-     * variant still drops the same loot.</p>
+     * <p>The matched variant's own rules come first, then the species wide {@code dropRules}. All
+     * of them are returned, so two rules may share a selector (for example "always drop gold" plus
+     * "20% chance of a loot table") instead of the second silently never firing.</p>
      *
      * @param mob the dead mob
-     * @return the matching rule, or {@code null} when no rule applies
+     * @return the matching rules in evaluation order, possibly empty
      */
-    public @Nullable DropRule dropRule(Mob mob) {
-        for (DropRule rule : dropRules) {
-            if (rule.matches(mob)) {
-                return rule;
+    public List<DropRule> dropRulesFor(Mob mob) {
+        List<DropRule> matched = new ArrayList<>();
+        int index = variantIndex(mob);
+        if (index >= 0) {
+            for (DropRule rule : variants.get(index).dropRules()) {
+                if (rule.matches(mob)) {
+                    matched.add(rule);
+                }
             }
         }
-        return null;
+        for (DropRule rule : dropRules) {
+            if (rule.matches(mob)) {
+                matched.add(rule);
+            }
+        }
+        return matched;
     }
 
     /**

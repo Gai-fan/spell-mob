@@ -10,11 +10,12 @@ import spellmob.util.JsonHelper;
 import spellmob.util.Logs;
 
 /**
- * One entry of a file's {@code dropRules} array.
+ * One entry of a {@code dropRules} array, either at the root of a file or inside a variant.
  *
- * <p>Rules are evaluated in order and the first match wins, exactly like {@code variants}. They are
- * deliberately independent of the casting variants: a boss that switches to a lower health variant
- * keeps dropping the same loot, because the drop rules only look at the mob itself.</p>
+ * <p>Every rule whose selector matches the dying mob is rolled, so two rules may share a selector
+ * (for example "always drop gold" and "20% chance of a loot table"). Rules are resolved through
+ * {@link SpellCasterRules#dropRulesFor(net.minecraft.world.entity.Mob)}, which puts the matched
+ * variant's own rules before the species wide ones.</p>
  *
  * @param selector decides which mobs the rule applies to
  * @param chance   probability applied to the whole rule, 0..1
