@@ -154,44 +154,7 @@
         "priority": 1,
         "range": 8,
         "target": "SELF"
-      },
-      "dropRules": [
-        {
-          "select": {
-            "tags": [
-              "husk_boss"
-            ]
-          },
-          "chance": 1.0,
-          "drops": [
-            {
-              "item": "minecraft:gold_block",
-              "min": 3,
-              "max": 6,
-              "looting": true
-            },
-            {
-              "item": "minecraft:emerald",
-              "min": 4,
-              "max": 10,
-              "looting": true
-            }
-          ]
-        },
-        {
-          "select": {
-            "tags": [
-              "husk_boss"
-            ]
-          },
-          "chance": 0.2,
-          "drops": [
-            {
-              "lootTable": "minecraft:chests/desert_pyramid"
-            }
-          ]
-        }
-      ]
+      }
     },
     {
       "_comment": "不带 Boss 标签：只有普通法阵，引导会被伤害打断。另外 12 种、且与 Boss 完全不重复。",
@@ -351,29 +314,55 @@
         "priority": 1,
         "range": 8,
         "target": "SELF"
+      }
+    }
+  ],
+  "dropRules": [
+    {
+      "select": {
+        "tags": [
+          "husk_boss"
+        ]
       },
-      "dropRules": [
+      "chance": 1.0,
+      "drops": [
         {
-          "select": {
-            "tags": [
-              "husk_elite"
-            ]
-          },
-          "chance": 1.0,
-          "drops": [
-            {
-              "item": "minecraft:iron_ingot",
-              "min": 2,
-              "max": 5,
-              "looting": true
-            },
-            {
-              "item": "minecraft:emerald",
-              "min": 1,
-              "max": 3,
-              "chance": 0.6
-            }
-          ]
+          "item": "minecraft:gold_block",
+          "min": 3,
+          "max": 6,
+          "looting": true
+        },
+        {
+          "item": "minecraft:emerald",
+          "min": 4,
+          "max": 10,
+          "looting": true
+        },
+        {
+          "lootTable": "minecraft:chests/desert_pyramid",
+          "chance": 0.2
+        }
+      ]
+    },
+    {
+      "select": {
+        "tags": [
+          "husk_elite"
+        ]
+      },
+      "chance": 1.0,
+      "drops": [
+        {
+          "item": "minecraft:iron_ingot",
+          "min": 2,
+          "max": 5,
+          "looting": true
+        },
+        {
+          "item": "minecraft:emerald",
+          "min": 1,
+          "max": 3,
+          "chance": 0.6
         }
       ]
     }
