@@ -25,6 +25,7 @@ import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterRegistry;
 import spellmob.data.SpellCasterRules;
 import spellmob.goal.CastGoalSync;
+import spellmob.presentation.CasterBossBar;
 import spellmob.presentation.CastingPresentation;
 import spellmob.util.Logs;
 
@@ -81,11 +82,24 @@ public final class SpellCaster implements ISpellCaster {
     /** Variant index the current goals were built for, -1 meaning the species default. */
     private int lastVariantIndex;
 
+    /**
+     * Deepest sticky variant this caster has reached, -1 when none.
+     *
+     * <p>Without it a boss that gets healed snaps back to its first phase and swaps its whole spell
+     * list mid fight. Only variants marked {@code sticky} are remembered; the lock is dropped on a
+     * rename because that changes which individual the selectors are looking at.</p>
+     */
+    private int lockedVariant;
+
     /** False until the first tick has read health, which cannot happen during construction. */
     private boolean variantInitialized;
 
     /** True when the health moved into another variant while a cast was in flight. */
     private boolean variantResyncPending;
+
+    /** Optional boss bar, only allocated once the config asks for one. */
+    @Nullable
+    private CasterBossBar bossBar;
 
     /**
      * True while a cast is being completed or cancelled.
@@ -115,6 +129,7 @@ public final class SpellCaster implements ISpellCaster {
         }
         syncGoalsIfRenamed();
         syncGoalsIfVariantChanged();
+        tickBossBar();
         if (!SpellMobConfig.enabled()) {
             cancel(CancelReason.DISABLED);
             return;
@@ -210,6 +225,9 @@ public final class SpellCaster implements ISpellCaster {
         Component current = mob.getCustomName();
         if (current != this.lastName) {
             this.lastName = current;
+            // The selectors are looking at a different individual now, so an old phase lock would
+            // keep a renamed cow in a boss phase it never reached.
+            this.lockedVariant = -1;
             CastGoalSync.sync(mob);
             this.lastVariantIndex = currentVariantIndex();
         }
@@ -256,7 +274,49 @@ public final class SpellCaster implements ISpellCaster {
 
     private int currentVariantIndex() {
         SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
-        return rules == null ? -1 : rules.variantIndex(mob);
+        if (rules == null) {
+            this.lockedVariant = -1;
+            return -1;
+        }
+        int matched = rules.variantIndex(mob);
+        int locked = this.lockedVariant;
+        if (locked >= 0) {
+            if (locked >= rules.variantCount() || !rules.isSticky(locked)) {
+                // The data pack changed (variant removed or no longer sticky): forget the lock.
+                this.lockedVariant = -1;
+            } else if (matched < locked) {
+                // Health came back above the threshold, but a phase is one way once entered.
+                return locked;
+            }
+        }
+        if (matched >= 0 && rules.isSticky(matched) && matched > this.lockedVariant) {
+            this.lockedVariant = matched;
+        }
+        return matched;
+    }
+
+    /**
+     * Runs the optional boss bar.
+     *
+     * <p>The bar object is only allocated once {@code presentation.bossBar} is on, so a server that
+     * never enables it pays nothing but one boolean read per tick.</p>
+     */
+    private void tickBossBar() {
+        if (this.bossBar == null) {
+            if (!SpellMobConfig.bossBarEnabled()) {
+                return;
+            }
+            this.bossBar = new CasterBossBar(this.mob);
+        }
+        this.bossBar.tick();
+    }
+
+    @Override
+    public void removeBossBar() {
+        if (this.bossBar != null) {
+            this.bossBar.remove();
+            this.bossBar = null;
+        }
     }
 
     private void aimAt(ActiveCast cast) {
@@ -553,6 +613,10 @@ public final class SpellCaster implements ISpellCaster {
 
     CompoundTag save() {
         CompoundTag tag = new CompoundTag();
+        if (this.lockedVariant >= 0) {
+            // Persisted so a boss does not fall back a phase when its chunk reloads mid fight.
+            tag.putInt("lockedVariant", this.lockedVariant);
+        }
         if (!cooldowns.isEmpty()) {
             CompoundTag stored = new CompoundTag();
             cooldowns.forEach((key, ticks) -> stored.putInt(key, ticks));
@@ -562,6 +626,7 @@ public final class SpellCaster implements ISpellCaster {
     }
 
     void load(CompoundTag tag) {
+        this.lockedVariant = tag.contains("lockedVariant") ? tag.getInt("lockedVariant") : -1;
         cooldowns.clear();
         CompoundTag stored = tag.getCompound("cooldowns");
         for (String key : stored.getAllKeys()) {

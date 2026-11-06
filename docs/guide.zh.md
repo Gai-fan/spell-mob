@@ -338,6 +338,27 @@ saves/<世界>/datapacks/我的法术/
 
 **改名**会在一个 tick 内自动重同步目标；**驯服或取消驯服**同样会自动重同步；**改标签不会**——改完要执行 `/spellmob resync`。
 
+### 阶段锁定 `sticky`
+
+血量阶段默认是双向的：Boss 被治疗回到阈值以上，就退回上一阶段，整套技能组跟着换回去。给变体加上 `"sticky": true` 之后，它**一旦命中就锁定**，血量回升也不会退回；继续掉到更深的阶段仍然允许，而锁定只会往前走。
+
+```json
+{
+  "variants": [
+    { "select": { "healthBelow": 0.5 }, "sticky": true,
+      "goals": [ { "spell": "irons_spellbooks:wither_skull", "cooldown": 100 } ] },
+
+    { "select": { "healthBelow": 0.2 }, "sticky": true,
+      "goals": [ { "spell": "irons_spellbooks:black_hole", "cooldown": 200 } ] }
+  ]
+}
+```
+
+- `sticky` 默认 `false`，即原来“血量回升就退回”的行为。
+- 只对带 `sticky` 的变体生效；没写 `sticky` 的变体照旧双向匹配。
+- 改名会重置锁定（改名等于换了个体）；锁定状态写进存档，区块卸载再加载不会掉阶段。
+- 写在 `select` 里也认：`"select": { "healthBelow": 0.5, "sticky": true }`，效果相同。
+
 ## 掉落
 
 `dropRules` 给会施法的生物追加掉落，也可以用来做“只掉东西、不施法”的战利品变体。
@@ -393,6 +414,15 @@ saves/<世界>/datapacks/我的法术/
 - 固定数量用 `count`，区间用 `min` / `max`（不是 `minCount`/`maxCount`）。
 - `requirePlayerKill` 默认 `true`，刷怪塔与挤压击杀不会掉落。
 
+## Boss 血条
+
+把 `presentation.bossBar` 设为 `true` 后，带 `bossBarTags` 标签（默认只有 `spellmob_boss`）的施法者会获得一条原版 Boss 血条：
+
+- 名字取生物显示名，进度是当前血量比例，颜色由 `bossBarColor` 决定。
+- 只发给 `bossBarRange` 格以内、非旁观模式的玩家；玩家进出范围会自动增减。
+- 与 `presentation.enabled` 独立：只想关法阵、留血条，就把 `enabled` 设 `false`、`bossBar` 设 `true`。
+- 生物死亡或区块卸载时血条自动收起；改配置项即时生效，不用重启。
+
 ## 配置
 
 配置文件在 `config/spellmob-common.toml`（COMMON 类型——整份安装共用一个文件，不是每个世界一份）。
@@ -423,6 +453,10 @@ saves/<世界>/datapacks/我的法术/
 | | `interruptFeedback` | `true` | 被打断时的烟与"熄灭"音效。 |
 | | `bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 特效：更大的脚下外环 + 脉冲环。 |
 | | `bossExtras` | `true` | Boss 特效是否加上周期性脉冲环。 |
+| | `bossBar` | `false` | 是否给施法者显示 Boss 血条；与 `enabled` 独立，可以只开血条不开法阵。 |
+| | `bossBarColor` | `white` | 血条颜色：`pink` / `blue` / `red` / `green` / `yellow` / `purple` / `white`。 |
+| | `bossBarRange` | `48` | 这个距离内的玩家能看到血条（8–128）。 |
+| | `bossBarTags` | `["spellmob_boss"]` | 带这些标签的生物显示血条；留空表示所有配置了规则的生物都显示。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。

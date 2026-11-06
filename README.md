@@ -413,6 +413,7 @@ my_spellmob_pack/
 |---|---|---|
 | `select` | 必填 | 匹配条件，至少配置一项 |
 | `override` | `true` | `true` 只用变体自己的配置；`false` 与顶层默认配置合并：`goals` 拼接（变体在前），触发器只在变体未定义时回落到顶层 |
+| `sticky` | `false` | `true` 时该变体一旦命中就锁定：血量被奶回阈值以上也不退回（阶段只往前走）；写在 `select` 里也认 |
 | `goals` / `onHurt` / `onTarget` / `onDeath` / `onKill` | 无 | 与顶层同名字段一致；全都不写表示“这个变体什么都不放” |
 
 `select` 支持以下条件，同时存在时要求全部满足：
@@ -430,6 +431,7 @@ my_spellmob_pack/
 - 改名、血量变化和驯服状态变化会自动重建 Goal；直接改 tag 或改数据包后，执行 `/spellmob resync` 立即生效。
 - 用血量做阶段时，建议把“低血量阶段”放在前面，顶层默认配置自然成为最后一个阶段。
 - 阶段切换时可以配合 `cooldownGroup` 让新旧阶段的法术共享冷却，避免“半血瞬间无缝换招”。
+- 血量阶段默认双向（被治疗就退回上一阶段）。希望“进二阶段就回不去”时给变体加 `"sticky": true`；锁定状态写进存档，改名会重置。
 
 ## 掉落规则
 
@@ -530,6 +532,10 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `presentation.interruptFeedback` | `true` | 被打断时是否冒烟并播放熄灭音效 |
 | `presentation.bossTags` | `["spellmob_boss"]` | 带这些标签的施法者使用 Boss 表现 |
 | `presentation.bossExtras` | `true` | Boss 表现是否附加额外效果（周期性/收尾冲击波等） |
+| `presentation.bossBar` | `false` | 是否给施法者显示原版 Boss 血条；与 `enabled` 独立，可只开血条不开法阵 |
+| `presentation.bossBarColor` | `white` | 血条颜色：`pink`/`blue`/`red`/`green`/`yellow`/`purple`/`white` |
+| `presentation.bossBarRange` | `48` | 该距离内的玩家能看到血条（8–128） |
+| `presentation.bossBarTags` | `["spellmob_boss"]` | 带这些标签的生物显示血条；留空表示所有配置了规则的生物 |
 | `species.extraRules` | `[]` | 直接写在配置里的物种级规则，一行一条 JSON |
 
 > 修改配置后重启游戏/服务器（或使用会触发 Forge 配置重载的工具）。数据包修改后执行 `/reload`。

@@ -7,6 +7,19 @@
 
 ---
 
+## [2.0.8] — 2026-11-07
+
+### 新增
+
+- **变体阶段锁定 `sticky`**：给变体加 `"sticky": true` 后，它一旦命中就锁定，血量被治疗回阈值以上也不会退回上一阶段（继续掉血进入更深的阶段仍然可以）。默认 `false`，保持原来的双向行为；锁定状态写入存档，区块重载不会掉阶段，改名会重置。
+- **Boss 血条**：`presentation.bossBar = true` 时，带 `presentation.bossBarTags` 标签（默认 `spellmob_boss`）的施法者会显示原版 Boss 血条。名字取显示名、进度取血量比例；`bossBarColor` 可选 `pink`/`blue`/`red`/`green`/`yellow`/`purple`/`white`，`bossBarRange`（默认 48）控制可见距离。与 `presentation.enabled` 独立，可以只开血条不开法阵；生物死亡或区块卸载时自动收起。
+
+### 文档
+
+- 指南与 README 补充 `sticky`、`bossBar*` 配置项与“Boss 血条”一节。
+
+---
+
 ## [2.0.7] — 2026-11-07
 
 ### 修复

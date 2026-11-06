@@ -18,7 +18,8 @@ import spellmob.util.Logs;
  * all).</p>
  *
  * @param fallback  the configuration every mob of the type gets when no variant matches
- * @param variants  individual rules, evaluated in order, first match wins
+ * @param variants  individual rules, evaluated in order, first match wins; a {@code sticky} variant
+ *                  stays active after its first match even when the mob heals back up
  * @param dropRules species wide loot rules; the matched variant may add its own, and every rule
  *                  whose selector matches the dying mob is rolled (they no longer replace each
  *                  other, so two rules can share a selector)
@@ -122,12 +123,32 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         if (selectElement == null || !selectElement.isJsonObject()) {
             throw new IllegalArgumentException(where + ": missing 'select' object");
         }
-        VariantSelector selector = VariantSelector.parse(selectElement.getAsJsonObject(), where + "/select");
+        JsonObject select = selectElement.getAsJsonObject();
+        VariantSelector selector = VariantSelector.parse(select, where + "/select");
         boolean override = JsonHelper.optBoolean(json, "override", true);
+        // 'sticky' belongs to the variant, but accepting it inside 'select' too costs nothing and
+        // spares file authors a confusing "nothing happened" when they put it one level too deep.
+        boolean sticky = JsonHelper.optBoolean(json, "sticky", JsonHelper.optBoolean(select, "sticky", false));
         SpellCasterData data = SpellCasterData.parse(json, where);
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
-        return new SpellCasterVariant(selector, override, data == null ? SpellCasterData.EMPTY : data,
+        return new SpellCasterVariant(selector, override, sticky, data == null ? SpellCasterData.EMPTY : data,
                 dropRules);
+    }
+
+    /**
+     * @param index a variant index
+     * @return the number of variants in this file
+     */
+    public int variantCount() {
+        return variants.size();
+    }
+
+    /**
+     * @param index a variant index
+     * @return true when that variant keeps its phase after the mob heals back
+     */
+    public boolean isSticky(int index) {
+        return index >= 0 && index < variants.size() && variants.get(index).sticky();
     }
 
     /**

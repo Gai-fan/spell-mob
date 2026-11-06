@@ -76,7 +76,12 @@ public final class CasterEvents {
             // Deliberately ungated: an event triggered cast never runs through a goal, so this is
             // the only place guaranteed to end it after a reload removed the mob's rules.
             mob.getCapability(SpellCasterCapability.capability())
-                    .ifPresent(caster -> caster.cancel(CancelReason.UNLOADED));
+                    .ifPresent(caster -> {
+                        caster.cancel(CancelReason.UNLOADED);
+                        // The bar is a player facing object: leaving it behind keeps a ghost bar on
+                        // the screen of everyone who was standing next to the mob.
+                        caster.removeBossBar();
+                    });
         }
     }
 

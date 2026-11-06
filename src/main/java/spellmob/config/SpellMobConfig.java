@@ -2,9 +2,12 @@ package spellmob.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.common.ForgeConfigSpec;
+import spellmob.util.Logs;
 
 /**
  * Server side configuration.
@@ -32,10 +35,17 @@ public final class SpellMobConfig {
     private static final ForgeConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
     private static final ForgeConfigSpec.BooleanValue BOSS_EXTRAS;
+    private static final ForgeConfigSpec.BooleanValue BOSS_BAR;
+    private static final ForgeConfigSpec.ConfigValue<String> BOSS_BAR_COLOR;
+    private static final ForgeConfigSpec.DoubleValue BOSS_BAR_RANGE;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> BOSS_BAR_TAGS;
     private static final ForgeConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
 
     public static final ForgeConfigSpec SPEC;
+
+    /** Set after the first invalid colour so the log does not repeat every frame. */
+    private static boolean WARNED_BOSS_BAR_COLOR;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -119,6 +129,20 @@ public final class SpellMobConfig {
         BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 10 ticks.",
                         "（Boss 施法者还会每 10 tick 向外扩散一圈脉冲尘环）")
                 .define("bossExtras", true);
+        BOSS_BAR = builder.comment("Show a boss bar above casters that carry one of 'bossBarTags'.",
+                        "Independent from 'enabled', so the particles can stay off while the bar is on.",
+                        "（为带有 bossBarTags 标签的施法者显示 Boss 血条；与 enabled 相互独立，可以只开血条不开法阵）")
+                .define("bossBar", false);
+        BOSS_BAR_COLOR = builder.comment("Boss bar colour: pink, blue, red, green, yellow, purple or white.",
+                        "（Boss 血条颜色：pink / blue / red / green / yellow / purple / white）")
+                .define("bossBarColor", "white");
+        BOSS_BAR_RANGE = builder.comment("Players within this many blocks see the boss bar.",
+                        "（这个距离内的玩家能看到 Boss 血条）")
+                .defineInRange("bossBarRange", 48.0D, 8.0D, 128.0D);
+        BOSS_BAR_TAGS = builder.comment("Mobs carrying any of these scoreboard tags get a boss bar.",
+                        "Empty means every mob with casting rules gets one.",
+                        "（带有任一这些计分板标签的生物显示 Boss 血条；留空表示所有配置了施法规则的生物都显示）")
+                .defineList("bossBarTags", List.of("spellmob_boss"), value -> value instanceof String);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -240,6 +264,53 @@ public final class SpellMobConfig {
     /** @return whether the boss circle adds the periodic pulse rings and the finishing blast */
     public static boolean bossExtras() {
         return !ready() || BOSS_EXTRAS.get();
+    }
+
+    /** @return whether casters carrying {@link #bossBarTags()} show a boss bar */
+    public static boolean bossBarEnabled() {
+        return ready() && BOSS_BAR.get();
+    }
+
+    /** @return radius in blocks inside which players see the boss bar */
+    public static double bossBarRange() {
+        return ready() ? BOSS_BAR_RANGE.get() : 48.0D;
+    }
+
+    /**
+     * @param entity the casting entity
+     * @return true when the entity should get a boss bar (an empty tag list matches every caster)
+     */
+    public static boolean isBossBarCaster(Entity entity) {
+        if (!ready() || entity == null) {
+            return false;
+        }
+        List<? extends String> tags = BOSS_BAR_TAGS.get();
+        if (tags.isEmpty()) {
+            return true;
+        }
+        for (String tag : tags) {
+            if (tag != null && entity.getTags().contains(tag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return the configured boss bar colour, falling back to white when the value is unknown */
+    public static BossEvent.BossBarColor bossBarColor() {
+        String raw = ready() ? BOSS_BAR_COLOR.get() : "white";
+        if (raw == null) {
+            return BossEvent.BossBarColor.WHITE;
+        }
+        try {
+            return BossEvent.BossBarColor.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            if (!WARNED_BOSS_BAR_COLOR) {
+                WARNED_BOSS_BAR_COLOR = true;
+                Logs.warn("Unknown presentation.bossBarColor '{}', using white", raw);
+            }
+            return BossEvent.BossBarColor.WHITE;
+        }
     }
 
     /**
