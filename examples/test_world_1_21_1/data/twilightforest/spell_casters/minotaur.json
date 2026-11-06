@@ -1,0 +1,35 @@
+{
+  "variants": [
+    {
+      "select": {
+        "name": "test-minotaur"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "weather": [
+                "rain"
+              ]
+            },
+            "self": {
+              "onFire": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

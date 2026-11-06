@@ -1,0 +1,57 @@
+{
+  "variants": [
+    {
+      "select": {
+        "name": "test-blaze"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:magma_bomb",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "self": {
+              "inLava": true,
+              "onFire": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-burning"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "self": {
+              "onFire": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

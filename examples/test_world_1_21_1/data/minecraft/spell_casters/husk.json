@@ -1,0 +1,235 @@
+{
+  "variants": [
+    {
+      "select": {
+        "name": "test-time"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "night",
+                "dusk"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-weather"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "weather": [
+                "thunder"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-moonphase"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 120,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "night"
+              ],
+              "moonPhase": [
+                0
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-conditions"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 3,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "night"
+              ],
+              "weather": [
+                "clear"
+              ],
+              "dimension": [
+                "minecraft:overworld"
+              ]
+            },
+            "self": {
+              "onFire": false,
+              "inWater": false,
+              "inLava": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-frozen"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "self": {
+              "frozen": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-channel"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 1,
+          "cooldown": 120,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:telekinesis",
+          "level": 1,
+          "cooldown": 120,
+          "priority": 1,
+          "range": 24,
+          "castTime": 80
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-husk-day"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "day"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "test-husk-rain"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "weather": [
+                "rain"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
