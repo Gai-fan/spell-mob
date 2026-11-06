@@ -77,4 +77,13 @@ public interface ISpellCaster {
      * @return remaining cooldown in ticks for that definition, 0 when ready
      */
     int cooldownTicks(SpellCastDefinition definition);
+
+    /**
+     * Hides and forgets the optional boss bar.
+     *
+     * <p>Called when the mob leaves the level: the bar would otherwise stay on the screens of the
+     * players that were nearby when it unloaded.</p>
+     */
+    default void removeBossBar() {
+    }
 }

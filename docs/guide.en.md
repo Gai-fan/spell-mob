@@ -343,6 +343,27 @@ Rules:
 
 **Renaming** a mob re-syncs its goals automatically within a tick. **Taming or untaming** does as well. **Changing tags does not** — run `/spellmob resync` afterwards.
 
+### Phase lock (`sticky`)
+
+Health bands are two-way by default: a boss that gets healed above the threshold falls back to the previous phase and swaps its whole spell list. Adding `"sticky": true` to a variant **locks it once it matched**, so healing does not undo it; dropping into a deeper phase is still allowed, and the lock only ever moves forward.
+
+```json
+{
+  "variants": [
+    { "select": { "healthBelow": 0.5 }, "sticky": true,
+      "goals": [ { "spell": "irons_spellbooks:wither_skull", "cooldown": 100 } ] },
+
+    { "select": { "healthBelow": 0.2 }, "sticky": true,
+      "goals": [ { "spell": "irons_spellbooks:black_hole", "cooldown": 200 } ] }
+  ]
+}
+```
+
+- `sticky` defaults to `false`, i.e. the old two-way behaviour.
+- Only variants marked `sticky` are remembered; the others keep matching both ways.
+- Renaming resets the lock (it is a different individual now); the lock is saved with the mob, so unloading and reloading a chunk does not drop the phase.
+- It is also accepted inside `select`: `"select": { "healthBelow": 0.5, "sticky": true }`.
+
 ## Drops
 
 `dropRules` gives loot to casting mobs, and also lets a definition carry loot only (a “loot variant” that never casts).
@@ -428,9 +449,22 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
 | | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the boss effects: a larger outer ground ring plus pulse rings. |
 | | `bossExtras` | `true` | Adds the periodic pulse rings to boss effects. |
+| | `bossBar` | `false` | Show a vanilla boss bar for casters; independent from `enabled`, so you can keep the bar and drop the particles. |
+| | `bossBarColor` | `white` | Bar colour: `pink` / `blue` / `red` / `green` / `yellow` / `purple` / `white`. |
+| | `bossBarRange` | `48` | Players within this distance see the bar (8–128). |
+| | `bossBarTags` | `["spellmob_boss"]` | Mobs with these tags get a bar; empty means every mob with rules. |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).
+
+## Boss bar
+
+With `presentation.bossBar = true`, casters carrying one of `bossBarTags` (default: only `spellmob_boss`) get a vanilla boss bar:
+
+- The name is the mob's display name and the progress is its health fraction; the colour comes from `bossBarColor`.
+- Only players within `bossBarRange` blocks (spectators excluded) receive it; the recipient list follows players in and out of range.
+- Independent from `presentation.enabled`: set `enabled` to `false` and `bossBar` to `true` to keep only the bar.
+- The bar is removed when the mob dies or its chunk unloads, and config edits apply immediately.
 
 ## Commands
 

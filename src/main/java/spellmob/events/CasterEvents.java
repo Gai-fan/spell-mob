@@ -73,6 +73,9 @@ public final class CasterEvents {
             ISpellCaster caster = SpellCasterAttachments.peek(mob);
             if (caster != null) {
                 caster.cancel(CancelReason.UNLOADED);
+                // The bar is a player facing object: leaving it behind keeps a ghost bar on the
+                // screen of everyone who was standing next to the mob.
+                caster.removeBossBar();
             }
         }
     }

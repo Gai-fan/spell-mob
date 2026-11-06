@@ -2,9 +2,12 @@ package spellmob.config;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import spellmob.util.Logs;
 
 /**
  * Server side configuration.
@@ -31,6 +34,11 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
     private static final ModConfigSpec.BooleanValue BOSS_EXTRAS;
+    private static final ModConfigSpec.BooleanValue BOSS_BAR;
+    private static final ModConfigSpec.ConfigValue<String> BOSS_BAR_COLOR;
+    private static final ModConfigSpec.DoubleValue BOSS_BAR_RANGE;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_BAR_TAGS;
+    private static boolean WARNED_BOSS_BAR_COLOR;
     private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
@@ -113,12 +121,25 @@ public final class SpellMobConfig {
                         "（施法被打断时冒烟并播放熄灭音效）")
                 .define("interruptFeedback", true);
         BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss effects.",
-                        "Boss casters also get a vertical magic circle in front of them.",
                         "（带有任一这些计分板标签的生物使用 Boss 特效；Boss 施法者脚下会多一圈更大的外环并周期性脉冲）")
                 .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
-        BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 10 ticks.",
-                        "（Boss 施法者还会每 10 tick 向外扩散一圈脉冲尘环）")
+        BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 20 ticks.",
+                        "（Boss 施法者还会每 20 tick 向外扩散一圈脉冲尘环）")
                 .define("bossExtras", true);
+        BOSS_BAR = builder.comment("Show a boss bar above casters that carry one of 'bossBarTags'.",
+                        "Independent from 'enabled', so the bar can stay while the rings are off.",
+                        "（为带有 bossBarTags 标签的施法者显示 Boss 血条；与 enabled 相互独立，可以只开血条不开法阵）")
+                .define("bossBar", false);
+        BOSS_BAR_COLOR = builder.comment("Boss bar colour: pink, blue, red, green, yellow, purple or white.",
+                        "（Boss 血条颜色：pink/blue/red/green/yellow/purple/white）")
+                .define("bossBarColor", "white");
+        BOSS_BAR_RANGE = builder.comment("Players within this many blocks see the boss bar.",
+                        "（这个距离内的玩家能看到 Boss 血条）")
+                .defineInRange("bossBarRange", 48.0D, 8.0D, 128.0D);
+        BOSS_BAR_TAGS = builder.comment("Mobs carrying any of these scoreboard tags get a boss bar.",
+                        "Leave empty to give every caster a bar.",
+                        "（带有任一这些计分板标签的生物显示血条；留空表示所有配置了规则的生物都显示）")
+                .defineList("bossBarTags", List.of("spellmob_boss"), value -> value instanceof String);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -240,6 +261,53 @@ public final class SpellMobConfig {
     /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
     public static boolean bossExtras() {
         return !ready() || BOSS_EXTRAS.get();
+    }
+
+    /** @return whether casters carrying {@link #bossBarTags()} show a boss bar */
+    public static boolean bossBarEnabled() {
+        return !ready() || BOSS_BAR.get();
+    }
+
+    /** @return radius in blocks inside which players see the boss bar */
+    public static double bossBarRange() {
+        return ready() ? BOSS_BAR_RANGE.get() : 48.0D;
+    }
+
+    /**
+     * @param entity the casting entity
+     * @return true when the entity is allowed to show a boss bar
+     */
+    public static boolean isBossBarCaster(Entity entity) {
+        if (!ready() || entity == null) {
+            return false;
+        }
+        List<? extends String> tags = BOSS_BAR_TAGS.get();
+        if (tags.isEmpty()) {
+            return true;
+        }
+        for (String tag : tags) {
+            if (entity.getTags().contains(tag)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** @return the configured boss bar colour, falling back to white for unknown values */
+    public static BossEvent.BossBarColor bossBarColor() {
+        String raw = ready() ? BOSS_BAR_COLOR.get() : "white";
+        if (raw == null || raw.isBlank()) {
+            return BossEvent.BossBarColor.WHITE;
+        }
+        try {
+            return BossEvent.BossBarColor.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            if (!WARNED_BOSS_BAR_COLOR) {
+                WARNED_BOSS_BAR_COLOR = true;
+                Logs.warn("Unknown presentation.bossBarColor '{}', using white", raw);
+            }
+            return BossEvent.BossBarColor.WHITE;
+        }
     }
 
     /**
