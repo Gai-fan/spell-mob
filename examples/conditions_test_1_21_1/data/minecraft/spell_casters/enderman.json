@@ -1,0 +1,20 @@
+{
+  "variants": [
+    {
+      "select": { "name": "test-enderman" },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:teleport",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 2,
+          "range": 24,
+          "conditions": {
+            "world": { "time": ["night"] },
+            "self": { "inWater": false }
+          }
+        }
+      ]
+    }
+  ]
+}
