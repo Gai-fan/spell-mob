@@ -1,0 +1,18 @@
+{
+  "variants": [
+    {
+      "select": {
+        "name": "test-zombie"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24
+        }
+      ]
+    }
+  ]
+}

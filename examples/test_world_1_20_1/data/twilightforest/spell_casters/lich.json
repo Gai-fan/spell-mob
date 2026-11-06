@@ -1,0 +1,91 @@
+{
+  "variants": [
+    {
+      "select": {
+        "name": "test-lich"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:wither_skull",
+          "level": 2,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "night"
+              ]
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:chain_lightning",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "weather": [
+                "rain"
+              ]
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 3,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "weather": [
+                "thunder"
+              ]
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "day"
+              ]
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:raise_dead",
+          "level": 2,
+          "cooldown": 160,
+          "priority": 1,
+          "range": 24,
+          "conditions": {
+            "world": {
+              "time": [
+                "night"
+              ]
+            },
+            "self": {
+              "onFire": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

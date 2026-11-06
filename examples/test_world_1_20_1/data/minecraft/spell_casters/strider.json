@@ -1,0 +1,32 @@
+{
+  "variants": [
+    {
+      "select": {
+        "name": "test-strider"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "NEAREST_PLAYER"
+        },
+        {
+          "spell": "irons_spellbooks:magma_bomb",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "target": "NEAREST_PLAYER",
+          "conditions": {
+            "self": {
+              "inLava": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
