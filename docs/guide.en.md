@@ -454,6 +454,13 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `maxRange` | `32` | Hard cap on `range` from data packs (up to 128). |
 | | `interruptChannelsOnDamage` | `true` | Damage interrupts channeled spells. |
 | | `globalCooldown` | `0` | Global cooldown in ticks: after one cast every spell of that caster waits this long. `0` disables it, max 400. |
+| `adaptive` | `enabled` | `true` | Master switch for bosses learning spells from players they defeated. |
+| | `adaptiveTag` | `spellmob_adaptive` | Scoreboard tag that marks a boss as able to learn; the boss must have it. |
+| | `maxLearnedSpells` | `1` | How many spells one boss may learn in total (0–8); `0` disables learning. |
+| | `rememberedSpells` | `6` | How many spells of one player are remembered per fight (1–16). |
+| | `learnedCooldown` | `-1` | Cooldown of a learned spell in ticks (-1–1200); `-1` follows the spell's own cooldown (seconds × 20), `>= 0` uses a fixed value. |
+| | `learnedPriority` | `2` | Goal priority of a learned spell (0–9, lower runs first). |
+| | `spellBlacklist` | teleport/blood_step/evasion | Spells a boss may never learn. |
 | `filters` | `entityBlacklist` | empty | Entity ids that never cast. |
 | | `dimensionBlacklist` | empty | Dimensions where casting is disabled. |
 | `protection` | `protectedTags` | empty | Mobs with these tags cannot be renamed with a name tag. |
@@ -485,6 +492,17 @@ With `presentation.bossBar = true`, casters carrying one of `bossBarTags` (defau
 - Independent from `presentation.enabled`: set `enabled` to `false` and `bossBar` to `true` to keep only the bar.
 - The bar is removed when the mob dies or its chunk unloads, and config edits apply immediately.
 - Data packs can override it per individual: put `"bossBar": true` or `"bossBar": false` in the root of a `spell_casters` file or inside a variant. That beats `bossBarTags` and `presentation.bossBar`; leave it out to follow the config. Two mobs of the same type can therefore show and hide the bar respectively (the bundled `zombie.json` demonstrates exactly that).
+
+## Adaptive bosses
+
+This is the "second encounter" mechanic: after a boss defeats a player, the next time they meet the boss learns one of the spells that player used last time, always at that spell's maximum level.
+
+- Gate: `adaptive.enabled` must be on and the boss must carry the scoreboard tag named by `adaptive.adaptiveTag` (default `spellmob_adaptive`). `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` turns a mob into a learner.
+- Recording: a fight starts when either side hits the other; every spell the player casts during it is remembered, up to `rememberedSpells` per player.
+- Learning: if the player dies to the boss (or within 48 blocks of it) the fight counts as a loss; on the next fight the boss randomly learns one remembered spell that it does not know yet and that is not in `spellBlacklist`.
+- Limits: at most `maxLearnedSpells` per boss (default 1, `0` disables learning); learned spells use `learnedCooldown` and `learnedPriority` like any other goal and always cast at `getMaxLevel()`. `learnedCooldown = -1` follows the spell's own default cooldown, `>= 0` pins a fixed tick value; either way `balance.cooldownMultiplier` still applies.
+- The default blacklist is `irons_spellbooks:teleport`, `blood_step` and `evasion`, so bosses do not pick up escape tools.
+- State is stored in the mob's NBT (`adaptive` sub-tag) and survives death, dimension changes and `/reload`; goals are rebuilt from the caster state on every sync.
 
 ## Commands
 

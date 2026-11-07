@@ -7,6 +7,18 @@
 
 ---
 
+## [2.1.1] — 2026-11-07
+
+### 新增
+
+- **会学习的 Boss（`[adaptive]`）**：带 `adaptive.adaptiveTag`（默认 `spellmob_adaptive`）标签的 Boss，在打败过某个玩家后，下次再遇到该玩家时随机学会对方上次用过的法术，并固定以最高等级释放。默认一生只学 1 个（`maxLearnedSpells`，0 = 不学），每场最多记 `rememberedSpells` 个，冷却默认跟随法术自身（`learnedCooldown = -1`）并受 `cooldownMultiplier` 缩放，优先级 `learnedPriority`，`spellBlacklist` 默认排除传送、血步、闪避。学习状态存在生物 NBT 里，`/reload` 不会丢。
+
+### 文档
+
+- 指南、README、CHANGELOG 补充会学习 Boss 的配置表、用法与测试标签命令。
+
+---
+
 ## [2.1.0] — 2026-11-07
 
 ### 新增

@@ -2,28 +2,39 @@ package spellmob.capability;
 
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.magic.SpellSelectionManager;
+import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.CastSource;
 import io.redspace.ironsspellbooks.api.spells.CastType;
 import io.redspace.ironsspellbooks.capabilities.magic.SyncedSpellData;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 import spellmob.config.SpellMobConfig;
+import spellmob.data.CastConditions;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterRegistry;
 import spellmob.data.SpellCasterRules;
+import spellmob.data.TargetSpec;
 import spellmob.goal.CastGoalSync;
 import spellmob.presentation.CasterBossBar;
 import spellmob.presentation.CastingPresentation;
@@ -69,6 +80,18 @@ public final class SpellCaster implements ISpellCaster {
      * naming a cooldown group the same way.
      */
     private int globalCooldown;
+
+    /** Player UUID -> the spells that player cast while fighting this boss. */
+    private final Map<UUID, List<ResourceLocation>> encounterSpells = new HashMap<>();
+
+    /** Players this boss is currently fighting. */
+    private final Set<UUID> engagedPlayers = new HashSet<>();
+
+    /** Players that died while fighting this boss and have not come back yet. */
+    private final Set<UUID> defeatedPlayers = new HashSet<>();
+
+    /** Spells copied from defeated players; always cast at the spell's maximum level. */
+    private final List<ResourceLocation> learnedSpells = new ArrayList<>();
 
     @Nullable
     private ActiveCast active;
@@ -408,6 +431,123 @@ public final class SpellCaster implements ISpellCaster {
         return this.globalCooldown > 0;
     }
 
+    /**
+     * @return true when this boss may learn spells from players that lose to it: the config switch
+     *     is on, the mob carries the adaptive tag and it has data pack rules
+     */
+    public boolean isAdaptive() {
+        return SpellMobConfig.adaptiveEnabled()
+                && SpellCasterRegistry.get(mob.getType()) != null
+                && mob.getTags().contains(SpellMobConfig.adaptiveTag());
+    }
+
+    /**
+     * Marks a player as fighting this boss. A player that had already died to the boss and comes
+     * back triggers the learning step here.
+     *
+     * @param player the player that attacked or was attacked
+     */
+    public void engage(Player player) {
+        if (!isAdaptive()) {
+            return;
+        }
+        UUID id = player.getUUID();
+        if (engagedPlayers.add(id) && defeatedPlayers.remove(id) && learnFrom(id)) {
+            CastGoalSync.sync(mob);
+        }
+    }
+
+    /**
+     * Records a spell a player cast while fighting this boss.
+     *
+     * @param player  the casting player
+     * @param spellId the Iron's Spellbooks spell id
+     */
+    public void recordPlayerSpell(Player player, ResourceLocation spellId) {
+        if (!isAdaptive()) {
+            return;
+        }
+        UUID id = player.getUUID();
+        if (!engagedPlayers.contains(id) && !defeatedPlayers.contains(id)) {
+            return;
+        }
+        List<ResourceLocation> spells = encounterSpells.computeIfAbsent(id, key -> new ArrayList<>());
+        if (spells.contains(spellId) || spells.size() >= SpellMobConfig.adaptiveRememberedSpells()) {
+            return;
+        }
+        spells.add(spellId);
+    }
+
+    /**
+     * Freezes the spells of a player that just died to this boss; the next fight unlocks one of
+     * them.
+     *
+     * @param player the dying player
+     */
+    public void markPlayerDefeated(Player player) {
+        UUID id = player.getUUID();
+        if (engagedPlayers.remove(id)) {
+            defeatedPlayers.add(id);
+        }
+    }
+
+    /**
+     * @return the learned spells as cast definitions, at the spell's maximum level
+     */
+    public List<SpellCastDefinition> learnedDefinitions() {
+        if (learnedSpells.isEmpty()) {
+            return List.of();
+        }
+        List<SpellCastDefinition> definitions = new ArrayList<>(learnedSpells.size());
+        for (ResourceLocation spellId : learnedSpells) {
+            AbstractSpell spell = SpellRegistry.getSpell(spellId);
+            if (spell == null || !spell.isEnabled()) {
+                continue;
+            }
+            int configuredCooldown = SpellMobConfig.learnedCooldownTicks();
+            int cooldown = configuredCooldown >= 0 ? configuredCooldown : Math.max(1, spell.getSpellCooldown() * 20);
+            definitions.add(new SpellCastDefinition(spellId, spell.getMaxLevel(),
+                    cooldown, SpellMobConfig.learnedPriority(), 24.0D,
+                    TargetSpec.attackTarget(), -1, 10, CastConditions.NONE, false, null, 1.0D, false,
+                    "learned/" + spellId));
+        }
+        return definitions;
+    }
+
+    /**
+     * Copies one spell of a defeated player into the learned list.
+     *
+     * @param playerId the player that lost the previous fight
+     * @return true when the boss learned something, so its goals must be rebuilt
+     */
+    private boolean learnFrom(UUID playerId) {
+        if (learnedSpells.size() >= SpellMobConfig.maxLearnedSpells()) {
+            return false;
+        }
+        List<ResourceLocation> cast = encounterSpells.get(playerId);
+        if (cast == null) {
+            return false;
+        }
+        List<ResourceLocation> candidates = new ArrayList<>();
+        for (ResourceLocation spellId : cast) {
+            if (learnedSpells.contains(spellId) || SpellMobConfig.isAdaptiveBlacklisted(spellId)) {
+                continue;
+            }
+            AbstractSpell spell = SpellRegistry.getSpell(spellId);
+            if (spell == null || !spell.isEnabled()) {
+                continue;
+            }
+            candidates.add(spellId);
+        }
+        if (candidates.isEmpty()) {
+            return false;
+        }
+        ResourceLocation picked = candidates.get(mob.getRandom().nextInt(candidates.size()));
+        learnedSpells.add(picked);
+        Logs.debug("{} learned {} from {}", mob, picked, playerId);
+        return true;
+    }
+
     @Override
     public boolean isReady(SpellCastDefinition definition) {
         if (resolving || active != null || !SpellMobConfig.enabled() || mob.tickCount < retryAtTick) {
@@ -657,12 +797,14 @@ public final class SpellCaster implements ISpellCaster {
         if (this.globalCooldown > 0) {
             tag.putInt("globalCooldown", this.globalCooldown);
         }
+        saveAdaptive(tag);
         return tag;
     }
 
     void load(CompoundTag tag) {
         this.lockedVariant = tag.contains("lockedVariant") ? tag.getInt("lockedVariant") : -1;
         this.globalCooldown = tag.contains("globalCooldown") ? Math.max(0, tag.getInt("globalCooldown")) : 0;
+        loadAdaptive(tag);
         cooldowns.clear();
         CompoundTag stored = tag.getCompound("cooldowns");
         for (String key : stored.getAllKeys()) {
@@ -671,6 +813,82 @@ public final class SpellCaster implements ISpellCaster {
                 cooldowns.put(key, ticks);
             }
         }
+    }
+
+    private void saveAdaptive(CompoundTag tag) {
+        if (learnedSpells.isEmpty() && engagedPlayers.isEmpty() && defeatedPlayers.isEmpty()
+                && encounterSpells.isEmpty()) {
+            return;
+        }
+        CompoundTag state = new CompoundTag();
+        state.put("learned", strings(learnedSpells));
+        state.put("engaged", uuids(engagedPlayers));
+        state.put("defeated", uuids(defeatedPlayers));
+        CompoundTag encounters = new CompoundTag();
+        encounterSpells.forEach((uuid, spells) -> encounters.put(uuid.toString(), strings(spells)));
+        state.put("encounters", encounters);
+        tag.put("adaptive", state);
+    }
+
+    private void loadAdaptive(CompoundTag tag) {
+        learnedSpells.clear();
+        engagedPlayers.clear();
+        defeatedPlayers.clear();
+        encounterSpells.clear();
+        if (!tag.contains("adaptive")) {
+            return;
+        }
+        CompoundTag state = tag.getCompound("adaptive");
+        learnedSpells.addAll(ids(state.getList("learned", 8)));
+        engagedPlayers.addAll(uuids(state.getList("engaged", 8)));
+        defeatedPlayers.addAll(uuids(state.getList("defeated", 8)));
+        CompoundTag encounters = state.getCompound("encounters");
+        for (String key : encounters.getAllKeys()) {
+            try {
+                encounterSpells.put(UUID.fromString(key), ids(encounters.getList(key, 8)));
+            } catch (IllegalArgumentException ignored) {
+                // A corrupt key is simply dropped; it cannot match a player anyway.
+            }
+        }
+    }
+
+    private static ListTag strings(List<ResourceLocation> ids) {
+        ListTag list = new ListTag();
+        for (ResourceLocation id : ids) {
+            list.add(StringTag.valueOf(id.toString()));
+        }
+        return list;
+    }
+
+    private static ListTag uuids(Set<UUID> ids) {
+        ListTag list = new ListTag();
+        for (UUID id : ids) {
+            list.add(StringTag.valueOf(id.toString()));
+        }
+        return list;
+    }
+
+    private static List<ResourceLocation> ids(ListTag list) {
+        List<ResourceLocation> ids = new ArrayList<>(list.size());
+        for (int i = 0; i < list.size(); i++) {
+            ResourceLocation id = ResourceLocation.tryParse(list.getString(i));
+            if (id != null) {
+                ids.add(id);
+            }
+        }
+        return ids;
+    }
+
+    private static Set<UUID> uuids(ListTag list) {
+        Set<UUID> ids = new HashSet<>();
+        for (int i = 0; i < list.size(); i++) {
+            try {
+                ids.add(UUID.fromString(list.getString(i)));
+            } catch (IllegalArgumentException ignored) {
+                // Skip malformed entries rather than failing the whole tag.
+            }
+        }
+        return ids;
     }
 
     /** One in-flight cast. */

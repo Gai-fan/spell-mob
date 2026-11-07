@@ -6,6 +6,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import spellmob.capability.ISpellCaster;
+import spellmob.capability.SpellCaster;
+import spellmob.capability.SpellCasterCapability;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterData;
 import spellmob.data.SpellCasterRegistry;
@@ -76,6 +79,14 @@ public final class CastGoalSync {
         }
         for (SpellCastDefinition definition : data.goals()) {
             mob.goalSelector.addGoal(definition.priority(), new CastSpellGoal(mob, definition));
+        }
+        // Learned spells live outside the data pack: they are rebuilt from the caster state on
+        // every sync so a /reload or a variant change never wipes what a boss has learned.
+        ISpellCaster caster = mob.getCapability(SpellCasterCapability.capability()).resolve().orElse(null);
+        if (caster instanceof SpellCaster spellCaster) {
+            for (SpellCastDefinition learned : spellCaster.learnedDefinitions()) {
+                mob.goalSelector.addGoal(learned.priority(), new CastSpellGoal(mob, learned));
+            }
         }
         Logs.debug("{} now knows {} casting goal(s) [{}]", mob, data.goals().size(), rules.describeMatch(mob));
     }
