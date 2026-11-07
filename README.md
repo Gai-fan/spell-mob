@@ -176,7 +176,7 @@ my_spellmob_pack/
 | `spell` | string | 必填 | ISS 法术 id，例如 `irons_spellbooks:fireball`；必须已注册且未被 ISS 配置禁用 |
 | `level` | int | `1` | 法术等级，1–10；超过该法术最大等级会被截到上限 |
 | `cooldown` | int | `-1` | 冷却（tick）。`-1` 使用 ISS 的默认冷却（秒 × 20）；实际最小 1 tick |
-| `priority` | int | `1` | Goal 优先级，0–9，数字越小越优先；只对 `goals` 有意义 |
+| `priority` | int | `1` | Goal 优先级，0–9，数字越小越优先；**近战怪必须保持 1**，否则会被原版近战 Goal 抢走（见下） |
 | `range` | double | `16.0` | 施法/索敌距离（格）；最终会被 `balance.maxRange`（默认 32）截断 |
 | `castTime` | int | `-1` | 吟唱时间（tick）。`-1` 使用 ISS 计算值；`0` 表示瞬发 |
 | `checkInterval` | int | `10` | 周期性 Goal 重新检查的间隔（tick），范围 1–200 |
@@ -186,6 +186,22 @@ my_spellmob_pack/
 | `cooldownGroup` | string | 无 | 共享冷却组，1–32 字符，只允许 `a-z0-9_.-`；同组法术共用冷却 |
 | `chance` | double | `1.0` | 每次尝试真正施放的概率（0–1）；未命中时等下一次检查 |
 | `repeatOnCast` | bool | `true` | 仅 `CONTINUOUS` 引导法术：是否每 10 tick 重跑一次 `onCast`；对于“每次结算都会重新生成实体”的法术建议设为 `false` |
+
+#### 优先级与原版 AI 的抢占
+
+施法 Goal 占用 `MOVE + LOOK`，按 `priority` 注册进原版 `goalSelector`；原版规则是“数字更小的 Goal 可以抢占正在运行的 Goal”，所以这个字段决定施法能不能压过近战/远程 AI：
+
+| 生物 | 原版攻击 Goal | 优先级 |
+|---|---|---|
+| 僵尸、尸壳 | `ZombieAttackGoal` | 2 |
+| 骷髅、流浪者 | `RangedBowAttackGoal` | 4 |
+| 烈焰人 | `BlazeAttackGoal` | 4 |
+
+- `1`（默认）能抢占上表所有攻击 Goal：有法术就停下施法，冷却/条件不满足时让位给近战，表现为“停下施法 → 继续追”。
+- `2` 及以上会与僵尸近战同档；近战 Goal 是生物自己先注册的，同档先注册者胜，**结果就是只追人、永远不放法术**。
+- `0` 一般不需要，只有当生物自带优先级 0–1 的移动 Goal（如 `PanicGoal`）时才有区别。
+- 目标超出 `range` 同样会让位给近战；想远程开打就把 `range` 调大（上限 `balance.maxRange`，默认 32）。
+- 近战 Goal 属于原版生物，本模组只能抢占、不能删除；目前没有“禁用近战”的开关。
 
 > `level` 会在解析时按 ISS 给出的法术上限进行夹取；`range` 会被全局 `maxRange` 限制；`cooldown` 的最小有效值是 1 tick。
 
