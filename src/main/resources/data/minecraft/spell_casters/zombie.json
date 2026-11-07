@@ -1,0 +1,214 @@
+{
+  "_comment": "内置测试（2.0.9）：用标签给僵尸挂上不同变体，未打标签的原版僵尸完全不受影响。",
+  "variants": [
+    {
+      "_comment": "施法者状态 + 血条：/tag @e[type=minecraft:zombie,limit=1] add spellmob_test_state",
+      "select": {
+        "tags": [
+          "spellmob_test_state"
+        ]
+      },
+      "override": true,
+      "bossBar": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 1,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "self": {
+              "inWater": true
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "castTime": 20,
+          "conditions": {
+            "self": {
+              "onFire": true
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "self": {
+              "frozen": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "和上面完全相同，只是强制不显示血条，用来对比：/tag @e[type=minecraft:zombie,limit=1] add spellmob_test_state_nobar",
+      "select": {
+        "tags": [
+          "spellmob_test_state_nobar"
+        ]
+      },
+      "override": true,
+      "bossBar": false,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 1,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "self": {
+              "inWater": true
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:fireball",
+          "level": 1,
+          "cooldown": 100,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "castTime": 20,
+          "conditions": {
+            "self": {
+              "onFire": true
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 1,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "self": {
+              "frozen": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "_comment": "世界状态：夜晚、打雷、满月、下界、白天晴天各一条：/tag @e[type=minecraft:zombie,limit=1] add spellmob_test_world",
+      "select": {
+        "tags": [
+          "spellmob_test_world"
+        ]
+      },
+      "override": true,
+      "bossBar": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:magic_missile",
+          "level": 1,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "world": {
+              "time": "night"
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:lightning_lance",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "world": {
+              "weather": "thunder"
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:wither_skull",
+          "level": 1,
+          "cooldown": 120,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "world": {
+              "time": "night",
+              "moonPhase": [
+                0
+              ]
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:cone_of_cold",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "world": {
+              "dimension": "minecraft:the_nether"
+            }
+          }
+        },
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 2,
+          "cooldown": 60,
+          "priority": 1,
+          "range": 24,
+          "target": "ATTACK_TARGET",
+          "conditions": {
+            "world": {
+              "time": "day",
+              "weather": "clear"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

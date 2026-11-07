@@ -23,10 +23,12 @@ import spellmob.util.Logs;
  * @param dropRules species wide loot rules; the matched variant may add its own, and every rule
  *                  whose selector matches the dying mob is rolled (they no longer replace each
  *                  other, so two rules can share a selector)
+ * @param bossBar   species wide boss bar override; {@code null} means "follow the presentation
+ *                  config", {@code true}/{@code false} force the bar on or off for these mobs
  * @param source    where the rules come from, shown by {@code /spellmob info}
  */
 public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant> variants,
-                               List<DropRule> dropRules, String source) {
+                               List<DropRule> dropRules, @Nullable Boolean bossBar, String source) {
 
     /** Source label used for rules read from {@code data/.../spell_casters}. */
     public static final String SOURCE_DATA_PACK = "data pack";
@@ -83,7 +85,8 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
             }
         }
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
-        return new SpellCasterRules(fallback, variants, dropRules, SOURCE_DATA_PACK);
+        Boolean bossBar = JsonHelper.optBooleanOrNull(json, "bossBar");
+        return new SpellCasterRules(fallback, variants, dropRules, bossBar, SOURCE_DATA_PACK);
     }
 
     /**
@@ -129,10 +132,16 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         // 'sticky' belongs to the variant, but accepting it inside 'select' too costs nothing and
         // spares file authors a confusing "nothing happened" when they put it one level too deep.
         boolean sticky = JsonHelper.optBoolean(json, "sticky", JsonHelper.optBoolean(select, "sticky", false));
+        // Same deal for 'bossBar': per variant control beats the config default, and "absent" must
+        // stay distinguishable from "false", so the Boolean stays nullable.
+        Boolean bossBar = JsonHelper.optBooleanOrNull(json, "bossBar");
+        if (bossBar == null) {
+            bossBar = JsonHelper.optBooleanOrNull(select, "bossBar");
+        }
         SpellCasterData data = SpellCasterData.parse(json, where);
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
-        return new SpellCasterVariant(selector, override, sticky, data == null ? SpellCasterData.EMPTY : data,
-                dropRules);
+        return new SpellCasterVariant(selector, override, sticky, bossBar,
+                data == null ? SpellCasterData.EMPTY : data, dropRules);
     }
 
     /**
@@ -149,6 +158,24 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
      */
     public boolean isSticky(int index) {
         return index >= 0 && index < variants.size() && variants.get(index).sticky();
+    }
+
+    /**
+     * Resolves the data pack boss bar override for one mob.
+     *
+     * @param mob the mob
+     * @return the matched variant's override when it has one, otherwise the species wide override,
+     * otherwise {@code null} meaning "follow the presentation config"
+     */
+    public @Nullable Boolean bossBar(Mob mob) {
+        int index = variantIndex(mob);
+        if (index >= 0) {
+            Boolean override = variants.get(index).bossBar();
+            if (override != null) {
+                return override;
+            }
+        }
+        return bossBar;
     }
 
     /**

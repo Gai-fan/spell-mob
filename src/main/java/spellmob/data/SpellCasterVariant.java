@@ -1,6 +1,7 @@
 package spellmob.data;
 
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * One individual rule inside a {@code spell_casters} file.
@@ -11,12 +12,15 @@ import java.util.List;
  * @param override  {@code true} replaces the species default, {@code false} appends to it
  * @param sticky    {@code true} keeps this variant after it matched once, even when the mob heals
  *                  back above the health threshold; meant for boss phases
+ * @param bossBar   forces the boss bar on ({@code true}) or off ({@code false}) for this variant;
+ *                  {@code null} falls back to the config default
  * @param data      the spells of this variant, may be {@link SpellCasterData#EMPTY} to silence the
  *                  mob when {@code override} is true
  * @param dropRules loot rules that only apply while this variant matches; every rule whose
  *                  selector matches the dying mob is rolled, in file order
  */
 public record SpellCasterVariant(VariantSelector selector, boolean override, boolean sticky,
+                                 @Nullable Boolean bossBar,
                                  SpellCasterData data, List<DropRule> dropRules) {
 
     public SpellCasterVariant {
