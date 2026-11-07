@@ -561,6 +561,8 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `pets.castRange` | `16.0` | 宠物法术最大射程 |
 | `pets.shareOwnerMana` | `true` | 宠物施法扣主人的法力 |
 | `pets.manaCostMultiplier` | `1.0` | 宠物法力消耗倍率 |
+| `pets.manaCostPercent` | `100` | 宠物法力消耗百分比（100 = 全额，与 `manaCostMultiplier` 相乘） |
+| `pets.castPriorityOverrides` | `[]` | 按生物类型单独设优先级，如 `["minecraft:wolf=2"]`；未列出的用 `castPriority` |
 | `filters.entityBlacklist` | `[]` | 永不施法的实体 id |
 | `filters.dimensionBlacklist` | `[]` | 禁用施法的维度 id |
 | `protection.protectedTags` | `[]` | 名字受保护的计分板标签；普通玩家不能用命名牌覆盖已有名字 |
@@ -622,6 +624,7 @@ extraRules = [
 | `/spellmob resync [目标]` | 重建目标（或执行者自己）的施法 Goal；改 tag 后使用 |
 | `/spellmob validate` | 用当前 ISS 法术表复查已加载配置，列出缺失/被禁用的法术与被数据包遮蔽的配置项 |
 | `/spellmob dump spells` | 把所有已注册的法术 id、施法类型、学派导出到 `config/spellmob-spells.txt`，写数据包时直接查 |
+| `/spellmob resetcooldown [目标]` | 清掉宠物的卷轴学习冷却（不给参数就是自己） |
 
 > 加载阶段被丢弃的条目（例如拼错法术 id）只会出现在日志里，`/spellmob validate` 检查的是已经成功加载的定义。排错时两者一起看。
 
@@ -648,7 +651,7 @@ extraRules = [
 
 已驯服的生物可以学法术：把法术卷轴丢到它脚边（要求它带 `scrollLearning.learnerTag` 标签，默认 `spellmob_learner`），地上会亮起该学派的法阵，`ritualTicks` 后卷轴被消耗、它学会卷轴上的法术。黑名单法术会画黑法阵并提示，卷轴留在地上；学完一本进入 `cooldown`（默认 30 分钟），一只宠物最多 `maxSpells` 个（默认 5）。再学同名法术只有更高等级的卷轴才会覆盖。
 
-学会的法术按宠物参数施法：`pets.castPriority`（默认 4，先近战再放法术）、`pets.castRange`（默认 16 格），冷却为 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)`（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放；`pets.shareOwnerMana` 打开时扣主人的法力。宠物坐下时能学但不能施法。
+学会的法术按宠物参数施法：`pets.castPriority`（默认 4，先近战再放法术；可用 `pets.castPriorityOverrides` 按生物类型单独覆盖，例如 `["minecraft:wolf=2"]`）、`pets.castRange`（默认 16 格），冷却为 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)`（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放；`pets.shareOwnerMana` 打开时扣主人的法力，消耗 = 基础 × `manaCostMultiplier` × `manaCostPercent` / 100。宠物坐下时能学但不能施法。同名法术被更高等级的卷轴覆盖时，法阵上会多出一圈螺旋上升的粒子。
 
 学到的法术存在生物 NBT 里，并给它加 `spellmob_caster` 标签，因此即使这个物种没有数据包规则，它也会继续 tick 冷却、继续施法。
 

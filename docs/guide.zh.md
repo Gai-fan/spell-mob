@@ -469,12 +469,12 @@ saves/<世界>/datapacks/我的法术/
 
 已驯服的生物可以把法术卷轴“教”给它：把卷轴丢到它脚边，地上会亮起该学派的法阵，几秒后卷轴被消耗，它学会这个法术，并把它加入自己的施法列表。
 
-- 前提：生物已驯服、带 `scrollLearning.learnerTag` 指定的标签（默认 `spellmob_learner`），且卷轴是主人自己丢的（`requireOwner`）。
+- 前提：生物已驯服，且带 `scrollLearning.learnerTag` 指定的标签（默认 `spellmob_learner`）或在它的变体里写了 `"learner": true`；卷轴必须是主人自己丢的（`requireOwner`）。
 - 判定：卷轴落地后 2.5 格内最近的合格宠物会开始仪式；黑名单里的法术会画一圈黑法阵并提示，卷轴留在地上不消耗。
-- 冷却与上限：每学完一本进入 `scrollLearning.cooldown`（默认 30 分钟）冷却；一只宠物最多学 `maxSpells` 个（默认 5，0 = 关闭学习）。
-- 等级：卷轴写的是几级就学几级；再学同名法术时，只有更高等级的卷轴才会覆盖旧等级。
-- 施法：学会的法术使用宠物专用参数——`pets.castPriority`（默认 4）、`pets.castRange`（默认 16 格），冷却按 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)` 计算（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放。
-- 法力：`pets.shareOwnerMana` 打开时（默认），宠物施法扣的是主人的法力，消耗按 `pets.manaCostMultiplier` 缩放；主人不在线时不检查法力、也不扣。
+- 冷却与上限：每学完一本进入 `scrollLearning.cooldown`（默认 30 分钟）冷却；一只宠物最多学 `maxSpells` 个（默认 5，0 = 关闭学习）。服务器管理员可以用 `/spellmob resetcooldown <目标>` 立刻清掉学习冷却。
+- 等级：卷轴写的是几级就学几级；再学同名法术时，只有更高等级的卷轴才会覆盖旧等级，此时法阵上会多出一圈螺旋上升的粒子（普通学习没有）。
+- 施法：学会的法术使用宠物专用参数——`pets.castPriority`（默认 4，可用 `pets.castPriorityOverrides` 按生物类型单独覆盖）、`pets.castRange`（默认 16 格），冷却按 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)` 计算（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放。
+- 法力：`pets.shareOwnerMana` 打开时（默认），宠物施法扣的是主人的法力，实际消耗 = 法术基础消耗 × `pets.manaCostMultiplier` × `pets.manaCostPercent` / 100；主人不在线时不检查法力、也不扣。
 - 其它：宠物坐下时仍能学卷轴，但坐下时不施法；`scrollLearning.enabled` 关掉后所有投掷卷轴都不再触发仪式。
 - 学会的状态存在生物 NBT 里（`adaptive.learned`），还带 `spellmob_caster` 标签，所以即使这个物种没有数据包规则，它也会继续 tick 冷却、继续施法。
 
@@ -520,6 +520,8 @@ saves/<世界>/datapacks/我的法术/
 | | `castRange` | `16.0` | 宠物法术的最大射程。 |
 | | `shareOwnerMana` | `true` | 宠物施法扣主人的法力。 |
 | | `manaCostMultiplier` | `1.0` | 宠物法力消耗倍率。 |
+| | `manaCostPercent` | `100` | 宠物法力消耗的百分比（100 = 全额，50 = 半价，0 = 免费），与 `manaCostMultiplier` 相乘。 |
+| | `castPriorityOverrides` | `[]` | 按生物类型单独设置施法优先级，例如 `["minecraft:wolf=2", "minecraft:cat:3"]`；没列出的用 `castPriority`。 |
 | `filters` | `entityBlacklist` | 空 | 永不施法的实体 id。 |
 | | `dimensionBlacklist` | 空 | 禁用施法的维度。 |
 | `protection` | `protectedTags` | 空 | 带这些标签的生物不能被命名牌改名。 |
@@ -553,6 +555,7 @@ saves/<世界>/datapacks/我的法术/
 | `/spellmob resync [目标]` | 对指定生物重新生成施法目标（不给参数就是自己）；改完标签后执行。 |
 | `/spellmob validate` | 检查所有已加载的法术 id，并列出被数据包遮蔽的配置条目。 |
 | `/spellmob dump spells` | 把所有已注册的法术 id、施法类型、学派导出到 `config/spellmob-spells.txt`。 |
+| `/spellmob resetcooldown [目标]` | 清掉宠物的卷轴学习冷却（不给参数就是自己），方便反复测试。 |
 
 ## 兼容性说明
 

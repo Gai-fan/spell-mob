@@ -491,6 +491,8 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `castRange` | `16.0` | Maximum range of pet spells. |
 | | `shareOwnerMana` | `true` | Pets spend their owner's mana. |
 | | `manaCostMultiplier` | `1.0` | Multiplier for pet mana costs. |
+| | `manaCostPercent` | `100` | Percentage of the mana cost a pet pays (100 = full, 50 = half, 0 = free); multiplied with `manaCostMultiplier`. |
+| | `castPriorityOverrides` | `[]` | Per entity type cast priority, e.g. `["minecraft:wolf=2", "minecraft:cat:3"]`; unlisted types use `castPriority`. |
 | `filters` | `entityBlacklist` | empty | Entity ids that never cast. |
 | | `dimensionBlacklist` | empty | Dimensions where casting is disabled. |
 | `protection` | `protectedTags` | empty | Mobs with these tags cannot be renamed with a name tag. |
@@ -538,12 +540,12 @@ This is the "second encounter" mechanic: after a boss defeats a player, the next
 
 A tamed mob can be taught a spell scroll: drop the scroll at its feet, a school coloured circle appears on the ground, and a few seconds later the scroll is consumed and the pet knows that spell.
 
-- Requirements: the mob is tamed, carries the tag named by `scrollLearning.learnerTag` (default `spellmob_learner`), and the scroll was dropped by its owner (`requireOwner`).
+- Requirements: the mob is tamed, carries the tag named by `scrollLearning.learnerTag` (default `spellmob_learner`) or its variant sets `"learner": true`, and the scroll was dropped by its owner (`requireOwner`).
 - Trigger: the nearest eligible pet within 2.5 blocks of the landed scroll starts the ritual. Blacklisted spells still draw a black circle and show a message, but the scroll stays on the ground.
-- Cooldown and limit: each completed lesson starts `scrollLearning.cooldown` (30 minutes by default); a pet knows at most `maxSpells` spells (`0` disables learning).
-- Levels: the scroll's level is the learned level; re-teaching the same spell only upgrades it when the new scroll is higher level.
-- Casting: learned spells use the pet numbers — `pets.castPriority` (default 4), `pets.castRange` (default 16) — and a cooldown of `clamp(spell cooldown × spellCooldownMultiplier, cooldownMin, cooldownMax)` (2× by default, 60–600 ticks), still scaled by `balance.cooldownMultiplier`.
-- Mana: with `pets.shareOwnerMana` (default on) a pet spends its owner's mana, scaled by `pets.manaCostMultiplier`; no check and no cost while the owner is offline.
+- Cooldown and limit: each completed lesson starts `scrollLearning.cooldown` (30 minutes by default); a pet knows at most `maxSpells` spells (`0` disables learning). Operators can clear the cooldown immediately with `/spellmob resetcooldown <targets>`.
+- Levels: the scroll's level is the learned level; re-teaching the same spell only upgrades it when the new scroll is higher level, and that upgrade adds a rising spiral of particles to the circle (plain lessons do not).
+- Casting: learned spells use the pet numbers — `pets.castPriority` (default 4, overridable per entity type via `pets.castPriorityOverrides`), `pets.castRange` (default 16) — and a cooldown of `clamp(spell cooldown × spellCooldownMultiplier, cooldownMin, cooldownMax)` (2× by default, 60–600 ticks), still scaled by `balance.cooldownMultiplier`.
+- Mana: with `pets.shareOwnerMana` (default on) a pet spends its owner's mana: base cost × `pets.manaCostMultiplier` × `pets.manaCostPercent` / 100; no check and no cost while the owner is offline.
 - Notes: sitting pets can still learn scrolls but do not cast while sitting; disabling `scrollLearning.enabled` turns every toss into an ordinary dropped item.
 - Learned state lives in the mob's NBT (`adaptive.learned`) and the mob gets the `spellmob_caster` tag, so it keeps ticking cooldowns and casting even when its species has no data pack rules.
 
@@ -558,6 +560,7 @@ Permission level 2 required.
 | `/spellmob resync [targets]` | Rebuilds casting goals for the given mobs (or yourself). Run after changing tags. |
 | `/spellmob validate` | Checks every loaded spell id and lists config entries shadowed by data packs. |
 | `/spellmob dump spells` | Writes every registered spell id, cast type and school to `config/spellmob-spells.txt`. |
+| `/spellmob resetcooldown [targets]` | Clears the scroll learning cooldown of the given pets (or yourself), handy while testing. |
 
 ## Compatibility notes
 

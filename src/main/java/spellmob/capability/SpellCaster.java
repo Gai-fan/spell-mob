@@ -506,7 +506,7 @@ public final class SpellCaster implements ISpellCaster {
             return List.of();
         }
         boolean pet = mob instanceof TamableAnimal tame && tame.isTame();
-        int priority = pet ? SpellMobConfig.petCastPriority() : SpellMobConfig.learnedPriority();
+        int priority = pet ? SpellMobConfig.petCastPriority(mob.getType()) : SpellMobConfig.learnedPriority();
         double range = pet ? SpellMobConfig.petCastRange() : 24.0D;
         List<SpellCastDefinition> definitions = new ArrayList<>(learnedSpells.size());
         for (Map.Entry<ResourceLocation, Integer> entry : learnedSpells.entrySet()) {
@@ -563,14 +563,20 @@ public final class SpellCaster implements ISpellCaster {
         this.scrollCooldownEnd = now + Math.max(0, ticks);
     }
 
+    /** Clears the scroll learning cooldown, used by {@code /spellmob resetcooldown}. */
+    public void clearScrollCooldown() {
+        this.scrollCooldownEnd = 0L;
+    }
+
     @Nullable
     private TamableAnimal tamedPet() {
         return mob instanceof TamableAnimal tame && tame.isTame() ? tame : null;
     }
 
     private float petManaCost(AbstractSpell spell, int level) {
+        double percent = SpellMobConfig.petManaCostPercent() / 100.0D;
         return (float) Math.max(0.0D,
-                spell.getManaCost(level) * SpellMobConfig.petManaCostMultiplier());
+                spell.getManaCost(level) * SpellMobConfig.petManaCostMultiplier() * percent);
     }
 
     /**
