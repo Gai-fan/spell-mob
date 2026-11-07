@@ -50,6 +50,23 @@ public final class SpellMobConfig {
     private static final ForgeConfigSpec.IntValue LEARNED_PRIORITY;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ADAPTIVE_BLACKLIST;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
+    private static final ForgeConfigSpec.BooleanValue SCROLL_LEARNING_ENABLED;
+    private static final ForgeConfigSpec.ConfigValue<String> SCROLL_LEARNER_TAG;
+    private static final ForgeConfigSpec.IntValue SCROLL_MAX_SPELLS;
+    private static final ForgeConfigSpec.IntValue SCROLL_COOLDOWN;
+    private static final ForgeConfigSpec.IntValue SCROLL_RITUAL_TICKS;
+    private static final ForgeConfigSpec.BooleanValue SCROLL_REQUIRE_OWNER;
+    private static final ForgeConfigSpec.DoubleValue SCROLL_SPELL_MULTIPLIER;
+    private static final ForgeConfigSpec.IntValue SCROLL_COOLDOWN_MIN;
+    private static final ForgeConfigSpec.IntValue SCROLL_COOLDOWN_MAX;
+    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> SCROLL_BLACKLIST;
+    private static final ForgeConfigSpec.BooleanValue PETS_DEFEND_OWNER;
+    private static final ForgeConfigSpec.BooleanValue PETS_AGGRESSIVE;
+    private static final ForgeConfigSpec.DoubleValue PETS_ENGAGE_RANGE;
+    private static final ForgeConfigSpec.IntValue PETS_CAST_PRIORITY;
+    private static final ForgeConfigSpec.DoubleValue PETS_CAST_RANGE;
+    private static final ForgeConfigSpec.BooleanValue PETS_SHARE_OWNER_MANA;
+    private static final ForgeConfigSpec.DoubleValue PETS_MANA_MULTIPLIER;
 
     public static final ForgeConfigSpec SPEC;
 
@@ -115,6 +132,73 @@ public final class SpellMobConfig {
                         List.of("irons_spellbooks:teleport", "irons_spellbooks:blood_step",
                                 "irons_spellbooks:evasion"),
                         value -> value instanceof String);
+        builder.pop();
+
+        builder.comment("Tamed pets that learn spells from scrolls thrown at their feet.",
+                        "（已驯服的宠物可以通过丢到脚下的法术卷轴学习法术）").push("scrollLearning");
+        SCROLL_LEARNING_ENABLED = builder.comment("Master switch for scroll learning.",
+                        "（总开关）")
+                .define("enabled", true);
+        SCROLL_LEARNER_TAG = builder.comment("Only tamed mobs carrying this scoreboard tag can learn.",
+                        "（只有带这个计分板标签的已驯服生物才能学习）")
+                .define("learnerTag", "spellmob_learner");
+        SCROLL_MAX_SPELLS = builder.comment("How many spells one pet may learn from scrolls (0 disables learning).",
+                        "（一只宠物最多能从卷轴学会几个法术，0 表示不能学）")
+                .defineInRange("maxSpells", 5, 0, 16);
+        SCROLL_COOLDOWN = builder.comment("Ticks a pet must wait after learning before it can learn again.",
+                        "（学完一本后要等多少 tick 才能再学，36000 = 30 分钟）")
+                .defineInRange("cooldown", 36000, 0, 720000);
+        SCROLL_RITUAL_TICKS = builder.comment("How long the learning ritual takes, in ticks.",
+                        "（学习法阵持续多少 tick，100 = 5 秒）")
+                .defineInRange("ritualTicks", 100, 20, 400);
+        SCROLL_REQUIRE_OWNER = builder.comment("Only the pet's owner may teach it.",
+                        "（只认主人丢的卷轴）")
+                .define("requireOwner", true);
+        SCROLL_SPELL_MULTIPLIER = builder.comment(
+                        "Learned spells reuse the spell's own cooldown times this multiplier.",
+                        "The result is clamped between cooldownMin and cooldownMax.",
+                        "（学会的法术冷却 = 法术自带冷却 × 该倍率，再夹在 cooldownMin 与 cooldownMax 之间）")
+                .defineInRange("spellCooldownMultiplier", 2.0D, 0.1D, 10.0D);
+        SCROLL_COOLDOWN_MIN = builder.comment("Lower bound for a learned spell's cooldown, in ticks.",
+                        "（学会法术冷却的下限，单位 tick）")
+                .defineInRange("cooldownMin", 60, 1, 1200);
+        SCROLL_COOLDOWN_MAX = builder.comment("Upper bound for a learned spell's cooldown, in ticks.",
+                        "（学会法术冷却的上限，单位 tick）")
+                .defineInRange("cooldownMax", 600, 1, 6000);
+        SCROLL_BLACKLIST = builder.comment("Spells a pet is never allowed to learn, e.g. escapes and summons.",
+                        "（永不被学会的法术 id，例如传送与召唤）")
+                .defineList("spellBlacklist",
+                        List.of("irons_spellbooks:teleport", "irons_spellbooks:blood_step",
+                                "irons_spellbooks:evasion", "irons_spellbooks:summon_vex",
+                                "irons_spellbooks:summon_swords", "irons_spellbooks:summon_polar_bear",
+                                "irons_spellbooks:summon_horse", "irons_spellbooks:raise_dead",
+                                "irons_spellbooks:raise_hell"),
+                        value -> value instanceof String);
+        builder.pop();
+
+        builder.comment("How tamed pets fight.",
+                        "（已驯服宠物的战斗行为）").push("pets");
+        PETS_DEFEND_OWNER = builder.comment("Pets attack whatever hurt their owner.",
+                        "（主人被攻击时，附近属于他的宠物会反击攻击者）")
+                .define("defendOwner", true);
+        PETS_AGGRESSIVE = builder.comment("Pets also pick the nearest hostile mob on their own.",
+                        "（宠物还会主动索敌最近的敌对生物）")
+                .define("aggressive", false);
+        PETS_ENGAGE_RANGE = builder.comment("How far a pet looks for a target, in blocks.",
+                        "（宠物索敌半径，单位方块）")
+                .defineInRange("engageRange", 24.0D, 4.0D, 64.0D);
+        PETS_CAST_PRIORITY = builder.comment("Goal priority of a learned spell on a pet (lower runs first).",
+                        "（宠物施法的 Goal 优先级，越小越先执行；默认 4 让它先近战再放法术）")
+                .defineInRange("castPriority", 4, 0, 9);
+        PETS_CAST_RANGE = builder.comment("How far a pet may cast, in blocks.",
+                        "（宠物施法距离，单位方块）")
+                .defineInRange("castRange", 16.0D, 4.0D, 48.0D);
+        PETS_SHARE_OWNER_MANA = builder.comment("Pets spend their owner's mana to cast.",
+                        "（宠物施法消耗主人的法力）")
+                .define("shareOwnerMana", true);
+        PETS_MANA_MULTIPLIER = builder.comment("Multiplier applied to the mana cost a pet pays.",
+                        "（宠物施法时法力消耗的倍率）")
+                .defineInRange("manaCostMultiplier", 1.0D, 0.0D, 4.0D);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -283,6 +367,88 @@ public final class SpellMobConfig {
             }
         }
         return false;
+    }
+
+    public static boolean scrollLearningEnabled() {
+        return ready() && SCROLL_LEARNING_ENABLED.get();
+    }
+
+    public static String scrollLearnerTag() {
+        return ready() ? SCROLL_LEARNER_TAG.get() : "spellmob_learner";
+    }
+
+    public static int scrollMaxSpells() {
+        return ready() ? SCROLL_MAX_SPELLS.get() : 5;
+    }
+
+    public static int scrollCooldownTicks() {
+        return ready() ? SCROLL_COOLDOWN.get() : 36000;
+    }
+
+    public static int scrollRitualTicks() {
+        return ready() ? SCROLL_RITUAL_TICKS.get() : 100;
+    }
+
+    public static boolean scrollRequireOwner() {
+        return !ready() || SCROLL_REQUIRE_OWNER.get();
+    }
+
+    public static boolean isScrollBlacklisted(ResourceLocation spellId) {
+        if (!ready()) {
+            return false;
+        }
+        String name = spellId.toString();
+        for (String entry : SCROLL_BLACKLIST.get()) {
+            if (entry != null && entry.equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Cooldown of a spell learned from a scroll, derived from the spell's own cooldown so a
+     * summons-heavy pack cannot turn a pet into a machine gun.
+     *
+     * @param spellCooldownSeconds the spell's own cooldown
+     * @return the clamped cooldown in ticks
+     */
+    public static int learnedSpellCooldown(int spellCooldownSeconds) {
+        if (!ready()) {
+            return Math.max(60, spellCooldownSeconds * 40);
+        }
+        double scaled = spellCooldownSeconds * 20.0D * SCROLL_SPELL_MULTIPLIER.get();
+        int min = SCROLL_COOLDOWN_MIN.get();
+        int max = SCROLL_COOLDOWN_MAX.get();
+        return (int) Math.max(min, Math.min(max, Math.round(scaled)));
+    }
+
+    public static boolean defendOwner() {
+        return !ready() || PETS_DEFEND_OWNER.get();
+    }
+
+    public static boolean petsAggressive() {
+        return ready() && PETS_AGGRESSIVE.get();
+    }
+
+    public static double petEngageRange() {
+        return ready() ? PETS_ENGAGE_RANGE.get() : 24.0D;
+    }
+
+    public static int petCastPriority() {
+        return ready() ? PETS_CAST_PRIORITY.get() : 4;
+    }
+
+    public static double petCastRange() {
+        return ready() ? PETS_CAST_RANGE.get() : 16.0D;
+    }
+
+    public static boolean shareOwnerMana() {
+        return !ready() || PETS_SHARE_OWNER_MANA.get();
+    }
+
+    public static double petManaCostMultiplier() {
+        return ready() ? PETS_MANA_MULTIPLIER.get() : 1.0D;
     }
 
     public static boolean isEntityBlacklisted(ResourceLocation id) {

@@ -15,6 +15,7 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
@@ -64,7 +65,10 @@ public final class CasterEvents {
         if (event.getEntity() instanceof Mob mob) {
             // A mob that enters the level starts with vanilla goals only, so a type without rules
             // has none of ours to clean up: skip the goal list copy and the variant match entirely.
-            if (SpellCasterRegistry.get(mob.getType()) != null) {
+            // Pets that learned a scroll have no rules either, but their learned goals must be
+            // restored as well, hence the tag check.
+            if (SpellCasterRegistry.get(mob.getType()) != null
+                    || mob.getTags().contains(SpellCaster.CASTER_TAG)) {
                 CastGoalSync.sync(mob);
             }
         }
@@ -125,7 +129,9 @@ public final class CasterEvents {
         }
         // Types without rules can never cast, so skip the capability lookup for them. This keeps
         // the per tick cost proportional to the configured mobs instead of every mob in the world.
-        if (SpellCasterRegistry.get(mob.getType()) == null) {
+        // Mobs that learned a scroll keep their caster alive even without rules.
+        if (SpellCasterRegistry.get(mob.getType()) == null
+                && !mob.getTags().contains(SpellCaster.CASTER_TAG)) {
             return;
         }
         mob.getCapability(SpellCasterCapability.capability()).ifPresent(ISpellCaster::tick);
@@ -143,7 +149,17 @@ public final class CasterEvents {
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             CastGoalSync.tick(event.getServer());
+            ScrollRituals.tick(event.getServer());
+            PetBehavior.tickAggressive(event.getServer(),
+                    event.getServer().overworld().getGameTime());
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(net.minecraftforge.event.server.ServerStoppedEvent event) {
+        // The ritual bookkeeping lives in static maps; a stopped server must not leak the previous
+        // worlds' entities into the next one (single player keeps the same JVM).
+        ScrollRituals.clear();
     }
 
     @SubscribeEvent
@@ -162,6 +178,14 @@ public final class CasterEvents {
         } else if (hurt instanceof ServerPlayer player && attacker instanceof Mob mob) {
             engageAdaptive(mob, player);
         }
+        if (hurt instanceof ServerPlayer owner && attacker instanceof LivingEntity living) {
+            PetBehavior.onOwnerHurt(owner, living);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onItemToss(ItemTossEvent event) {
+        ScrollRituals.onItemToss(event);
     }
 
     /**
