@@ -508,7 +508,7 @@ public final class SpellCaster implements ISpellCaster {
             int cooldown = configuredCooldown >= 0 ? configuredCooldown : Math.max(1, spell.getSpellCooldown() * 20);
             definitions.add(new SpellCastDefinition(spellId, spell.getMaxLevel(),
                     cooldown, SpellMobConfig.learnedPriority(), 24.0D,
-                    TargetSpec.attackTarget(), -1, 10, CastConditions.NONE, false, null, 1.0D, false,
+                    TargetSpec.attackTarget(), -1, 10, CastConditions.NONE, false, null, 1.0D, true,
                     "learned/" + spellId));
         }
         return definitions;
