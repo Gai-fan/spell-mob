@@ -77,7 +77,7 @@ Every cast object — inside `goals`, `onHurt`, `onTarget`, `onDeath`, `onKill`,
 | `spell` | string | — | **Required.** ISS spell id. |
 | `level` | int | `1` | Clamped to the spell's max level. |
 | `cooldown` | int (ticks) | the spell's own | 20 ticks = 1 second. After the config multiplier the minimum is 1 tick. |
-| `priority` | int 0–9 | `1` | Lower runs first, and also decides who wins against vanilla AI: the cast goal holds MOVE + LOOK, so `1` preempts melee (priority 2). Raise it if you want melee to win. |
+| `priority` | int 0–9 | `1` | Lower runs first, and decides whether the cast beats vanilla AI; see [Priority and vanilla AI](#priority-and-vanilla-ai). |
 | `range` | number | `16` | Blocks, capped by the config's `maxRange` (32 by default). |
 | `castTime` | int (ticks) | ISS's value | `0` = instant, `> 0` = wind-up or channel. Overrides ISS's cast-time reduction attribute. |
 | `checkInterval` | int (ticks) | `10` | How often the goal re-checks whether it can cast. |
@@ -87,6 +87,23 @@ Every cast object — inside `goals`, `onHurt`, `onTarget`, `onDeath`, `onKill`,
 | `repeatOnCast` | bool | `true` | Channeled (CONTINUOUS) spells only: re-run `onCast` every 10 ticks, like ISS's own casters. |
 | `target` | string or object | `ATTACK_TARGET` | See [Targets](#targets). |
 | `conditions` | object | — | Health, target distance, plus the `world` and `self` groups below. |
+
+### Priority and vanilla AI
+
+The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelector` at `priority`. Vanilla `GoalSelector` lets a goal with a **lower number preempt** the running one, so the field is not just our internal ordering: it decides whether casting can beat melee or ranged AI:
+
+| Mob | Vanilla attack goal | Priority |
+|---|---|---|
+| Zombie, husk | `ZombieAttackGoal` | 2 |
+| Skeleton, stray | `RangedBowAttackGoal` | 4 |
+| Blaze | `BlazeAttackGoal` | 4 |
+
+- `priority: 1` (default): preempts melee whenever a spell is ready, so the mob stops chasing while it casts. During cooldown, or when the conditions fail, `canUse()` returns false and melee takes over again — the "stop, cast, keep chasing" loop is expected.
+- `priority: 2` or higher: ties with zombie melee. The melee goal was registered first by the mob itself in `registerGoals()`, and on a tie the earlier registration wins, so **casting never gets a turn and the mob only chases**. Keep melee mobs at `1`.
+- `priority: 0`: rarely needed; only mobs that ship a movement goal at priority 0–1 (some `PanicGoal`/`FloatGoal`) require it.
+- A target farther than `range` also fails `canUse()` and hands control back to melee. Raise `range` (capped by the `maxRange` config, default 32) if the caster should open fire from farther away.
+
+The melee goal belongs to the vanilla mob, so this mod can only preempt it, never remove it. Today the only ways to keep a caster out of melee are `teleport`-style spells or a larger `range`.
 
 ### Conditions
 

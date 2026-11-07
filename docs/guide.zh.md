@@ -77,7 +77,7 @@ saves/<世界>/datapacks/我的法术/
 | `spell` | 字符串 | — | **必填**，ISS 法术 id。 |
 | `level` | 整数 | `1` | 自动夹到法术的最大等级。 |
 | `cooldown` | 整数（tick） | 法术自带 | 20 tick = 1 秒；乘上配置倍率后最少 1 tick。 |
-| `priority` | 整数 0–9 | `1` | 数字越小越先执行，同时决定与原版 AI 的抢占：施法目标占用 MOVE + LOOK，`1` 会抢占近战（优先级 2）。想让近战优先就调大。 |
+| `priority` | 整数 0–9 | `1` | 数字越小越优先，同时决定能不能抢过原版 AI；见[优先级与原版 AI 的抢占](#优先级与原版-ai-的抢占)。 |
 | `range` | 数值 | `16` | 格，会被配置里的 `maxRange`（默认 32）截断。 |
 | `castTime` | 整数（tick） | ISS 的值 | `0` = 瞬发，`> 0` = 读条或引导；写了就覆盖 ISS 的减读条属性。 |
 | `checkInterval` | 整数（tick） | `10` | 每隔多久重新判断一次能否施法。 |
@@ -87,6 +87,23 @@ saves/<世界>/datapacks/我的法术/
 | `repeatOnCast` | 布尔 | `true` | 只对引导（CONTINUOUS）法术生效：每 10 tick 重放一次 `onCast`，与 ISS 自己的施法怪一致。 |
 | `target` | 字符串或对象 | `ATTACK_TARGET` | 见[目标](#目标)。 |
 | `conditions` | 对象 | — | 血量、目标距离，以及 `world` / `self` 两组世界与施法者条件。 |
+
+### 优先级与原版 AI 的抢占
+
+施法 Goal 占用 `MOVE + LOOK`，按 `priority` 注册进原版 `goalSelector`。原版 `GoalSelector` 的规则是“数字更小的 Goal 可以抢占正在运行的 Goal”，所以这个字段不只是我们内部的排序，也决定施法能不能压过近战、远程 AI：
+
+| 生物 | 原版攻击 Goal | 优先级 |
+|---|---|---|
+| 僵尸、尸壳 | `ZombieAttackGoal` | 2 |
+| 骷髅、流浪者 | `RangedBowAttackGoal` | 4 |
+| 烈焰人 | `BlazeAttackGoal` | 4 |
+
+- `priority: 1`（默认）：有法术可放时抢占近战，施法期间不再追人；冷却中或条件不满足时 `canUse()` 失败，让位给近战，所以看起来是“停下施法 → 继续追”的循环，这是正常的。
+- `priority: 2` 及以上：与僵尸近战同档。近战 Goal 由生物自己在 `registerGoals()` 里先注册，同档先注册者胜，结果是**永远轮不到施法，只会追人**。给近战生物写规则时保持 `1`。
+- `priority: 0`：一般不需要；只有当这只生物自带优先级 0 或 1 的移动 Goal（部分生物的 `PanicGoal`、`FloatGoal` 在 0–1）时才用得上。
+- 距离超过 `range` 时同样 `canUse()` 失败、让位给近战。想让施法者站远处就开打，把 `range` 调大（会被配置 `maxRange` 截断，默认 32）。
+
+近战 Goal 是原版注册的，本模组只能抢占、不能删除。想让生物完全放弃近战，目前只能用 `teleport` 类法术或更大的 `range` 拉开距离。
 
 ### 条件
 
