@@ -130,7 +130,7 @@ public final class ScrollRituals {
             return;
         }
         if (SpellMobConfig.isScrollBlacklisted(data.spellId())) {
-            startRitual(level, pet, item, data.spellId(), data.level(), now, true);
+            startRitual(level, pet, item, data.spellId(), data.level(), now, true, false);
             notify(owner, Component.translatable("spellmob.message.scroll_blacklisted")
                     .withStyle(ChatFormatting.RED));
             return;
@@ -145,15 +145,16 @@ public final class ScrollRituals {
                     spell.getDisplayName(null)).withStyle(ChatFormatting.GRAY));
             return;
         }
-        startRitual(level, pet, item, data.spellId(), data.level(), now, false);
+        boolean upgrading = caster.learnedLevel(data.spellId()) > 0;
+        startRitual(level, pet, item, data.spellId(), data.level(), now, false, upgrading);
     }
 
     private static void startRitual(ServerLevel level, TamableAnimal pet, ItemEntity item,
                                     ResourceLocation spellId, int spellLevel, long now,
-                                    boolean rejected) {
+                                    boolean rejected, boolean upgraded) {
         int ticks = rejected ? REJECT_TICKS : SpellMobConfig.scrollRitualTicks();
         RITUALS.put(pet.getUUID(), new Ritual(pet.getUUID(), item.getUUID(), level.dimension(),
-                spellId, spellLevel, now, now + ticks, rejected));
+                spellId, spellLevel, now, now + ticks, rejected, upgraded));
         level.playSound(null, pet.blockPosition(), rejected
                 ? SoundEvents.FIRE_EXTINGUISH : SoundEvents.ILLUSIONER_PREPARE_MIRROR,
                 SoundSource.NEUTRAL, 0.7F, 1.0F);
@@ -183,7 +184,7 @@ public final class ScrollRituals {
             float progress = Math.min(1.0F, (now - ritual.startTick()) / duration);
             Vector3f colour = ritual.rejected() ? new Vector3f(0.05F)
                     : CastingPresentation.schoolColour(SpellRegistry.getSpell(ritual.spellId()));
-            RitualCircle.tick(level, pet, colour, progress, ritual.rejected());
+            RitualCircle.tick(level, pet, colour, progress, ritual.rejected(), ritual.upgraded());
             if (now < ritual.endTick()) {
                 continue;
             }
@@ -202,7 +203,7 @@ public final class ScrollRituals {
         if (caster == null || spell == null || spell == SpellRegistry.none()) {
             return;
         }
-        boolean upgraded = caster.learnedLevel(ritual.spellId()) > 0;
+        boolean upgraded = ritual.upgraded();
         caster.learnScrollSpell(ritual.spellId(), ritual.level());
         caster.startScrollCooldown(level.getGameTime(), SpellMobConfig.scrollCooldownTicks());
         CastGoalSync.sync(pet);
@@ -291,6 +292,6 @@ public final class ScrollRituals {
 
     private record Ritual(UUID petId, UUID itemId, ResourceKey<Level> dimension,
                           ResourceLocation spellId, int level, long startTick, long endTick,
-                          boolean rejected) {
+                          boolean rejected, boolean upgraded) {
     }
 }

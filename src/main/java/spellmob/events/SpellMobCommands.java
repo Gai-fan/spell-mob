@@ -29,6 +29,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import spellmob.SpellMob;
 import spellmob.capability.ISpellCaster;
+import spellmob.capability.SpellCaster;
 import spellmob.capability.SpellCasterAttachments;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterData;
@@ -79,7 +80,12 @@ public final class SpellMobCommands {
                         .executes(context -> validate(context.getSource())))
                 .then(Commands.literal("dump")
                         .then(Commands.literal("spells")
-                                .executes(context -> dumpSpells(context.getSource())))));
+                                .executes(context -> dumpSpells(context.getSource()))))
+                .then(Commands.literal("resetcooldown")
+                        .executes(SpellMobCommands::resetCooldownSelf)
+                        .then(Commands.argument("targets", EntityArgument.entities())
+                                .executes(context -> resetCooldown(context.getSource(),
+                                        EntityArgument.getEntities(context, "targets"))))));
     }
 
     private static int resyncSelf(CommandContext<CommandSourceStack> context) {
@@ -89,6 +95,28 @@ public final class SpellMobCommands {
             return 0;
         }
         return resync(context.getSource(), List.of(mob));
+    }
+
+    private static int resetCooldownSelf(CommandContext<CommandSourceStack> context) {
+        Entity entity = context.getSource().getEntity();
+        if (!(entity instanceof Mob mob)) {
+            context.getSource().sendFailure(Component.literal("Run this as a pet, or pass <targets>"));
+            return 0;
+        }
+        return resetCooldown(context.getSource(), List.of(mob));
+    }
+
+    private static int resetCooldown(CommandSourceStack source, Collection<? extends Entity> targets) {
+        int count = 0;
+        for (Entity entity : targets) {
+            if (entity instanceof Mob mob && SpellCasterAttachments.get(mob) instanceof SpellCaster caster) {
+                caster.clearScrollCooldown();
+                count++;
+            }
+        }
+        int reset = count;
+        source.sendSuccess(() -> Component.literal("Reset the scroll learning cooldown of " + reset + " pet(s)"), true);
+        return count;
     }
 
     private static int resync(CommandSourceStack source, Collection<? extends Entity> targets) {

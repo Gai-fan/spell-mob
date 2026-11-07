@@ -7,6 +7,21 @@
 
 ---
 
+## [2.1.5] — 2026-11-08
+
+### 新增
+
+- **`pets.manaCostPercent`**：宠物施法实际消耗的法力百分比（默认 100，0 = 免费），与 `manaCostMultiplier` 相乘。
+- **`pets.castPriorityOverrides`**：按生物类型单独设置宠物施法优先级，例如 `["minecraft:wolf=2", "minecraft:cat:3"]`；未列出的类型继续用 `castPriority`。
+- **升级法阵特效**：同一法术被更高等级的卷轴覆盖时，法阵上会多出一圈螺旋上升的粒子，普通学习没有。
+- **`/spellmob resetcooldown [目标]`**：立刻清掉宠物的卷轴学习冷却，方便反复测试。
+
+### 文档
+
+- 中英文指南、README 的 `[pets]` 配置表、命令表与卷轴教学章节同步。
+
+---
+
 ## [2.1.4] — 2026-11-08
 
 ### 新增

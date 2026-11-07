@@ -3,10 +3,13 @@ package spellmob.config;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import org.jetbrains.annotations.Nullable;
 import spellmob.util.Logs;
 
 /**
@@ -67,6 +70,8 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.DoubleValue PETS_CAST_RANGE;
     private static final ModConfigSpec.BooleanValue PETS_SHARE_OWNER_MANA;
     private static final ModConfigSpec.DoubleValue PETS_MANA_MULTIPLIER;
+    private static final ModConfigSpec.IntValue PETS_MANA_PERCENT;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> PETS_CAST_PRIORITY_OVERRIDES;
 
     public static final ModConfigSpec SPEC;
 
@@ -199,6 +204,12 @@ public final class SpellMobConfig {
         PETS_MANA_MULTIPLIER = builder.comment("Multiplier applied to the mana cost a pet pays.",
                         "（宠物施法时法力消耗的倍率）")
                 .defineInRange("manaCostMultiplier", 1.0D, 0.0D, 4.0D);
+        PETS_MANA_PERCENT = builder.comment("Percentage of the mana cost a pet actually pays (100 = full cost).",
+                        "（宠物施法实际消耗的法力百分比，100 表示全额，0 表示免费）")
+                .defineInRange("manaCostPercent", 100, 0, 400);
+        PETS_CAST_PRIORITY_OVERRIDES = builder.comment("Per entity type cast priority, e.g. \"minecraft:wolf=2\" (lower runs first).",
+                        "（按生物类型单独设置宠物施法优先级，例如 \"minecraft:wolf=2\"；没列出的用 castPriority）")
+                .defineList("castPriorityOverrides", List.<String>of(), value -> value instanceof String);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -439,6 +450,41 @@ public final class SpellMobConfig {
         return ready() ? PETS_CAST_PRIORITY.get() : 4;
     }
 
+    /**
+     * Resolves the cast priority of one pet type: {@code castPriorityOverrides} wins over the global
+     * {@code castPriority}, entries look like {@code minecraft:wolf=2} or {@code minecraft:wolf:2}.
+     *
+     * @param type the entity type of the pet, may be {@code null}
+     * @return the goal priority to use
+     */
+    public static int petCastPriority(@Nullable EntityType<?> type) {
+        int fallback = petCastPriority();
+        if (type == null || !ready()) {
+            return fallback;
+        }
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+        if (id == null) {
+            return fallback;
+        }
+        for (String entry : PETS_CAST_PRIORITY_OVERRIDES.get()) {
+            int separator = Math.max(entry.lastIndexOf('='), entry.lastIndexOf(':'));
+            if (separator <= 0) {
+                continue;
+            }
+            ResourceLocation key = ResourceLocation.tryParse(entry.substring(0, separator).trim());
+            if (!id.equals(key)) {
+                continue;
+            }
+            try {
+                return Math.max(0, Math.min(9, Integer.parseInt(entry.substring(separator + 1).trim())));
+            } catch (NumberFormatException exception) {
+                Logs.warn("pets.castPriorityOverrides: '{}' is not a number, ignoring", entry);
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
     public static double petCastRange() {
         return ready() ? PETS_CAST_RANGE.get() : 16.0D;
     }
@@ -449,6 +495,10 @@ public final class SpellMobConfig {
 
     public static double petManaCostMultiplier() {
         return ready() ? PETS_MANA_MULTIPLIER.get() : 1.0D;
+    }
+
+    public static int petManaCostPercent() {
+        return ready() ? PETS_MANA_PERCENT.get() : 100;
     }
 
     public static boolean isEntityBlacklisted(ResourceLocation id) {

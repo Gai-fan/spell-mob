@@ -33,9 +33,11 @@ public final class RitualCircle {
      * @param colour   school colour, black when the ritual is a rejection
      * @param progress 0 at the start, 1 when the ritual completes
      * @param rejected true for the short black "cannot learn" circle
+     * @param upgraded true when the scroll upgrades a spell the pet already knows, which adds a
+     *                 rising spiral on top of the regular circle
      */
     public static void tick(ServerLevel level, LivingEntity pet, Vector3f colour, float progress,
-                            boolean rejected) {
+                            boolean rejected, boolean upgraded) {
         Vec3 centre = pet.position().add(0.0D, 0.05D, 0.0D);
         float pulse = 0.85F + 0.15F * Mth.sin(progress * (float) Math.PI * 6.0F);
         float scale = 0.9F + progress * 0.3F;
@@ -53,6 +55,32 @@ public final class RitualCircle {
         drawStar(level, centre, dust);
         if (!rejected && level.getGameTime() % 6L == 0L) {
             drawRune(level, centre, colour);
+        }
+        if (!rejected && upgraded) {
+            drawSpiral(level, centre, dust, progress);
+        }
+    }
+
+    /**
+     * A helix of particles climbing out of the circle; only drawn when the scroll upgrades a spell
+     * the pet already knows, so the player gets a visual confirmation that this is not a new spell.
+     */
+    private static void drawSpiral(ServerLevel level, Vec3 centre, DustParticleOptions dust,
+                                   float progress) {
+        int points = 12;
+        double spin = progress * Math.PI * 6.0D;
+        for (int i = 0; i < points; i++) {
+            double t = i / (double) (points - 1);
+            double angle = spin + t * Math.PI * 3.0D;
+            double radius = 0.30D + 0.85D * t;
+            double y = 0.10D + 1.45D * t;
+            double x = centre.x + Math.cos(angle) * radius;
+            double z = centre.z + Math.sin(angle) * radius;
+            level.sendParticles(dust, x, centre.y + y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            if (i % 3 == 0) {
+                level.sendParticles(ParticleTypes.ENCHANT, x, centre.y + y, z, 0,
+                        0.0D, 0.05D, 0.0D, 0.02D);
+            }
         }
     }
 
