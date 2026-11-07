@@ -14,13 +14,15 @@ import org.jetbrains.annotations.Nullable;
  *                  back above the health threshold; meant for boss phases
  * @param bossBar   forces the boss bar on ({@code true}) or off ({@code false}) for this variant;
  *                  {@code null} falls back to the config default
+ * @param learner   {@code true} lets the mob learn spells from thrown scrolls; equivalent to giving
+ *                  it the {@code scrollLearning.learnerTag} tag, but stored in the data pack
  * @param data      the spells of this variant, may be {@link SpellCasterData#EMPTY} to silence the
  *                  mob when {@code override} is true
  * @param dropRules loot rules that only apply while this variant matches; every rule whose
  *                  selector matches the dying mob is rolled, in file order
  */
 public record SpellCasterVariant(VariantSelector selector, boolean override, boolean sticky,
-                                 @Nullable Boolean bossBar,
+                                 @Nullable Boolean bossBar, boolean learner,
                                  SpellCasterData data, List<DropRule> dropRules) {
 
     public SpellCasterVariant {

@@ -49,6 +49,11 @@
           "description": "Once this variant matches it stays active until the mob dies, even if health climbs back."
         },
         "bossBar": { "type": "boolean" },
+        "learner": {
+          "type": "boolean",
+          "default": false,
+          "description": "Lets a tamed mob learn spells from thrown scrolls without giving it the learner tag."
+        },
         "dropRules": {
           "type": "array",
           "items": { "$ref": "#/definitions/dropRule" }

@@ -381,6 +381,19 @@ Health bands are two-way by default: a boss that gets healed above the threshold
 - Renaming resets the lock (it is a different individual now); the lock is saved with the mob, so unloading and reloading a chunk does not drop the phase.
 - It is also accepted inside `select`: `"select": { "healthBelow": 0.5, "sticky": true }`.
 
+### Scroll learning (`learner`)
+
+Add `"learner": true` to a variant and the mob can learn spells from thrown scrolls. It is equivalent to giving the mob the `scrollLearning.learnerTag` tag, but expressed in the data pack:
+
+```json
+{ "select": { "name": "Bryan", "tamed": true }, "learner": true,
+  "goals": [ { "spell": "irons_spellbooks:fang_strike", "cooldown": 80 } ] }
+```
+
+- Only **tamed** mobs can learn; `learner` itself does not check taming, so pair it with `select.tamed`.
+- It is also accepted inside `select`: `"select": { "name": "Bryan", "tamed": true, "learner": true }`.
+- The bundled `wolf.json` is an example: a wild Bryan only casts fang strike, and once tamed it keeps the fangs and gains the ability to learn.
+
 ## Drops
 
 `dropRules` gives loot to casting mobs, and also lets a definition carry loot only (a “loot variant” that never casts).

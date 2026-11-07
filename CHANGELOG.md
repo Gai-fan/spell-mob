@@ -7,6 +7,19 @@
 
 ---
 
+## [2.1.4] — 2026-11-08
+
+### 新增
+
+- **变体级 `learner`**：在 `spell_casters` 的变体（或 `select`）里写 `"learner": true`，这只生物就能学卷轴上的法术，不必再手动打 `scrollLearning.learnerTag` 标签；只有已驯服的生物能学，因此通常和 `select.tamed` 一起用。
+- **内置 `wolf.json`**：名为 `Bryan` 的狼，未驯服时只会每 4 秒放一次唤魔尖牙（`irons_spellbooks:fang_strike`，2 级）；被驯服后保留尖牙并获得学习能力；其他狼不受影响。
+
+### 文档
+
+- 中英文指南、README 的变体字段表与 JSON Schema 加入 `learner`。
+
+---
+
 ## [2.1.3] — 2026-11-08
 
 ### 新增

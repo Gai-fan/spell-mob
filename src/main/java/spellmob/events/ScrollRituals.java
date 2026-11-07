@@ -32,6 +32,8 @@ import org.joml.Vector3f;
 import spellmob.capability.SpellCaster;
 import spellmob.capability.SpellCasterAttachments;
 import spellmob.config.SpellMobConfig;
+import spellmob.data.SpellCasterRegistry;
+import spellmob.data.SpellCasterRules;
 import spellmob.goal.CastGoalSync;
 import spellmob.presentation.CastingPresentation;
 import spellmob.presentation.RitualCircle;
@@ -235,7 +237,11 @@ public final class ScrollRituals {
     }
 
     private static boolean isLearner(TamableAnimal pet) {
-        return pet.getTags().contains(SpellMobConfig.scrollLearnerTag());
+        if (pet.getTags().contains(SpellMobConfig.scrollLearnerTag())) {
+            return true;
+        }
+        SpellCasterRules rules = SpellCasterRegistry.get(pet.getType());
+        return rules != null && rules.learner(pet);
     }
 
     @Nullable

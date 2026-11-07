@@ -431,6 +431,7 @@ my_spellmob_pack/
 | `override` | `true` | `true` 只用变体自己的配置；`false` 与顶层默认配置合并：`goals` 拼接（变体在前），触发器只在变体未定义时回落到顶层 |
 | `sticky` | `false` | `true` 时该变体一旦命中就锁定：血量被奶回阈值以上也不退回（阶段只往前走）；写在 `select` 里也认 |
 | `bossBar` | 无 | `true`/`false` 强制这个变体显示或不显示 Boss 血条，优先于 `presentation.bossBar` 与 `bossBarTags`；不写则沿用配置。根节点也可写，作用于整族 |
+| `learner` | `false` | `true` 时该生物可以学卷轴上的法术，等同于给它打 `scrollLearning.learnerTag` 标签；通常与 `select.tamed` 一起用（只有已驯服的生物能学）；写在 `select` 里也认 |
 | `goals` / `onHurt` / `onTarget` / `onDeath` / `onKill` | 无 | 与顶层同名字段一致；全都不写表示“这个变体什么都不放” |
 
 `select` 支持以下条件，同时存在时要求全部满足：
