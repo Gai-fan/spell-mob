@@ -63,6 +63,13 @@ public final class SpellCaster implements ISpellCaster {
     private MagicData magicData;
     private final Map<String, Integer> cooldowns = new HashMap<>();
 
+    /**
+     * Remaining ticks of the optional global cooldown, which is shared by every spell of this
+     * caster. It is kept apart from {@link #cooldowns} so a data pack can never collide with it by
+     * naming a cooldown group the same way.
+     */
+    private int globalCooldown;
+
     @Nullable
     private ActiveCast active;
 
@@ -199,6 +206,9 @@ public final class SpellCaster implements ISpellCaster {
     }
 
     private void tickCooldowns() {
+        if (this.globalCooldown > 0) {
+            this.globalCooldown--;
+        }
         if (cooldowns.isEmpty()) {
             return;
         }
@@ -382,6 +392,22 @@ public final class SpellCaster implements ISpellCaster {
         return cast == null ? 0 : Math.max(0, cast.totalTicks - cast.ticks);
     }
 
+    /**
+     * @return the spell currently being cast, or {@code null}
+     *
+     * <p>Used by the boss bar to append "casting &lt;spell&gt;" to the mob name. Returned as the
+     * spell object rather than its id so the caller can use the game's own translated name.</p>
+     */
+    public @Nullable AbstractSpell castingSpell() {
+        ActiveCast cast = this.active;
+        return cast == null ? null : cast.spell;
+    }
+
+    /** @return whether the caster is inside the global cooldown window */
+    public boolean onGlobalCooldown() {
+        return this.globalCooldown > 0;
+    }
+
     @Override
     public boolean isReady(SpellCastDefinition definition) {
         if (resolving || active != null || !SpellMobConfig.enabled() || mob.tickCount < retryAtTick) {
@@ -501,6 +527,12 @@ public final class SpellCaster implements ISpellCaster {
         ActiveCast cast = new ActiveCast(definition, spell, castTime, target, position,
                 channel, scaledCooldown, key);
         this.active = cast;
+        // The global cooldown starts with any successful cast, channels included: the caster is
+        // busy anyway, and this keeps "one spell per window" true for channel-heavy packs too.
+        int global = SpellMobConfig.globalCooldownTicks();
+        if (global > 0) {
+            this.globalCooldown = Math.max(this.globalCooldown, global);
+        }
         Logs.debug("{} starts casting {} (level {}, {} ticks)", mob, definition.spellId(), definition.level(), castTime);
         CastingPresentation.onCastStart(mob, spell, castTime);
         if (castTime <= 0) {
@@ -593,7 +625,7 @@ public final class SpellCaster implements ISpellCaster {
 
     @Override
     public int cooldownTicks(SpellCastDefinition definition) {
-        return cooldowns.getOrDefault(cooldownKey(definition), 0);
+        return Math.max(cooldowns.getOrDefault(cooldownKey(definition), 0), this.globalCooldown);
     }
 
     /**
@@ -622,11 +654,15 @@ public final class SpellCaster implements ISpellCaster {
             cooldowns.forEach((key, ticks) -> stored.putInt(key, ticks));
             tag.put("cooldowns", stored);
         }
+        if (this.globalCooldown > 0) {
+            tag.putInt("globalCooldown", this.globalCooldown);
+        }
         return tag;
     }
 
     void load(CompoundTag tag) {
         this.lockedVariant = tag.contains("lockedVariant") ? tag.getInt("lockedVariant") : -1;
+        this.globalCooldown = tag.contains("globalCooldown") ? Math.max(0, tag.getInt("globalCooldown")) : 0;
         cooldowns.clear();
         CompoundTag stored = tag.getCompound("cooldowns");
         for (String key : stored.getAllKeys()) {

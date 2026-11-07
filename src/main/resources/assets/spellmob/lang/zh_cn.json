@@ -1,3 +1,4 @@
 {
-  "spellmob.message.name_locked": "这只生物的名字已被锁定。"
+  "spellmob.message.name_locked": "这只生物的名字已被锁定。",
+  "spellmob.boss_bar.casting": "正在施放 %s"
 }

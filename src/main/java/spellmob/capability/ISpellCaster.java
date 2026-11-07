@@ -36,6 +36,13 @@ public interface ISpellCaster {
     int castTicksRemaining();
 
     /**
+     * @return the spell of the active cast, or null when nothing is being cast
+     */
+    default @Nullable io.redspace.ironsspellbooks.api.spells.AbstractSpell castingSpell() {
+        return null;
+    }
+
+    /**
      * @param definition the definition to check
      * @return true when the caster may start this spell right now
      */

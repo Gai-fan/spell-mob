@@ -7,6 +7,21 @@
 
 ---
 
+## [2.1.0] — 2026-11-07
+
+### 新增
+
+- **全局冷却 `balance.globalCooldown`**：一次施法开始后，该施法者的所有法术都要再等这么多 tick 才能起手，用来防止一轮爆发把整张法术表倒出来。单位 tick，默认 `0`（关闭），上限 400。
+- **`/spellmob dump spells`**：把当前加载的所有法术 id、施法类型、学派、是否启用导出到 `config/spellmob-spells.txt`，写数据包时可以直接查，不必再猜 id 拼写。
+- **JSON Schema**：新增 `docs/spell_casters.schema.json`，在 VS Code / IntelliJ 里给 `spell_casters/*.json` 绑定后可以补全字段、标出拼错的键与类型错误。
+- **血条显示施法**：`presentation.bossBarCastName`（默认开）打开时，Boss 血条的名字会在读条期间变成“名字 正在施放 xxx”，施法结束后自动恢复；关闭则只显示生物名字。
+
+### 文档
+
+- 指南与 README 补充 `globalCooldown`、`bossBarCastName` 两个配置项、`dump spells` 命令与 Schema 的用法。
+
+---
+
 ## [2.0.9] — 2026-11-07
 
 ### 新增

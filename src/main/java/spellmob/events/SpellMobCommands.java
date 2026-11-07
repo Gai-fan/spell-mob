@@ -2,9 +2,15 @@ package spellmob.events;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -19,6 +25,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLPaths;
 import spellmob.SpellMob;
 import spellmob.capability.SpellCasterCapability;
 import spellmob.data.SpellCastDefinition;
@@ -27,6 +34,7 @@ import spellmob.data.SpellCasterRegistry;
 import spellmob.data.SpellCasterRules;
 import spellmob.data.SpellCasterVariant;
 import spellmob.goal.CastGoalSync;
+import spellmob.util.Logs;
 
 /**
  * Operator commands used to inspect and refresh the loaded definitions.
@@ -65,6 +73,9 @@ public final class SpellMobCommands {
                                         EntityArgument.getEntity(context, "target")))))
                 .then(Commands.literal("list")
                         .executes(context -> list(context.getSource())))
+                .then(Commands.literal("dump")
+                        .then(Commands.literal("spells")
+                                .executes(context -> dumpSpells(context.getSource()))))
                 .then(Commands.literal("validate")
                         .executes(context -> validate(context.getSource()))));
     }
@@ -155,6 +166,47 @@ public final class SpellMobCommands {
                     false);
         }
         return ids.size();
+    }
+
+    /**
+     * Writes every spell id the loaded Iron's Spellbooks registers to {@code config/spellmob-spells.txt}.
+     *
+     * <p>Spell ids are usually guessed from a wiki page, and a typo only shows up as a debug line at
+     * load time. Dumping the registry turns that guesswork into a file the pack author can search.</p>
+     */
+    private static int dumpSpells(CommandSourceStack source) {
+        List<AbstractSpell> spells = new ArrayList<>(SpellRegistry.REGISTRY.get().getValues());
+        spells.sort(Comparator.comparing(AbstractSpell::getSpellId));
+        StringBuilder text = new StringBuilder(8192);
+        text.append("# SpellMob spell dump: ").append(spells.size())
+                .append(" spell(s) registered by Iron's Spellbooks").append(System.lineSeparator());
+        text.append("# id").append('\t').append("castType").append('\t').append("school")
+                .append('\t').append("enabled").append(System.lineSeparator());
+        for (AbstractSpell spell : spells) {
+            String school;
+            try {
+                school = spell.getSchoolType() == null ? "?" : spell.getSchoolType().getId().toString();
+            } catch (Throwable throwable) {
+                // NoneSpell and a few utility spells have no school at all.
+                school = "?";
+            }
+            text.append(spell.getSpellId()).append('\t')
+                    .append(spell.getCastType()).append('\t')
+                    .append(school).append('\t')
+                    .append(spell.isEnabled()).append(System.lineSeparator());
+        }
+        Path file = FMLPaths.CONFIGDIR.get().resolve("spellmob-spells.txt");
+        try {
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, text.toString(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            Logs.error("Could not write the spell dump to " + file, exception);
+            source.sendFailure(Component.literal("Could not write " + file + ": " + exception.getMessage()));
+            return 0;
+        }
+        int count = spells.size();
+        source.sendSuccess(() -> Component.literal("Wrote " + count + " spell id(s) to " + file), true);
+        return count;
     }
 
     /**

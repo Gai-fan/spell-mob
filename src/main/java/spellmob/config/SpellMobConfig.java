@@ -39,7 +39,9 @@ public final class SpellMobConfig {
     private static final ForgeConfigSpec.ConfigValue<String> BOSS_BAR_COLOR;
     private static final ForgeConfigSpec.DoubleValue BOSS_BAR_RANGE;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> BOSS_BAR_TAGS;
+    private static final ForgeConfigSpec.BooleanValue BOSS_BAR_CAST_NAME;
     private static final ForgeConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
+    private static final ForgeConfigSpec.IntValue GLOBAL_COOLDOWN;
     private static final ForgeConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
 
     public static final ForgeConfigSpec SPEC;
@@ -71,6 +73,12 @@ public final class SpellMobConfig {
                         "Normal casts keep using the per spell 'interruptOnDamage' flag instead.",
                         "（受伤是否打断引导型法术；普通吟唱仍由每个法术的 interruptOnDamage 决定）")
                 .define("interruptChannelsOnDamage", true);
+        GLOBAL_COOLDOWN = builder.comment(
+                        "Global cooldown in ticks shared by every spell of one caster (0 = off).",
+                        "After any cast starts, no other spell of that caster can start for this long,",
+                        "which stops a mob from dumping its whole spell list in a few seconds.",
+                        "（全局冷却，单位 tick，0 表示关闭；一次施法后该施法者的所有法术都要等这么久，防止一轮爆发）")
+                .defineInRange("globalCooldown", 0, 0, 400);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -143,6 +151,11 @@ public final class SpellMobConfig {
                         "Empty means every mob with casting rules gets one.",
                         "（带有任一这些计分板标签的生物显示 Boss 血条；留空表示所有配置了施法规则的生物都显示）")
                 .defineList("bossBarTags", List.of("spellmob_boss"), value -> value instanceof String);
+        BOSS_BAR_CAST_NAME = builder.comment(
+                        "Append 'casting <spell>' to the boss bar name while the mob is casting.",
+                        "Turn this off to keep the plain mob name, for example when the bar is only a health display.",
+                        "（施法时在血条名字后面显示“正在施放 xxx”；关掉后只显示生物名字）")
+                .define("bossBarCastName", true);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -182,6 +195,11 @@ public final class SpellMobConfig {
 
     public static double maxRange() {
         return ready() ? MAX_RANGE.get() : 32.0D;
+    }
+
+    /** @return the global cooldown in ticks shared by every spell of one caster, 0 when disabled */
+    public static int globalCooldownTicks() {
+        return ready() ? Math.max(0, GLOBAL_COOLDOWN.get()) : 0;
     }
 
     public static boolean isEntityBlacklisted(ResourceLocation id) {
@@ -274,6 +292,11 @@ public final class SpellMobConfig {
     /** @return radius in blocks inside which players see the boss bar */
     public static double bossBarRange() {
         return ready() ? BOSS_BAR_RANGE.get() : 48.0D;
+    }
+
+    /** @return whether the boss bar name shows the spell the mob is currently casting */
+    public static boolean bossBarCastName() {
+        return !ready() || BOSS_BAR_CAST_NAME.get();
     }
 
     /**

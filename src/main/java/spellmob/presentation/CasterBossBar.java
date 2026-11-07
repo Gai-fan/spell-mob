@@ -1,5 +1,6 @@
 package spellmob.presentation;
 
+import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -10,6 +11,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Mob;
+import spellmob.capability.SpellCaster;
+import spellmob.capability.SpellCasterCapability;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.SpellCasterRegistry;
 
@@ -30,7 +33,7 @@ public final class CasterBossBar {
     private ServerBossEvent bar;
     private int ticks;
     private BossEvent.BossBarColor colour;
-    private Component name;
+    private String nameText = "";
 
     public CasterBossBar(Mob mob) {
         this.mob = mob;
@@ -43,12 +46,13 @@ public final class CasterBossBar {
             return;
         }
         if (bar == null) {
-            ServerBossEvent created = new ServerBossEvent(mob.getDisplayName(), SpellMobConfig.bossBarColor(),
+            Component created = displayName();
+            ServerBossEvent event = new ServerBossEvent(created, SpellMobConfig.bossBarColor(),
                     BossEvent.BossBarOverlay.PROGRESS);
-            created.setProgress(progress());
-            bar = created;
+            event.setProgress(progress());
+            bar = event;
             colour = SpellMobConfig.bossBarColor();
-            name = mob.getDisplayName();
+            nameText = created.getString();
             refreshPlayers(level);
         }
         ticks++;
@@ -58,9 +62,10 @@ public final class CasterBossBar {
                 colour = configured;
                 bar.setColor(configured);
             }
-            Component currentName = mob.getDisplayName();
-            if (!currentName.equals(name)) {
-                name = currentName;
+            Component currentName = displayName();
+            String currentText = currentName.getString();
+            if (!currentText.equals(nameText)) {
+                nameText = currentText;
                 bar.setName(currentName);
             }
             bar.setProgress(progress());
@@ -95,6 +100,28 @@ public final class CasterBossBar {
             bar = null;
             ticks = 0;
         }
+    }
+
+    /**
+     * Builds the bar title: the plain mob name, or "name casting &lt;spell&gt;" while the caster is
+     * busy. The suffix can be switched off with {@code presentation.bossBarCastName}.
+     */
+    private Component displayName() {
+        Component base = mob.getDisplayName();
+        if (!SpellMobConfig.bossBarCastName()) {
+            return base;
+        }
+        AbstractSpell spell = mob.getCapability(SpellCasterCapability.capability())
+                .resolve()
+                .map(spellmob.capability.ISpellCaster::castingSpell)
+                .orElse(null);
+        if (spell == null) {
+            return base;
+        }
+        return Component.empty()
+                .append(base)
+                .append(Component.literal(" "))
+                .append(Component.translatable("spellmob.boss_bar.casting", spell.getDisplayName(null)));
     }
 
     private float progress() {
