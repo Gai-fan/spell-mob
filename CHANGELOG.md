@@ -7,6 +7,21 @@
 
 ---
 
+## [2.1.3] — 2026-11-08
+
+### 新增
+
+- **宠物学习卷轴（`[scrollLearning]`）**：把法术卷轴丢到带 `learnerTag`（默认 `spellmob_learner`）的已驯服生物脚边，地上会亮起该学派的法阵，`ritualTicks` 后卷轴被消耗、宠物学会卷轴上的法术（同名更高等级的卷轴会覆盖旧等级）。黑名单法术画黑法阵并提示、卷轴留在地上；学完一本进入 `cooldown`（默认 30 分钟），一只宠物最多 `maxSpells` 个（默认 5，0 = 关闭）。学到的法术存进 NBT 并给宠物打 `spellmob_caster` 标签，没有数据包规则的宠物也会继续 tick 冷却并施法。
+- **宠物施法参数（`[pets]`）**：学会的法术按 `castPriority`（默认 4）、`castRange`（默认 16）参与施法，冷却按 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)` 计算（默认 2 倍、60–600 tick）并同样受 `cooldownMultiplier` 缩放；`shareOwnerMana` 打开时扣主人的法力（`manaCostMultiplier` 缩放），主人在线才检查；坐下时能学卷轴但不施法。
+- **宠物护主**：主人被攻击时，`engageRange` 内没坐下的宠物会反击攻击者；`pets.aggressive` 为真时宠物还会主动索敌最近的敌对生物。
+- `/spellmob dump spells` 导出的法术列表仍可用于挑选卷轴，不用再猜 id。
+
+### 文档
+
+- 中文/英文指南与 README 新增“宠物学习卷轴”章节、`[scrollLearning]` 与 `[pets]` 配置表；中文提示文案与英文文案同步（学习成功、升级、已会、黑名单、冷却、上限、学习中断）。
+
+---
+
 ## [2.1.2] — 2026-11-07
 
 ### 修复

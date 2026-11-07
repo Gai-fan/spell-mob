@@ -32,15 +32,16 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.IntValue BOSS_POINTS;
     private static final ModConfigSpec.DoubleValue RING_SCALE;
     private static final ModConfigSpec.DoubleValue PRESENTATION_DISTANCE;
+    private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_TAGS;
     private static final ModConfigSpec.BooleanValue BOSS_EXTRAS;
     private static final ModConfigSpec.BooleanValue BOSS_BAR;
     private static final ModConfigSpec.ConfigValue<String> BOSS_BAR_COLOR;
     private static final ModConfigSpec.DoubleValue BOSS_BAR_RANGE;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> BOSS_BAR_TAGS;
-    private static boolean WARNED_BOSS_BAR_COLOR;
-    private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
+    private static final ModConfigSpec.BooleanValue BOSS_BAR_CAST_NAME;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
+    private static final ModConfigSpec.IntValue GLOBAL_COOLDOWN;
     private static final ModConfigSpec.BooleanValue ADAPTIVE_ENABLED;
     private static final ModConfigSpec.ConfigValue<String> ADAPTIVE_TAG;
     private static final ModConfigSpec.IntValue MAX_LEARNED_SPELLS;
@@ -48,11 +49,29 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.IntValue LEARNED_COOLDOWN;
     private static final ModConfigSpec.IntValue LEARNED_PRIORITY;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> ADAPTIVE_BLACKLIST;
-    private static final ModConfigSpec.IntValue GLOBAL_COOLDOWN;
-    private static final ModConfigSpec.BooleanValue BOSS_BAR_CAST_NAME;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
+    private static final ModConfigSpec.BooleanValue SCROLL_LEARNING_ENABLED;
+    private static final ModConfigSpec.ConfigValue<String> SCROLL_LEARNER_TAG;
+    private static final ModConfigSpec.IntValue SCROLL_MAX_SPELLS;
+    private static final ModConfigSpec.IntValue SCROLL_COOLDOWN;
+    private static final ModConfigSpec.IntValue SCROLL_RITUAL_TICKS;
+    private static final ModConfigSpec.BooleanValue SCROLL_REQUIRE_OWNER;
+    private static final ModConfigSpec.DoubleValue SCROLL_SPELL_MULTIPLIER;
+    private static final ModConfigSpec.IntValue SCROLL_COOLDOWN_MIN;
+    private static final ModConfigSpec.IntValue SCROLL_COOLDOWN_MAX;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> SCROLL_BLACKLIST;
+    private static final ModConfigSpec.BooleanValue PETS_DEFEND_OWNER;
+    private static final ModConfigSpec.BooleanValue PETS_AGGRESSIVE;
+    private static final ModConfigSpec.DoubleValue PETS_ENGAGE_RANGE;
+    private static final ModConfigSpec.IntValue PETS_CAST_PRIORITY;
+    private static final ModConfigSpec.DoubleValue PETS_CAST_RANGE;
+    private static final ModConfigSpec.BooleanValue PETS_SHARE_OWNER_MANA;
+    private static final ModConfigSpec.DoubleValue PETS_MANA_MULTIPLIER;
 
     public static final ModConfigSpec SPEC;
+
+    /** Set after the first invalid colour so the log does not repeat every frame. */
+    private static boolean WARNED_BOSS_BAR_COLOR;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -78,10 +97,11 @@ public final class SpellMobConfig {
                         "Normal casts keep using the per spell 'interruptOnDamage' flag instead.",
                         "（受伤是否打断引导型法术；普通吟唱仍由每个法术的 interruptOnDamage 决定）")
                 .define("interruptChannelsOnDamage", true);
-        GLOBAL_COOLDOWN = builder.comment("Global cooldown in ticks, shared by every spell of a caster.",
-                        "Useful to stop a burst of spells from landing in the same second.",
-                        "0 disables it.",
-                        "（全局冷却，单位 tick：一次施法后该施法者的所有法术都要再等这么久；0 关闭）")
+        GLOBAL_COOLDOWN = builder.comment(
+                        "Global cooldown in ticks shared by every spell of one caster (0 = off).",
+                        "After any cast starts, no other spell of that caster can start for this long,",
+                        "which stops a mob from dumping its whole spell list in a few seconds.",
+                        "（全局冷却，单位 tick，0 表示关闭；一次施法后该施法者的所有法术都要等这么久，防止一轮爆发）")
                 .defineInRange("globalCooldown", 0, 0, 400);
         builder.pop();
 
@@ -94,13 +114,13 @@ public final class SpellMobConfig {
         ADAPTIVE_TAG = builder.comment("Scoreboard tag that marks a boss as able to learn.",
                         "（标记“会学习”的计分板标签）")
                 .define("adaptiveTag", "spellmob_adaptive");
-        MAX_LEARNED_SPELLS = builder.comment("How many spells one boss may learn in total; 0 disables learning.",
+        MAX_LEARNED_SPELLS = builder.comment("How many spells one boss may learn in total.",
                         "（一个 Boss 最多能学会几个法术；0 表示不学）")
                 .defineInRange("maxLearnedSpells", 1, 0, 8);
         ADAPTIVE_REMEMBERED = builder.comment("How many spells of one player are remembered per fight.",
                         "（每场战斗最多记住一个玩家的几个法术）")
                 .defineInRange("rememberedSpells", 6, 1, 16);
-        LEARNED_COOLDOWN = builder.comment("Cooldown of a learned spell in ticks; -1 uses the spell's own cooldown.",
+        LEARNED_COOLDOWN = builder.comment("Cooldown of a learned spell, in ticks.",
                         "（学会的法术的冷却，单位 tick；-1 表示跟随该法术自己的冷却）")
                 .defineInRange("learnedCooldown", -1, -1, 1200);
         LEARNED_PRIORITY = builder.comment("Goal priority of a learned spell (lower runs first).",
@@ -112,6 +132,73 @@ public final class SpellMobConfig {
                         List.of("irons_spellbooks:teleport", "irons_spellbooks:blood_step",
                                 "irons_spellbooks:evasion"),
                         value -> value instanceof String);
+        builder.pop();
+
+        builder.comment("Tamed pets that learn spells from scrolls thrown at their feet.",
+                        "（已驯服的宠物可以通过丢到脚下的法术卷轴学习法术）").push("scrollLearning");
+        SCROLL_LEARNING_ENABLED = builder.comment("Master switch for scroll learning.",
+                        "（总开关）")
+                .define("enabled", true);
+        SCROLL_LEARNER_TAG = builder.comment("Only tamed mobs carrying this scoreboard tag can learn.",
+                        "（只有带这个计分板标签的已驯服生物才能学习）")
+                .define("learnerTag", "spellmob_learner");
+        SCROLL_MAX_SPELLS = builder.comment("How many spells one pet may learn from scrolls (0 disables learning).",
+                        "（一只宠物最多能从卷轴学会几个法术，0 表示不能学）")
+                .defineInRange("maxSpells", 5, 0, 16);
+        SCROLL_COOLDOWN = builder.comment("Ticks a pet must wait after learning before it can learn again.",
+                        "（学完一本后要等多少 tick 才能再学，36000 = 30 分钟）")
+                .defineInRange("cooldown", 36000, 0, 720000);
+        SCROLL_RITUAL_TICKS = builder.comment("How long the learning ritual takes, in ticks.",
+                        "（学习法阵持续多少 tick，100 = 5 秒）")
+                .defineInRange("ritualTicks", 100, 20, 400);
+        SCROLL_REQUIRE_OWNER = builder.comment("Only the pet's owner may teach it.",
+                        "（只认主人丢的卷轴）")
+                .define("requireOwner", true);
+        SCROLL_SPELL_MULTIPLIER = builder.comment(
+                        "Learned spells reuse the spell's own cooldown times this multiplier.",
+                        "The result is clamped between cooldownMin and cooldownMax.",
+                        "（学会的法术冷却 = 法术自带冷却 × 该倍率，再夹在 cooldownMin 与 cooldownMax 之间）")
+                .defineInRange("spellCooldownMultiplier", 2.0D, 0.1D, 10.0D);
+        SCROLL_COOLDOWN_MIN = builder.comment("Lower bound for a learned spell's cooldown, in ticks.",
+                        "（学会法术冷却的下限，单位 tick）")
+                .defineInRange("cooldownMin", 60, 1, 1200);
+        SCROLL_COOLDOWN_MAX = builder.comment("Upper bound for a learned spell's cooldown, in ticks.",
+                        "（学会法术冷却的上限，单位 tick）")
+                .defineInRange("cooldownMax", 600, 1, 6000);
+        SCROLL_BLACKLIST = builder.comment("Spells a pet is never allowed to learn, e.g. escapes and summons.",
+                        "（永不被学会的法术 id，例如传送与召唤）")
+                .defineList("spellBlacklist",
+                        List.of("irons_spellbooks:teleport", "irons_spellbooks:blood_step",
+                                "irons_spellbooks:evasion", "irons_spellbooks:summon_vex",
+                                "irons_spellbooks:summon_swords", "irons_spellbooks:summon_polar_bear",
+                                "irons_spellbooks:summon_horse", "irons_spellbooks:raise_dead",
+                                "irons_spellbooks:raise_hell"),
+                        value -> value instanceof String);
+        builder.pop();
+
+        builder.comment("How tamed pets fight.",
+                        "（已驯服宠物的战斗行为）").push("pets");
+        PETS_DEFEND_OWNER = builder.comment("Pets attack whatever hurt their owner.",
+                        "（主人被攻击时，附近属于他的宠物会反击攻击者）")
+                .define("defendOwner", true);
+        PETS_AGGRESSIVE = builder.comment("Pets also pick the nearest hostile mob on their own.",
+                        "（宠物还会主动索敌最近的敌对生物）")
+                .define("aggressive", false);
+        PETS_ENGAGE_RANGE = builder.comment("How far a pet looks for a target, in blocks.",
+                        "（宠物索敌半径，单位方块）")
+                .defineInRange("engageRange", 24.0D, 4.0D, 64.0D);
+        PETS_CAST_PRIORITY = builder.comment("Goal priority of a learned spell on a pet (lower runs first).",
+                        "（宠物施法的 Goal 优先级，越小越先执行；默认 4 让它先近战再放法术）")
+                .defineInRange("castPriority", 4, 0, 9);
+        PETS_CAST_RANGE = builder.comment("How far a pet may cast, in blocks.",
+                        "（宠物施法距离，单位方块）")
+                .defineInRange("castRange", 16.0D, 4.0D, 48.0D);
+        PETS_SHARE_OWNER_MANA = builder.comment("Pets spend their owner's mana to cast.",
+                        "（宠物施法消耗主人的法力）")
+                .define("shareOwnerMana", true);
+        PETS_MANA_MULTIPLIER = builder.comment("Multiplier applied to the mana cost a pet pays.",
+                        "（宠物施法时法力消耗的倍率）")
+                .defineInRange("manaCostMultiplier", 1.0D, 0.0D, 4.0D);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -164,28 +251,30 @@ public final class SpellMobConfig {
                         "（施法被打断时冒烟并播放熄灭音效）")
                 .define("interruptFeedback", true);
         BOSS_TAGS = builder.comment("Mobs carrying any of these scoreboard tags use the boss effects.",
+                        "Boss casters get a second, larger circle under their feet.",
                         "（带有任一这些计分板标签的生物使用 Boss 特效；Boss 施法者脚下会多一圈更大的外环并周期性脉冲）")
                 .defineList("bossTags", List.of("spellmob_boss"), value -> value instanceof String);
-        BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 20 ticks.",
-                        "（Boss 施法者还会每 20 tick 向外扩散一圈脉冲尘环）")
+        BOSS_EXTRAS = builder.comment("Boss casters also pulse extra dust rings outward every 10 ticks.",
+                        "（Boss 施法者还会每 10 tick 向外扩散一圈脉冲尘环）")
                 .define("bossExtras", true);
         BOSS_BAR = builder.comment("Show a boss bar above casters that carry one of 'bossBarTags'.",
-                        "Independent from 'enabled', so the bar can stay while the rings are off.",
+                        "Independent from 'enabled', so the particles can stay off while the bar is on.",
                         "（为带有 bossBarTags 标签的施法者显示 Boss 血条；与 enabled 相互独立，可以只开血条不开法阵）")
                 .define("bossBar", false);
         BOSS_BAR_COLOR = builder.comment("Boss bar colour: pink, blue, red, green, yellow, purple or white.",
-                        "（Boss 血条颜色：pink/blue/red/green/yellow/purple/white）")
+                        "（Boss 血条颜色：pink / blue / red / green / yellow / purple / white）")
                 .define("bossBarColor", "white");
         BOSS_BAR_RANGE = builder.comment("Players within this many blocks see the boss bar.",
                         "（这个距离内的玩家能看到 Boss 血条）")
                 .defineInRange("bossBarRange", 48.0D, 8.0D, 128.0D);
         BOSS_BAR_TAGS = builder.comment("Mobs carrying any of these scoreboard tags get a boss bar.",
-                        "Leave empty to give every caster a bar.",
-                        "（带有任一这些计分板标签的生物显示血条；留空表示所有配置了规则的生物都显示）")
+                        "Empty means every mob with casting rules gets one.",
+                        "（带有任一这些计分板标签的生物显示 Boss 血条；留空表示所有配置了施法规则的生物都显示）")
                 .defineList("bossBarTags", List.of("spellmob_boss"), value -> value instanceof String);
-        BOSS_BAR_CAST_NAME = builder.comment("Append \"casting <spell>\" to the boss bar name while the mob casts.",
-                        "Turn it off to keep the plain mob name.",
-                        "（读条时在血条名后面显示“正在施放 xxx”；关掉只显示生物名字）")
+        BOSS_BAR_CAST_NAME = builder.comment(
+                        "Append 'casting <spell>' to the boss bar name while the mob is casting.",
+                        "Turn this off to keep the plain mob name, for example when the bar is only a health display.",
+                        "（施法时在血条名字后面显示“正在施放 xxx”；关掉后只显示生物名字）")
                 .define("bossBarCastName", true);
         builder.pop();
 
@@ -226,6 +315,140 @@ public final class SpellMobConfig {
 
     public static double maxRange() {
         return ready() ? MAX_RANGE.get() : 32.0D;
+    }
+
+    /** @return the global cooldown in ticks shared by every spell of one caster, 0 when disabled */
+    public static int globalCooldownTicks() {
+        return ready() ? Math.max(0, GLOBAL_COOLDOWN.get()) : 0;
+    }
+
+    /** @return whether bosses may learn spells from players that lose to them */
+    public static boolean adaptiveEnabled() {
+        return ready() && ADAPTIVE_ENABLED.get();
+    }
+
+    /** @return the scoreboard tag that marks a boss as able to learn */
+    public static String adaptiveTag() {
+        return ready() ? ADAPTIVE_TAG.get() : "spellmob_adaptive";
+    }
+
+    /** @return how many spells one boss may learn in total */
+    public static int maxLearnedSpells() {
+        return ready() ? MAX_LEARNED_SPELLS.get() : 1;
+    }
+
+    /** @return how many spells of one player are remembered per fight */
+    public static int adaptiveRememberedSpells() {
+        return ready() ? ADAPTIVE_REMEMBERED.get() : 6;
+    }
+
+    /** @return cooldown of a learned spell, in ticks */
+    public static int learnedCooldownTicks() {
+        return ready() ? LEARNED_COOLDOWN.get() : -1;
+    }
+
+    /** @return goal priority of a learned spell */
+    public static int learnedPriority() {
+        return ready() ? LEARNED_PRIORITY.get() : 1;
+    }
+
+    /**
+     * @param spellId the spell a boss would learn
+     * @return true when the blacklist forbids learning that spell
+     */
+    public static boolean isAdaptiveBlacklisted(ResourceLocation spellId) {
+        if (!ready()) {
+            return false;
+        }
+        String name = spellId.toString();
+        for (String entry : ADAPTIVE_BLACKLIST.get()) {
+            if (entry != null && entry.equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean scrollLearningEnabled() {
+        return ready() && SCROLL_LEARNING_ENABLED.get();
+    }
+
+    public static String scrollLearnerTag() {
+        return ready() ? SCROLL_LEARNER_TAG.get() : "spellmob_learner";
+    }
+
+    public static int scrollMaxSpells() {
+        return ready() ? SCROLL_MAX_SPELLS.get() : 5;
+    }
+
+    public static int scrollCooldownTicks() {
+        return ready() ? SCROLL_COOLDOWN.get() : 36000;
+    }
+
+    public static int scrollRitualTicks() {
+        return ready() ? SCROLL_RITUAL_TICKS.get() : 100;
+    }
+
+    public static boolean scrollRequireOwner() {
+        return !ready() || SCROLL_REQUIRE_OWNER.get();
+    }
+
+    public static boolean isScrollBlacklisted(ResourceLocation spellId) {
+        if (!ready()) {
+            return false;
+        }
+        String name = spellId.toString();
+        for (String entry : SCROLL_BLACKLIST.get()) {
+            if (entry != null && entry.equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Cooldown of a spell learned from a scroll, derived from the spell's own cooldown so a
+     * summons-heavy pack cannot turn a pet into a machine gun.
+     *
+     * @param spellCooldownSeconds the spell's own cooldown
+     * @return the clamped cooldown in ticks
+     */
+    public static int learnedSpellCooldown(int spellCooldownSeconds) {
+        if (!ready()) {
+            return Math.max(60, spellCooldownSeconds * 40);
+        }
+        double scaled = spellCooldownSeconds * 20.0D * SCROLL_SPELL_MULTIPLIER.get();
+        int min = SCROLL_COOLDOWN_MIN.get();
+        int max = SCROLL_COOLDOWN_MAX.get();
+        return (int) Math.max(min, Math.min(max, Math.round(scaled)));
+    }
+
+    public static boolean defendOwner() {
+        return !ready() || PETS_DEFEND_OWNER.get();
+    }
+
+    public static boolean petsAggressive() {
+        return ready() && PETS_AGGRESSIVE.get();
+    }
+
+    public static double petEngageRange() {
+        return ready() ? PETS_ENGAGE_RANGE.get() : 24.0D;
+    }
+
+    public static int petCastPriority() {
+        return ready() ? PETS_CAST_PRIORITY.get() : 4;
+    }
+
+    public static double petCastRange() {
+        return ready() ? PETS_CAST_RANGE.get() : 16.0D;
+    }
+
+    public static boolean shareOwnerMana() {
+        return !ready() || PETS_SHARE_OWNER_MANA.get();
+    }
+
+    public static double petManaCostMultiplier() {
+        return ready() ? PETS_MANA_MULTIPLIER.get() : 1.0D;
     }
 
     public static boolean isEntityBlacklisted(ResourceLocation id) {
@@ -305,14 +528,14 @@ public final class SpellMobConfig {
         return false;
     }
 
-    /** @return whether the boss circle adds the halo, spark pillars and pulse rings */
+    /** @return whether the boss circle adds the periodic pulse rings and the finishing blast */
     public static boolean bossExtras() {
         return !ready() || BOSS_EXTRAS.get();
     }
 
     /** @return whether casters carrying {@link #bossBarTags()} show a boss bar */
     public static boolean bossBarEnabled() {
-        return !ready() || BOSS_BAR.get();
+        return ready() && BOSS_BAR.get();
     }
 
     /** @return radius in blocks inside which players see the boss bar */
@@ -320,9 +543,14 @@ public final class SpellMobConfig {
         return ready() ? BOSS_BAR_RANGE.get() : 48.0D;
     }
 
+    /** @return whether the boss bar name shows the spell the mob is currently casting */
+    public static boolean bossBarCastName() {
+        return !ready() || BOSS_BAR_CAST_NAME.get();
+    }
+
     /**
      * @param entity the casting entity
-     * @return true when the entity is allowed to show a boss bar
+     * @return true when the entity should get a boss bar (an empty tag list matches every caster)
      */
     public static boolean isBossBarCaster(Entity entity) {
         if (!ready() || entity == null) {
@@ -333,22 +561,22 @@ public final class SpellMobConfig {
             return true;
         }
         for (String tag : tags) {
-            if (entity.getTags().contains(tag)) {
+            if (tag != null && entity.getTags().contains(tag)) {
                 return true;
             }
         }
         return false;
     }
 
-    /** @return the configured boss bar colour, falling back to white for unknown values */
+    /** @return the configured boss bar colour, falling back to white when the value is unknown */
     public static BossEvent.BossBarColor bossBarColor() {
         String raw = ready() ? BOSS_BAR_COLOR.get() : "white";
-        if (raw == null || raw.isBlank()) {
+        if (raw == null) {
             return BossEvent.BossBarColor.WHITE;
         }
         try {
             return BossEvent.BossBarColor.valueOf(raw.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException exception) {
             if (!WARNED_BOSS_BAR_COLOR) {
                 WARNED_BOSS_BAR_COLOR = true;
                 Logs.warn("Unknown presentation.bossBarColor '{}', using white", raw);
@@ -376,63 +604,6 @@ public final class SpellMobConfig {
     /** @return whether damage interrupts a channeled (CONTINUOUS) spell */
     public static boolean interruptChannelsOnDamage() {
         return !ready() || INTERRUPT_CHANNELS_ON_DAMAGE.get();
-    }
-
-    /** @return the shared global cooldown in ticks, 0 when disabled */
-    public static int globalCooldownTicks() {
-        return ready() ? Math.max(0, GLOBAL_COOLDOWN.get()) : 0;
-    }
-
-    /** @return whether bosses may learn spells from players that lose to them */
-    public static boolean adaptiveEnabled() {
-        return ready() && ADAPTIVE_ENABLED.get();
-    }
-
-    /** @return the scoreboard tag that marks a boss as able to learn */
-    public static String adaptiveTag() {
-        return ready() ? ADAPTIVE_TAG.get() : "spellmob_adaptive";
-    }
-
-    /** @return how many spells one boss may learn in total */
-    public static int maxLearnedSpells() {
-        return ready() ? MAX_LEARNED_SPELLS.get() : 1;
-    }
-
-    /** @return how many spells of one player are remembered per fight */
-    public static int adaptiveRememberedSpells() {
-        return ready() ? ADAPTIVE_REMEMBERED.get() : 6;
-    }
-
-    /** @return cooldown of a learned spell, in ticks */
-    public static int learnedCooldownTicks() {
-        return ready() ? LEARNED_COOLDOWN.get() : -1;
-    }
-
-    /** @return goal priority of a learned spell */
-    public static int learnedPriority() {
-        return ready() ? LEARNED_PRIORITY.get() : 1;
-    }
-
-    /**
-     * @param spellId the spell a boss would learn
-     * @return true when the blacklist forbids learning that spell
-     */
-    public static boolean isAdaptiveBlacklisted(ResourceLocation spellId) {
-        if (!ready()) {
-            return false;
-        }
-        String name = spellId.toString();
-        for (String entry : ADAPTIVE_BLACKLIST.get()) {
-            if (entry != null && entry.equals(name)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /** @return whether the boss bar should name the spell being cast */
-    public static boolean bossBarCastName() {
-        return !ready() || BOSS_BAR_CAST_NAME.get();
     }
 
     /**

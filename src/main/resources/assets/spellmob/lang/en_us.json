@@ -1,4 +1,10 @@
 {
   "spellmob.message.name_locked": "This creature's name is locked.",
-  "spellmob.boss_bar.casting": "Casting %s"
+  "spellmob.boss_bar.casting": "Casting %s",
+  "spellmob.message.scroll_learned": "Your pet learned %s.",
+  "spellmob.message.scroll_upgraded": "Your pet upgraded %s to a higher level.",
+  "spellmob.message.scroll_known": "Your pet already knows %s.",
+  "spellmob.message.scroll_blacklisted": "That spell is blacklisted and cannot be learned.",
+  "spellmob.message.scroll_cooldown": "Your pet can learn another scroll in %s min %s s.",
+  "spellmob.message.scroll_max": "Your pet already knows enough spells."
 }

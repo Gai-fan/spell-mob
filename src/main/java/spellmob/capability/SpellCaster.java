@@ -2,15 +2,16 @@ package spellmob.capability;
 
 import io.redspace.ironsspellbooks.api.magic.MagicData;
 import io.redspace.ironsspellbooks.api.magic.SpellSelectionManager;
+import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.CastSource;
 import io.redspace.ironsspellbooks.api.spells.CastType;
-import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.capabilities.magic.SyncedSpellData;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,9 @@ import spellmob.util.Logs;
  */
 public final class SpellCaster implements ISpellCaster {
 
+    /** Tag carried by mobs that learned at least one spell, so they keep ticking without rules. */
+    public static final String CASTER_TAG = "spellmob_caster";
+
     /**
      * How long a caster waits after a failed attempt before trying again.
      *
@@ -90,8 +94,11 @@ public final class SpellCaster implements ISpellCaster {
     /** Players that died while fighting this boss and have not come back yet. */
     private final Set<UUID> defeatedPlayers = new HashSet<>();
 
-    /** Spells copied from defeated players; always cast at the spell's maximum level. */
-    private final List<ResourceLocation> learnedSpells = new ArrayList<>();
+    /** Spells learned from defeated players or from scrolls, mapped to the level they are cast at. */
+    private final Map<ResourceLocation, Integer> learnedSpells = new LinkedHashMap<>();
+
+    /** Game time before which this pet refuses a second scroll. */
+    private long scrollCooldownEnd;
 
     @Nullable
     private ActiveCast active;
@@ -112,21 +119,20 @@ public final class SpellCaster implements ISpellCaster {
     /** Variant index the current goals were built for, -1 meaning the species default. */
     private int lastVariantIndex;
 
+    /**
+     * Deepest sticky variant this caster has reached, -1 when none.
+     *
+     * <p>Without it a boss that gets healed snaps back to its first phase and swaps its whole spell
+     * list mid fight. Only variants marked {@code sticky} are remembered; the lock is dropped on a
+     * rename because that changes which individual the selectors are looking at.</p>
+     */
+    private int lockedVariant;
+
     /** False until the first tick has read health, which cannot happen during construction. */
     private boolean variantInitialized;
 
     /** True when the health moved into another variant while a cast was in flight. */
     private boolean variantResyncPending;
-
-    /**
-     * Highest sticky variant this mob has reached, -1 for none.
-     *
-     * <p>Sticky variants are one way: once a boss drops into phase two, healing it back to full does
-     * not put it into phase one again. The value is saved with the mob so a chunk unload does not
-     * reset the phase, and it is cleared on rename because that changes which individual the
-     * selectors are looking at.</p>
-     */
-    private int lockedVariant;
 
     /** Optional boss bar, only allocated once the config asks for one. */
     @Nullable
@@ -215,7 +221,8 @@ public final class SpellCaster implements ISpellCaster {
      * <p>Iron's Spellbooks cannot cast without a synced state: {@code initiateCast} writes the
      * casting marker into it and throws when it is missing, which is why Iron's own casting mobs
      * build one in their constructor. Here the object is created only when this mob actually starts
-     * a cast, so configured but idle mobs do not carry it around.</p>
+     * a cast, so configured but idle mobs do not carry it around, and nothing entity dependent runs
+     * during {@code Entity#<init>}.</p>
      *
      * @return the magic state of this caster
      */
@@ -410,12 +417,23 @@ public final class SpellCaster implements ISpellCaster {
     }
 
     @Override
+    public int castTicksRemaining() {
+        ActiveCast cast = this.active;
+        return cast == null ? 0 : Math.max(0, cast.totalTicks - cast.ticks);
+    }
+
+    /**
+     * @return the spell currently being cast, or {@code null}
+     *
+     * <p>Used by the boss bar to append "casting &lt;spell&gt;" to the mob name. Returned as the
+     * spell object rather than its id so the caller can use the game's own translated name.</p>
+     */
     public @Nullable AbstractSpell castingSpell() {
         ActiveCast cast = this.active;
         return cast == null ? null : cast.spell;
     }
 
-    @Override
+    /** @return whether the caster is inside the global cooldown window */
     public boolean onGlobalCooldown() {
         return this.globalCooldown > 0;
     }
@@ -487,22 +505,111 @@ public final class SpellCaster implements ISpellCaster {
         if (learnedSpells.isEmpty()) {
             return List.of();
         }
-        int configuredCooldown = SpellMobConfig.learnedCooldownTicks();
+        boolean pet = mob instanceof TamableAnimal tame && tame.isTame();
+        int priority = pet ? SpellMobConfig.petCastPriority() : SpellMobConfig.learnedPriority();
+        double range = pet ? SpellMobConfig.petCastRange() : 24.0D;
         List<SpellCastDefinition> definitions = new ArrayList<>(learnedSpells.size());
-        for (ResourceLocation spellId : learnedSpells) {
+        for (Map.Entry<ResourceLocation, Integer> entry : learnedSpells.entrySet()) {
+            ResourceLocation spellId = entry.getKey();
             AbstractSpell spell = SpellRegistry.getSpell(spellId);
             if (spell == null || !spell.isEnabled()) {
                 continue;
             }
-            // -1 means "follow the spell": Iron's Spellbooks reports seconds, our goals use ticks.
+            int configuredCooldown = SpellMobConfig.learnedCooldownTicks();
             int cooldown = configuredCooldown >= 0 ? configuredCooldown
-                    : Math.max(1, spell.getSpellCooldown() * 20);
-            definitions.add(new SpellCastDefinition(spellId, spell.getMaxLevel(),
-                    cooldown, SpellMobConfig.learnedPriority(), 24.0D,
+                    : SpellMobConfig.learnedSpellCooldown(spell.getSpellCooldown());
+            definitions.add(new SpellCastDefinition(spellId, Math.max(1, entry.getValue()),
+                    cooldown, priority, range,
                     TargetSpec.attackTarget(), -1, 10, CastConditions.NONE, false, null, 1.0D, true,
                     "learned/" + spellId));
         }
         return definitions;
+    }
+
+    /**
+     * Teaches this caster a spell from a scroll.
+     *
+     * @param spellId the spell on the scroll
+     * @param level   the level written on the scroll
+     * @return true when the spell is new or replaced a weaker copy
+     */
+    public boolean learnScrollSpell(ResourceLocation spellId, int level) {
+        int current = learnedSpells.getOrDefault(spellId, 0);
+        if (level <= current) {
+            return false;
+        }
+        learnedSpells.put(spellId, level);
+        mob.addTag(CASTER_TAG);
+        Logs.debug("{} learned {} level {} from a scroll", mob, spellId, level);
+        return true;
+    }
+
+    /**
+     * @return the level a learned spell is cast at, or 0 when it is unknown
+     */
+    public int learnedLevel(ResourceLocation spellId) {
+        return learnedSpells.getOrDefault(spellId, 0);
+    }
+
+    public int learnedCount() {
+        return learnedSpells.size();
+    }
+
+    public long scrollCooldownRemaining(long now) {
+        return Math.max(0L, this.scrollCooldownEnd - now);
+    }
+
+    public void startScrollCooldown(long now, int ticks) {
+        this.scrollCooldownEnd = now + Math.max(0, ticks);
+    }
+
+    @Nullable
+    private TamableAnimal tamedPet() {
+        return mob instanceof TamableAnimal tame && tame.isTame() ? tame : null;
+    }
+
+    private float petManaCost(AbstractSpell spell, int level) {
+        return (float) Math.max(0.0D,
+                spell.getManaCost(level) * SpellMobConfig.petManaCostMultiplier());
+    }
+
+    /**
+     * @return true when the pet may pay for this cast; mobs without an online owner cast for free
+     */
+    private boolean petCanPayMana(AbstractSpell spell, int level) {
+        if (!SpellMobConfig.shareOwnerMana()) {
+            return true;
+        }
+        TamableAnimal pet = tamedPet();
+        if (pet == null) {
+            return true;
+        }
+        LivingEntity owner = pet.getOwner();
+        if (owner == null) {
+            // The owner is offline or in another dimension; do not silently disable the pet.
+            return true;
+        }
+        return MagicData.getPlayerMagicData(owner).getMana() >= petManaCost(spell, level);
+    }
+
+    private void spendPetMana(AbstractSpell spell, int level) {
+        if (!SpellMobConfig.shareOwnerMana()) {
+            return;
+        }
+        TamableAnimal pet = tamedPet();
+        if (pet == null) {
+            return;
+        }
+        LivingEntity owner = pet.getOwner();
+        if (owner == null) {
+            return;
+        }
+        float cost = petManaCost(spell, level);
+        if (cost <= 0.0F) {
+            return;
+        }
+        MagicData data = MagicData.getPlayerMagicData(owner);
+        data.setMana(Math.max(0.0F, data.getMana() - cost));
     }
 
     /**
@@ -521,7 +628,7 @@ public final class SpellCaster implements ISpellCaster {
         }
         List<ResourceLocation> candidates = new ArrayList<>();
         for (ResourceLocation spellId : cast) {
-            if (learnedSpells.contains(spellId) || SpellMobConfig.isAdaptiveBlacklisted(spellId)) {
+            if (learnedSpells.containsKey(spellId) || SpellMobConfig.isAdaptiveBlacklisted(spellId)) {
                 continue;
             }
             AbstractSpell spell = SpellRegistry.getSpell(spellId);
@@ -534,15 +641,10 @@ public final class SpellCaster implements ISpellCaster {
             return false;
         }
         ResourceLocation picked = candidates.get(mob.getRandom().nextInt(candidates.size()));
-        learnedSpells.add(picked);
+        AbstractSpell pickedSpell = SpellRegistry.getSpell(picked);
+        learnedSpells.put(picked, pickedSpell == null ? 1 : pickedSpell.getMaxLevel());
         Logs.debug("{} learned {} from {}", mob, picked, playerId);
         return true;
-    }
-
-    @Override
-    public int castTicksRemaining() {
-        ActiveCast cast = this.active;
-        return cast == null ? 0 : Math.max(0, cast.totalTicks - cast.ticks);
     }
 
     @Override
@@ -551,6 +653,10 @@ public final class SpellCaster implements ISpellCaster {
             return false;
         }
         if (!mob.isAlive() || mob.isDeadOrDying()) {
+            return false;
+        }
+        // A sitting pet stays put; casting would either yank it out of the sit or waste a spell.
+        if (mob instanceof TamableAnimal tame && tame.isOrderedToSit()) {
             return false;
         }
         ServerLevel level = level();
@@ -611,15 +717,6 @@ public final class SpellCaster implements ISpellCaster {
             return false;
         }
 
-        // ISS resolves a spell's maximum level through its config manager, and a spell can be
-        // missing from that map while the data pack loads (before ISS fills it). Clamping here,
-        // at cast time, keeps the configured level intact and still never exceeds what ISS allows.
-        // ISS 1.21.1 reads a spell's max level from its config manager, which defaults to 1 when
-        // no per-spell entry exists. That default would flatten every configured level to 1, so the
-        // cap is only applied when the config actually declares a higher maximum.
-        int configuredMax = spell.getMaxLevel();
-        int spellLevel = configuredMax > 1 ? Math.min(definition.level(), configuredMax) : definition.level();
-
         Vec3 aim = position != null ? position : target != null && target != mob ? target.getEyePosition() : null;
         if (aim != null) {
             mob.lookAt(EntityAnchorArgument.Anchor.EYES, aim);
@@ -627,7 +724,7 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         try {
-            if (!spell.checkPreCastConditions(level, spellLevel, mob, magicData())) {
+            if (!spell.checkPreCastConditions(level, definition.level(), mob, magicData())) {
                 Logs.debug("{} failed pre-cast conditions for {}", mob, definition.spellId());
                 this.retryAtTick = mob.tickCount + FAILED_CAST_BACKOFF_TICKS;
                 return false;
@@ -640,9 +737,15 @@ public final class SpellCaster implements ISpellCaster {
 
         int castTime = instant ? 0
                 : definition.castTimeTicks() >= 0 ? definition.castTimeTicks()
-                : Math.max(0, spell.getEffectiveCastTime(spellLevel, mob));
+                : Math.max(0, spell.getEffectiveCastTime(definition.level(), mob));
         int cooldownTicks = definition.cooldownTicks() >= 0 ? definition.cooldownTicks()
                 : Math.max(1, spell.getSpellCooldown() * 20);
+        if (!forced && !petCanPayMana(spell, definition.level())) {
+            // A pet without enough of its owner's mana simply waits; it must not burn the cooldown.
+            this.retryAtTick = mob.tickCount + FAILED_CAST_BACKOFF_TICKS;
+            return false;
+        }
+
         // A channeled spell keeps its cooldown until the channel ends (see applyCooldown): charging
         // it up front would let the same caster start a second channel the tick the first one ends.
         boolean channel = castTime > 0 && spell.getCastType() == CastType.CONTINUOUS;
@@ -654,9 +757,10 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         try {
-            magicData().initiateCast(spell, spellLevel, castTime, CastSource.MOB,
+            magicData().initiateCast(spell, definition.level(), castTime, CastSource.MOB,
                     SpellSelectionManager.MAINHAND);
-            spell.onServerPreCast(level, spellLevel, mob, magicData());
+            spell.onServerPreCast(level, definition.level(), mob, magicData());
+            spendPetMana(spell, definition.level());
         } catch (Throwable throwable) {
             Logs.error("Spell " + definition.spellId() + " threw while starting its cast", throwable);
             if (this.magicData != null) {
@@ -670,14 +774,16 @@ public final class SpellCaster implements ISpellCaster {
         }
 
         this.retryAtTick = 0;
-        ActiveCast cast = new ActiveCast(definition, spell, spellLevel, castTime, target, position,
+        ActiveCast cast = new ActiveCast(definition, spell, castTime, target, position,
                 channel, scaledCooldown, key);
         this.active = cast;
+        // The global cooldown starts with any successful cast, channels included: the caster is
+        // busy anyway, and this keeps "one spell per window" true for channel-heavy packs too.
         int global = SpellMobConfig.globalCooldownTicks();
         if (global > 0) {
             this.globalCooldown = Math.max(this.globalCooldown, global);
         }
-        Logs.debug("{} starts casting {} (level {}, {} ticks)", mob, definition.spellId(), spellLevel, castTime);
+        Logs.debug("{} starts casting {} (level {}, {} ticks)", mob, definition.spellId(), definition.level(), castTime);
         CastingPresentation.onCastStart(mob, spell, castTime);
         if (castTime <= 0) {
             complete(cast);
@@ -769,10 +875,7 @@ public final class SpellCaster implements ISpellCaster {
 
     @Override
     public int cooldownTicks(SpellCastDefinition definition) {
-        if (this.globalCooldown > 0) {
-            return Math.max(cooldowns.getOrDefault(cooldownKey(definition), 0), this.globalCooldown);
-        }
-        return cooldowns.getOrDefault(cooldownKey(definition), 0);
+        return Math.max(cooldowns.getOrDefault(cooldownKey(definition), 0), this.globalCooldown);
     }
 
     /**
@@ -785,7 +888,6 @@ public final class SpellCaster implements ISpellCaster {
         String group = definition.cooldownGroup();
         return group == null ? definition.spellId().toString() : "group:" + group;
     }
-
 
     private @Nullable ServerLevel level() {
         return mob.level() instanceof ServerLevel serverLevel ? serverLevel : null;
@@ -805,6 +907,9 @@ public final class SpellCaster implements ISpellCaster {
         if (this.globalCooldown > 0) {
             tag.putInt("globalCooldown", this.globalCooldown);
         }
+        if (this.scrollCooldownEnd > 0L) {
+            tag.putLong("scrollCooldownEnd", this.scrollCooldownEnd);
+        }
         saveAdaptive(tag);
         return tag;
     }
@@ -812,6 +917,7 @@ public final class SpellCaster implements ISpellCaster {
     void load(CompoundTag tag) {
         this.lockedVariant = tag.contains("lockedVariant") ? tag.getInt("lockedVariant") : -1;
         this.globalCooldown = tag.contains("globalCooldown") ? Math.max(0, tag.getInt("globalCooldown")) : 0;
+        this.scrollCooldownEnd = tag.contains("scrollCooldownEnd") ? Math.max(0L, tag.getLong("scrollCooldownEnd")) : 0L;
         loadAdaptive(tag);
         cooldowns.clear();
         CompoundTag stored = tag.getCompound("cooldowns");
@@ -823,43 +929,13 @@ public final class SpellCaster implements ISpellCaster {
         }
     }
 
-    /** One in-flight cast. */
-    private static final class ActiveCast {
-
-        private final SpellCastDefinition definition;
-        private final AbstractSpell spell;
-        private final int level;
-        private final int totalTicks;
-        private final @Nullable LivingEntity target;
-        private final @Nullable Vec3 position;
-        private final boolean channel;
-        private final int cooldownTicks;
-        private final String cooldownKey;
-        private int ticks;
-        private boolean repeatedOnCast;
-
-        private ActiveCast(SpellCastDefinition definition, AbstractSpell spell, int level, int totalTicks,
-                           @Nullable LivingEntity target, @Nullable Vec3 position,
-                           boolean channel, int cooldownTicks, String cooldownKey) {
-            this.definition = definition;
-            this.spell = spell;
-            this.level = level;
-            this.totalTicks = totalTicks;
-            this.target = target;
-            this.position = position;
-            this.channel = channel;
-            this.cooldownTicks = cooldownTicks;
-            this.cooldownKey = cooldownKey;
-        }
-    }
-
     private void saveAdaptive(CompoundTag tag) {
         if (learnedSpells.isEmpty() && engagedPlayers.isEmpty() && defeatedPlayers.isEmpty()
                 && encounterSpells.isEmpty()) {
             return;
         }
         CompoundTag state = new CompoundTag();
-        state.put("learned", strings(learnedSpells));
+        state.put("learned", learnedTags());
         state.put("engaged", uuids(engagedPlayers));
         state.put("defeated", uuids(defeatedPlayers));
         CompoundTag encounters = new CompoundTag();
@@ -877,7 +953,7 @@ public final class SpellCaster implements ISpellCaster {
             return;
         }
         CompoundTag state = tag.getCompound("adaptive");
-        learnedSpells.addAll(ids(state.getList("learned", 8)));
+        readLearned(state.getList("learned", 10));
         engagedPlayers.addAll(uuids(state.getList("engaged", 8)));
         defeatedPlayers.addAll(uuids(state.getList("defeated", 8)));
         CompoundTag encounters = state.getCompound("encounters");
@@ -896,6 +972,36 @@ public final class SpellCaster implements ISpellCaster {
             list.add(StringTag.valueOf(id.toString()));
         }
         return list;
+    }
+
+    private ListTag learnedTags() {
+        ListTag list = new ListTag();
+        learnedSpells.forEach((id, level) -> {
+            CompoundTag entry = new CompoundTag();
+            entry.putString("id", id.toString());
+            entry.putInt("level", level);
+            list.add(entry);
+        });
+        return list;
+    }
+
+    private void readLearned(ListTag list) {
+        for (int i = 0; i < list.size(); i++) {
+            if (list.getElementType() == 10) {
+                CompoundTag entry = list.getCompound(i);
+                ResourceLocation id = ResourceLocation.tryParse(entry.getString("id"));
+                if (id != null) {
+                    learnedSpells.put(id, Math.max(1, entry.getInt("level")));
+                }
+                continue;
+            }
+            // Older worlds stored plain spell ids; those are cast at the spell's maximum level.
+            ResourceLocation id = ResourceLocation.tryParse(list.getString(i));
+            if (id != null) {
+                AbstractSpell spell = SpellRegistry.getSpell(id);
+                learnedSpells.put(id, spell == null ? 1 : Math.max(1, spell.getMaxLevel()));
+            }
+        }
     }
 
     private static ListTag uuids(Set<UUID> ids) {
@@ -927,5 +1033,35 @@ public final class SpellCaster implements ISpellCaster {
             }
         }
         return ids;
+    }
+
+    /** One in-flight cast. */
+    private static final class ActiveCast {
+
+        private final SpellCastDefinition definition;
+        private final AbstractSpell spell;
+        private final int level;
+        private final int totalTicks;
+        private final @Nullable LivingEntity target;
+        private final @Nullable Vec3 position;
+        private final boolean channel;
+        private final int cooldownTicks;
+        private final String cooldownKey;
+        private int ticks;
+        private boolean repeatedOnCast;
+
+        private ActiveCast(SpellCastDefinition definition, AbstractSpell spell, int totalTicks,
+                           @Nullable LivingEntity target, @Nullable Vec3 position,
+                           boolean channel, int cooldownTicks, String cooldownKey) {
+            this.definition = definition;
+            this.spell = spell;
+            this.level = definition.level();
+            this.totalTicks = totalTicks;
+            this.target = target;
+            this.position = position;
+            this.channel = channel;
+            this.cooldownTicks = cooldownTicks;
+            this.cooldownKey = cooldownKey;
+        }
     }
 }

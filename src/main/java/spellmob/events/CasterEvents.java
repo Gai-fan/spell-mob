@@ -16,6 +16,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
@@ -23,6 +24,7 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import io.redspace.ironsspellbooks.api.events.SpellOnCastEvent;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.CastType;
@@ -61,7 +63,9 @@ public final class CasterEvents {
         if (event.getEntity() instanceof Mob mob) {
             // A mob that enters the level starts with vanilla goals only, so a type without rules
             // has none of ours to clean up: skip the goal list copy and the variant match entirely.
-            if (SpellCasterRegistry.get(mob.getType()) != null) {
+            // Learned pets have no rules either but still need their learned goals rebuilt.
+            if (SpellCasterRegistry.get(mob.getType()) != null
+                    || mob.getTags().contains(SpellCaster.CASTER_TAG)) {
                 CastGoalSync.sync(mob);
             }
         }
@@ -119,8 +123,10 @@ public final class CasterEvents {
             return;
         }
         // Types without rules can never cast, so they never get a caster: this is what keeps a
-        // full world from paying for the attachment bookkeeping on every mob, every tick.
-        if (SpellCasterRegistry.get(mob.getType()) == null) {
+        // full world from paying for the attachment bookkeeping on every mob, every tick. Pets that
+        // learned a scroll keep their caster alive without rules.
+        if (SpellCasterRegistry.get(mob.getType()) == null
+                && !mob.getTags().contains(SpellCaster.CASTER_TAG)) {
             return;
         }
         ISpellCaster caster = SpellCasterAttachments.get(mob);
@@ -140,6 +146,20 @@ public final class CasterEvents {
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         CastGoalSync.tick(event.getServer());
+        ScrollRituals.tick(event.getServer());
+        PetBehavior.tickAggressive(event.getServer(), event.getServer().overworld().getGameTime());
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        // Ritual bookkeeping lives in static maps; a stopped server must not leak the previous
+        // world's entities into the next one (single player keeps the same JVM).
+        ScrollRituals.clear();
+    }
+
+    @SubscribeEvent
+    public static void onItemToss(ItemTossEvent event) {
+        ScrollRituals.onItemToss(event);
     }
 
     @SubscribeEvent
@@ -157,6 +177,9 @@ public final class CasterEvents {
             engageAdaptive(mob, player);
         } else if (hurt instanceof ServerPlayer player && attacker instanceof Mob mob) {
             engageAdaptive(mob, player);
+        }
+        if (hurt instanceof ServerPlayer owner && attacker instanceof LivingEntity living) {
+            PetBehavior.onOwnerHurt(owner, living);
         }
     }
 

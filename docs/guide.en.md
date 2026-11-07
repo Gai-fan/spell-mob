@@ -461,6 +461,23 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `learnedCooldown` | `-1` | Cooldown of a learned spell in ticks (-1–1200); `-1` follows the spell's own cooldown (seconds × 20), `>= 0` uses a fixed value. |
 | | `learnedPriority` | `2` | Goal priority of a learned spell (0–9, lower runs first). |
 | | `spellBlacklist` | teleport/blood_step/evasion | Spells a boss may never learn. |
+| `scrollLearning` | `enabled` | `true` | Whether a tossed scroll can teach a pet. |
+| | `learnerTag` | `spellmob_learner` | Pets that may learn must carry this tag. |
+| | `maxSpells` | `5` | Spells a pet may know (0–16); `0` disables learning. |
+| | `cooldown` | `36000` | Cooldown after one lesson, in ticks (default 30 minutes). |
+| | `ritualTicks` | `100` | Ritual length in ticks (20–400). |
+| | `requireOwner` | `true` | Only the owner's thrown scroll counts. |
+| | `spellCooldownMultiplier` | `2.0` | Multiplier applied to a learned spell's default cooldown. |
+| | `cooldownMin` | `60` | Lower clamp for learned spell cooldowns (ticks). |
+| | `cooldownMax` | `600` | Upper clamp for learned spell cooldowns (ticks). |
+| | `spellBlacklist` | teleport/summons | Spells that cannot be learned. |
+| `pets` | `defendOwner` | `true` | Nearby standing pets attack whoever hurt their owner. |
+| | `aggressive` | `false` | Pets also pick the nearest hostile on their own. |
+| | `engageRange` | `24.0` | Range for defending and for aggressive targeting. |
+| | `castPriority` | `4` | Goal priority for pet casting (4 = melee first, spells after). |
+| | `castRange` | `16.0` | Maximum range of pet spells. |
+| | `shareOwnerMana` | `true` | Pets spend their owner's mana. |
+| | `manaCostMultiplier` | `1.0` | Multiplier for pet mana costs. |
 | `filters` | `entityBlacklist` | empty | Entity ids that never cast. |
 | | `dimensionBlacklist` | empty | Dimensions where casting is disabled. |
 | `protection` | `protectedTags` | empty | Mobs with these tags cannot be renamed with a name tag. |
@@ -503,6 +520,19 @@ This is the "second encounter" mechanic: after a boss defeats a player, the next
 - Limits: at most `maxLearnedSpells` per boss (default 1, `0` disables learning); learned spells use `learnedCooldown` and `learnedPriority` like any other goal and always cast at `getMaxLevel()`. `learnedCooldown = -1` follows the spell's own default cooldown, `>= 0` pins a fixed tick value; either way `balance.cooldownMultiplier` still applies.
 - The default blacklist is `irons_spellbooks:teleport`, `blood_step` and `evasion`, so bosses do not pick up escape tools.
 - State is stored in the mob's NBT (`adaptive` sub-tag) and survives death, dimension changes and `/reload`; goals are rebuilt from the caster state on every sync.
+
+## Scroll learning
+
+A tamed mob can be taught a spell scroll: drop the scroll at its feet, a school coloured circle appears on the ground, and a few seconds later the scroll is consumed and the pet knows that spell.
+
+- Requirements: the mob is tamed, carries the tag named by `scrollLearning.learnerTag` (default `spellmob_learner`), and the scroll was dropped by its owner (`requireOwner`).
+- Trigger: the nearest eligible pet within 2.5 blocks of the landed scroll starts the ritual. Blacklisted spells still draw a black circle and show a message, but the scroll stays on the ground.
+- Cooldown and limit: each completed lesson starts `scrollLearning.cooldown` (30 minutes by default); a pet knows at most `maxSpells` spells (`0` disables learning).
+- Levels: the scroll's level is the learned level; re-teaching the same spell only upgrades it when the new scroll is higher level.
+- Casting: learned spells use the pet numbers — `pets.castPriority` (default 4), `pets.castRange` (default 16) — and a cooldown of `clamp(spell cooldown × spellCooldownMultiplier, cooldownMin, cooldownMax)` (2× by default, 60–600 ticks), still scaled by `balance.cooldownMultiplier`.
+- Mana: with `pets.shareOwnerMana` (default on) a pet spends its owner's mana, scaled by `pets.manaCostMultiplier`; no check and no cost while the owner is offline.
+- Notes: sitting pets can still learn scrolls but do not cast while sitting; disabling `scrollLearning.enabled` turns every toss into an ordinary dropped item.
+- Learned state lives in the mob's NBT (`adaptive.learned`) and the mob gets the `spellmob_caster` tag, so it keeps ticking cooldowns and casting even when its species has no data pack rules.
 
 ## Commands
 

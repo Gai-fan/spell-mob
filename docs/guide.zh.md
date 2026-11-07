@@ -452,6 +452,19 @@ saves/<世界>/datapacks/我的法术/
 - 默认黑名单是 `irons_spellbooks:teleport`、`blood_step`、`evasion`，防止 Boss 学会逃跑类法术。
 - 状态存在生物 NBT 里（`adaptive` 子标签），杀死 Boss、换维度都还在；`/reload` 不会抹掉，因为每次同步都会从施法者状态重建这些 Goal。
 
+## 宠物学习卷轴
+
+已驯服的生物可以把法术卷轴“教”给它：把卷轴丢到它脚边，地上会亮起该学派的法阵，几秒后卷轴被消耗，它学会这个法术，并把它加入自己的施法列表。
+
+- 前提：生物已驯服、带 `scrollLearning.learnerTag` 指定的标签（默认 `spellmob_learner`），且卷轴是主人自己丢的（`requireOwner`）。
+- 判定：卷轴落地后 2.5 格内最近的合格宠物会开始仪式；黑名单里的法术会画一圈黑法阵并提示，卷轴留在地上不消耗。
+- 冷却与上限：每学完一本进入 `scrollLearning.cooldown`（默认 30 分钟）冷却；一只宠物最多学 `maxSpells` 个（默认 5，0 = 关闭学习）。
+- 等级：卷轴写的是几级就学几级；再学同名法术时，只有更高等级的卷轴才会覆盖旧等级。
+- 施法：学会的法术使用宠物专用参数——`pets.castPriority`（默认 4）、`pets.castRange`（默认 16 格），冷却按 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)` 计算（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放。
+- 法力：`pets.shareOwnerMana` 打开时（默认），宠物施法扣的是主人的法力，消耗按 `pets.manaCostMultiplier` 缩放；主人不在线时不检查法力、也不扣。
+- 其它：宠物坐下时仍能学卷轴，但坐下时不施法；`scrollLearning.enabled` 关掉后所有投掷卷轴都不再触发仪式。
+- 学会的状态存在生物 NBT 里（`adaptive.learned`），还带 `spellmob_caster` 标签，所以即使这个物种没有数据包规则，它也会继续 tick 冷却、继续施法。
+
 ## 配置
 
 配置文件在 `config/spellmob-common.toml`（COMMON 类型——整份安装共用一个文件，不是每个世界一份）。
@@ -477,6 +490,23 @@ saves/<世界>/datapacks/我的法术/
 | | `learnedCooldown` | `-1` | 学会的法术的冷却（tick，-1–1200）；`-1` 表示跟随该法术自己的默认冷却（秒 ×20），≥0 用固定值。 |
 | | `learnedPriority` | `2` | 学会的法术的 Goal 优先级（0–9，越小越先执行）。 |
 | | `spellBlacklist` | 传送/血步/闪避 | 永不被学会的法术 id，可以继续往里加。 |
+| `scrollLearning` | `enabled` | `true` | 总开关：卷轴丢到宠物脚边能不能学法术。 |
+| | `learnerTag` | `spellmob_learner` | 能学法术的宠物必须带这个标签。 |
+| | `maxSpells` | `5` | 一只宠物最多学几个法术（0–16）；`0` 表示关闭。 |
+| | `cooldown` | `36000` | 学完一本后的冷却（tick，0–720000），默认 30 分钟。 |
+| | `ritualTicks` | `100` | 学习仪式时长（20–400 tick）。 |
+| | `requireOwner` | `true` | 只有主人丢的卷轴才认。 |
+| | `spellCooldownMultiplier` | `2.0` | 学会的法术冷却倍率（0.1–10），乘在法术默认冷却上。 |
+| | `cooldownMin` | `60` | 学会的法术冷却下限（tick）。 |
+| | `cooldownMax` | `600` | 学会的法术冷却上限（tick）。 |
+| | `spellBlacklist` | 传送/召唤等 | 不能学、也不触发仪式的法术 id。 |
+| `pets` | `defendOwner` | `true` | 主人被打时，附近没坐下的宠物会反击攻击者。 |
+| | `aggressive` | `false` | 为真时宠物会主动索敌最近的敌对生物。 |
+| | `engageRange` | `24.0` | 护主/索敌的触发距离（格）。 |
+| | `castPriority` | `4` | 宠物施法 Goal 的优先级（越小越先执行，4 表示先近战再法术）。 |
+| | `castRange` | `16.0` | 宠物法术的最大射程。 |
+| | `shareOwnerMana` | `true` | 宠物施法扣主人的法力。 |
+| | `manaCostMultiplier` | `1.0` | 宠物法力消耗倍率。 |
 | `filters` | `entityBlacklist` | 空 | 永不施法的实体 id。 |
 | | `dimensionBlacklist` | 空 | 禁用施法的维度。 |
 | `protection` | `protectedTags` | 空 | 带这些标签的生物不能被命名牌改名。 |

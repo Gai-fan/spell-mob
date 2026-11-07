@@ -544,6 +544,22 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `adaptive.learnedCooldown` | `-1` | 学会的法术的冷却（tick，-1–1200）；`-1` 跟随法术自身冷却 |
 | `adaptive.learnedPriority` | `2` | 学会的法术的 Goal 优先级（0–9） |
 | `adaptive.spellBlacklist` | 传送/血步/闪避 | 永不被学会的法术 id |
+| `scrollLearning.enabled` | `true` | 卷轴能不能教宠物法术 |
+| `scrollLearning.learnerTag` | `spellmob_learner` | 能学法术的宠物必须带的标签 |
+| `scrollLearning.maxSpells` | `5` | 一只宠物最多学几个（0–16）；`0` = 关闭 |
+| `scrollLearning.cooldown` | `36000` | 学完一本后的冷却（tick，默认 30 分钟） |
+| `scrollLearning.ritualTicks` | `100` | 学习仪式时长（20–400 tick） |
+| `scrollLearning.requireOwner` | `true` | 只认主人丢的卷轴 |
+| `scrollLearning.spellCooldownMultiplier` | `2.0` | 学会的法术冷却倍率 |
+| `scrollLearning.cooldownMin` / `cooldownMax` | `60` / `600` | 学会的法术冷却上下限（tick） |
+| `scrollLearning.spellBlacklist` | 传送/召唤等 | 不能学的法术 id |
+| `pets.defendOwner` | `true` | 主人被打时，附近没坐下的宠物反击 |
+| `pets.aggressive` | `false` | 宠物是否主动索敌最近的敌对生物 |
+| `pets.engageRange` | `24.0` | 护主/索敌距离 |
+| `pets.castPriority` | `4` | 宠物施法 Goal 优先级（4 = 先近战） |
+| `pets.castRange` | `16.0` | 宠物法术最大射程 |
+| `pets.shareOwnerMana` | `true` | 宠物施法扣主人的法力 |
+| `pets.manaCostMultiplier` | `1.0` | 宠物法力消耗倍率 |
 | `filters.entityBlacklist` | `[]` | 永不施法的实体 id |
 | `filters.dimensionBlacklist` | `[]` | 禁用施法的维度 id |
 | `protection.protectedTags` | `[]` | 名字受保护的计分板标签；普通玩家不能用命名牌覆盖已有名字 |
@@ -626,6 +642,14 @@ extraRules = [
 ```mcfunction
 /tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive
 ```
+
+## 宠物学习卷轴
+
+已驯服的生物可以学法术：把法术卷轴丢到它脚边（要求它带 `scrollLearning.learnerTag` 标签，默认 `spellmob_learner`），地上会亮起该学派的法阵，`ritualTicks` 后卷轴被消耗、它学会卷轴上的法术。黑名单法术会画黑法阵并提示，卷轴留在地上；学完一本进入 `cooldown`（默认 30 分钟），一只宠物最多 `maxSpells` 个（默认 5）。再学同名法术只有更高等级的卷轴才会覆盖。
+
+学会的法术按宠物参数施法：`pets.castPriority`（默认 4，先近战再放法术）、`pets.castRange`（默认 16 格），冷却为 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)`（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放；`pets.shareOwnerMana` 打开时扣主人的法力。宠物坐下时能学但不能施法。
+
+学到的法术存在生物 NBT 里，并给它加 `spellmob_caster` 标签，因此即使这个物种没有数据包规则，它也会继续 tick 冷却、继续施法。
 
 ## 常见问题
 

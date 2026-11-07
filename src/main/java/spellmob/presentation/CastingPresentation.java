@@ -338,6 +338,11 @@ public final class CastingPresentation {
         return new Vector3f(((value >> 16) & 0xFF) / 255.0F, ((value >> 8) & 0xFF) / 255.0F, (value & 0xFF) / 255.0F);
     }
 
+    /** Public accessor so other effects (the scroll ritual) draw the same school colour. */
+    public static Vector3f schoolColour(AbstractSpell spell) {
+        return colorOf(spell);
+    }
+
     private static Vector3f colorOf(AbstractSpell spell) {
         SchoolType school = schoolOf(spell);
         Vector3f colour = targetingColourOf(school);

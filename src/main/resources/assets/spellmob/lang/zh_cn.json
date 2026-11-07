@@ -1,4 +1,10 @@
 {
   "spellmob.message.name_locked": "这只生物的名字已被锁定。",
-  "spellmob.boss_bar.casting": "正在施放 %s"
+  "spellmob.boss_bar.casting": "正在施放 %s",
+  "spellmob.message.scroll_learned": "你的宠物学会了 %s。",
+  "spellmob.message.scroll_upgraded": "你的宠物把 %s 提升到了更高等级。",
+  "spellmob.message.scroll_known": "你的宠物已经会 %s 了。",
+  "spellmob.message.scroll_blacklisted": "该法术在黑名单中，无法学习。",
+  "spellmob.message.scroll_cooldown": "需要 %s 分 %s 秒后才能再学习法术。",
+  "spellmob.message.scroll_max": "你的宠物已经学会了足够的法术。"
 }
