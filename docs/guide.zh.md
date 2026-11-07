@@ -441,6 +441,17 @@ saves/<世界>/datapacks/我的法术/
 - 生物死亡或区块卸载时血条自动收起；改配置项即时生效，不用重启。
 - 数据包可以逐个体覆盖：在 `spell_casters` 文件的根节点或某个变体里写 `"bossBar": true` 或 `"bossBar": false`，优先级高于 `bossBarTags` 与 `presentation.bossBar`；不写就沿用配置。同一物种的两个个体因此可以一个显示、一个不显示（jar 内置的 `zombie.json` 就是这样演示的）。
 
+## 会学习的 Boss
+
+这是给“第二次挑战”准备的机制：Boss 打败过某个玩家后，下次再遇到这个玩家时，会从对方上次用过的法术里随机学会一个，并且总以该法术的最高等级释放。
+
+- 门控：`adaptive.enabled` 打开，且这只 Boss 带 `adaptive.adaptiveTag` 指定的计分板标签（默认 `spellmob_adaptive`）；用 `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` 就能让它开始学。
+- 记录：Boss 与玩家交手（任一方打到对方）时算“交战”；玩家交战中释放的每一个法术都会被记下，每个玩家最多 `rememberedSpells` 条。
+- 学会：玩家被它打死（或死在它 48 格内）时，这次交战记为“失败”；下次再交手，只要该玩家上次记下的法术里还有没学过的、也没在 `spellBlacklist` 里的，Boss 就随机学一个。
+- 上限：一个 Boss 最多 `maxLearnedSpells` 个（默认 1，填 0 = 完全不学）；学到的法术按 `learnedCooldown` 参与正常施法，`-1` 表示跟随该法术自己的默认冷却，填 ≥0 则用固定 tick；冷却同样受 `balance.cooldownMultiplier` 缩放。等级固定 `getMaxLevel()`。
+- 默认黑名单是 `irons_spellbooks:teleport`、`blood_step`、`evasion`，防止 Boss 学会逃跑类法术。
+- 状态存在生物 NBT 里（`adaptive` 子标签），杀死 Boss、换维度都还在；`/reload` 不会抹掉，因为每次同步都会从施法者状态重建这些 Goal。
+
 ## 配置
 
 配置文件在 `config/spellmob-common.toml`（COMMON 类型——整份安装共用一个文件，不是每个世界一份）。
@@ -459,6 +470,13 @@ saves/<世界>/datapacks/我的法术/
 | | `maxRange` | `32` | 数据包 `range` 的硬上限（最高 128）。 |
 | | `interruptChannelsOnDamage` | `true` | 受伤是否打断引导法术。 |
 | | `globalCooldown` | `0` | 全局冷却（tick）：一次施法后该施法者的所有法术都要再等这么久；`0` 关闭，上限 400。 |
+| `adaptive` | `enabled` | `true` | 总开关：Boss 是否会学习打败过自己的玩家用过的法术。 |
+| | `adaptiveTag` | `spellmob_adaptive` | 标记“会学习”的计分板标签；Boss 必须同时带上它。 |
+| | `maxLearnedSpells` | `1` | 一个 Boss 一辈子最多记住几个法术（0–8）；`0` 表示不学。 |
+| | `rememberedSpells` | `6` | 每场战斗最多记一个玩家的几个法术（1–16）。 |
+| | `learnedCooldown` | `-1` | 学会的法术的冷却（tick，-1–1200）；`-1` 表示跟随该法术自己的默认冷却（秒 ×20），≥0 用固定值。 |
+| | `learnedPriority` | `2` | 学会的法术的 Goal 优先级（0–9，越小越先执行）。 |
+| | `spellBlacklist` | 传送/血步/闪避 | 永不被学会的法术 id，可以继续往里加。 |
 | `filters` | `entityBlacklist` | 空 | 永不施法的实体 id。 |
 | | `dimensionBlacklist` | 空 | 禁用施法的维度。 |
 | `protection` | `protectedTags` | 空 | 带这些标签的生物不能被命名牌改名。 |

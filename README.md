@@ -537,6 +537,13 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `balance.maxRange` | `32.0` | `range` 的硬上限（1–128） |
 | `balance.interruptChannelsOnDamage` | `true` | 引导法术是否被伤害打断（普通吟唱仍由每条法术的 `interruptOnDamage` 控制） |
 | `balance.globalCooldown` | `0` | 全局冷却（tick）：一次施法后该施法者的所有法术都要再等这么久；`0` 关闭，上限 400 |
+| `adaptive.enabled` | `true` | 总开关：Boss 是否会学习打败过自己的玩家用过的法术 |
+| `adaptive.adaptiveTag` | `spellmob_adaptive` | 标记“会学习”的计分板标签，Boss 必须同时带上 |
+| `adaptive.maxLearnedSpells` | `1` | 一个 Boss 最多记住几个法术（0–8）；`0` = 不学 |
+| `adaptive.rememberedSpells` | `6` | 每场战斗最多记一个玩家的几个法术（1–16） |
+| `adaptive.learnedCooldown` | `-1` | 学会的法术的冷却（tick，-1–1200）；`-1` 跟随法术自身冷却 |
+| `adaptive.learnedPriority` | `2` | 学会的法术的 Goal 优先级（0–9） |
+| `adaptive.spellBlacklist` | 传送/血步/闪避 | 永不被学会的法术 id |
 | `filters.entityBlacklist` | `[]` | 永不施法的实体 id |
 | `filters.dimensionBlacklist` | `[]` | 禁用施法的维度 id |
 | `protection.protectedTags` | `[]` | 名字受保护的计分板标签；普通玩家不能用命名牌覆盖已有名字 |
@@ -611,6 +618,14 @@ extraRules = [
 - **可关闭**：`presentation.enabled = false` 关闭全部粒子与打断反馈；`points = 0` 关闭普通圆环；`bossPoints = 0` 关闭 Boss 圆环；`bossExtras = false` 关闭 Boss 的额外冲击波效果。
 
 性能提示：法阵由一个个独立的粒子点组成，每个点一次发包。Boss 数量多或玩家人数多时，可以降低 `points` / `bossPoints` / `distance`，或适当增大 `checkInterval`。关闭法阵不会影响施法逻辑。
+
+## 会学习的 Boss
+
+`[adaptive]` 让带 `spellmob_adaptive` 标签的 Boss 记住打败过的玩家：下次再遇到同一玩家，它会从对方上次用过的法术里随机学一个，永远以 `getMaxLevel()` 释放。交战期间玩家放的每个法术都会被记下（每人最多 `rememberedSpells` 条）；玩家死给它（或死在它 48 格内）才算“失败”，下次交手才触发学习。默认一生只学 `maxLearnedSpells = 1` 个（填 0 = 不学，调大可累积），黑名单 `spellBlacklist` 默认排除传送、血步、闪避；学到的法术用 `learnedCooldown`（`-1` = 跟随该法术自身冷却）与 `learnedPriority` 参与正常施法，并同样受 `balance.cooldownMultiplier` 缩放。状态写在生物 NBT 的 `adaptive` 子标签里，`/reload` 后由施法者状态重建 Goal，不会丢。
+
+```mcfunction
+/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive
+```
 
 ## 常见问题
 

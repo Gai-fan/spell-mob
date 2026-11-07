@@ -41,6 +41,13 @@ public final class SpellMobConfig {
     private static boolean WARNED_BOSS_BAR_COLOR;
     private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
+    private static final ModConfigSpec.BooleanValue ADAPTIVE_ENABLED;
+    private static final ModConfigSpec.ConfigValue<String> ADAPTIVE_TAG;
+    private static final ModConfigSpec.IntValue MAX_LEARNED_SPELLS;
+    private static final ModConfigSpec.IntValue ADAPTIVE_REMEMBERED;
+    private static final ModConfigSpec.IntValue LEARNED_COOLDOWN;
+    private static final ModConfigSpec.IntValue LEARNED_PRIORITY;
+    private static final ModConfigSpec.ConfigValue<List<? extends String>> ADAPTIVE_BLACKLIST;
     private static final ModConfigSpec.IntValue GLOBAL_COOLDOWN;
     private static final ModConfigSpec.BooleanValue BOSS_BAR_CAST_NAME;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
@@ -76,6 +83,35 @@ public final class SpellMobConfig {
                         "0 disables it.",
                         "（全局冷却，单位 tick：一次施法后该施法者的所有法术都要再等这么久；0 关闭）")
                 .defineInRange("globalCooldown", 0, 0, 400);
+        builder.pop();
+
+        builder.comment("Bosses that learn the spells of players that lose to them.",
+                        "（会学习败者法术的 Boss）").push("adaptive");
+        ADAPTIVE_ENABLED = builder.comment("Master switch for adaptive bosses.",
+                        "Bosses also need the scoreboard tag from 'adaptiveTag'.",
+                        "（总开关；Boss 还需要带上 adaptiveTag 指定的计分板标签）")
+                .define("enabled", true);
+        ADAPTIVE_TAG = builder.comment("Scoreboard tag that marks a boss as able to learn.",
+                        "（标记“会学习”的计分板标签）")
+                .define("adaptiveTag", "spellmob_adaptive");
+        MAX_LEARNED_SPELLS = builder.comment("How many spells one boss may learn in total; 0 disables learning.",
+                        "（一个 Boss 最多能学会几个法术；0 表示不学）")
+                .defineInRange("maxLearnedSpells", 1, 0, 8);
+        ADAPTIVE_REMEMBERED = builder.comment("How many spells of one player are remembered per fight.",
+                        "（每场战斗最多记住一个玩家的几个法术）")
+                .defineInRange("rememberedSpells", 6, 1, 16);
+        LEARNED_COOLDOWN = builder.comment("Cooldown of a learned spell in ticks; -1 uses the spell's own cooldown.",
+                        "（学会的法术的冷却，单位 tick；-1 表示跟随该法术自己的冷却）")
+                .defineInRange("learnedCooldown", -1, -1, 1200);
+        LEARNED_PRIORITY = builder.comment("Goal priority of a learned spell (lower runs first).",
+                        "（学会的法术的 Goal 优先级，越小越先执行）")
+                .defineInRange("learnedPriority", 1, 0, 9);
+        ADAPTIVE_BLACKLIST = builder.comment("Spells a boss is never allowed to learn, e.g. escapes.",
+                        "（永不被学会的法术 id，例如传送类）")
+                .defineList("spellBlacklist",
+                        List.of("irons_spellbooks:teleport", "irons_spellbooks:blood_step",
+                                "irons_spellbooks:evasion"),
+                        value -> value instanceof String);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -345,6 +381,53 @@ public final class SpellMobConfig {
     /** @return the shared global cooldown in ticks, 0 when disabled */
     public static int globalCooldownTicks() {
         return ready() ? Math.max(0, GLOBAL_COOLDOWN.get()) : 0;
+    }
+
+    /** @return whether bosses may learn spells from players that lose to them */
+    public static boolean adaptiveEnabled() {
+        return ready() && ADAPTIVE_ENABLED.get();
+    }
+
+    /** @return the scoreboard tag that marks a boss as able to learn */
+    public static String adaptiveTag() {
+        return ready() ? ADAPTIVE_TAG.get() : "spellmob_adaptive";
+    }
+
+    /** @return how many spells one boss may learn in total */
+    public static int maxLearnedSpells() {
+        return ready() ? MAX_LEARNED_SPELLS.get() : 1;
+    }
+
+    /** @return how many spells of one player are remembered per fight */
+    public static int adaptiveRememberedSpells() {
+        return ready() ? ADAPTIVE_REMEMBERED.get() : 6;
+    }
+
+    /** @return cooldown of a learned spell, in ticks */
+    public static int learnedCooldownTicks() {
+        return ready() ? LEARNED_COOLDOWN.get() : -1;
+    }
+
+    /** @return goal priority of a learned spell */
+    public static int learnedPriority() {
+        return ready() ? LEARNED_PRIORITY.get() : 1;
+    }
+
+    /**
+     * @param spellId the spell a boss would learn
+     * @return true when the blacklist forbids learning that spell
+     */
+    public static boolean isAdaptiveBlacklisted(ResourceLocation spellId) {
+        if (!ready()) {
+            return false;
+        }
+        String name = spellId.toString();
+        for (String entry : ADAPTIVE_BLACKLIST.get()) {
+            if (entry != null && entry.equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** @return whether the boss bar should name the spell being cast */

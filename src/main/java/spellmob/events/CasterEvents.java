@@ -23,8 +23,10 @@ import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import io.redspace.ironsspellbooks.api.events.SpellOnCastEvent;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
 import io.redspace.ironsspellbooks.api.spells.CastType;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
@@ -32,6 +34,7 @@ import org.jetbrains.annotations.Nullable;
 import spellmob.SpellMob;
 import spellmob.capability.CancelReason;
 import spellmob.capability.ISpellCaster;
+import spellmob.capability.SpellCaster;
 import spellmob.capability.SpellCasterAttachments;
 import spellmob.config.SpellMobConfig;
 import spellmob.data.DropEntry;
@@ -150,6 +153,65 @@ public final class CasterEvents {
         }
         Entity attacker = event.getSource().getEntity();
         trigger(hurt, SpellCasterData::onHurt, attacker instanceof LivingEntity living ? living : null);
+        if (attacker instanceof Player player && hurt instanceof Mob mob) {
+            engageAdaptive(mob, player);
+        } else if (hurt instanceof ServerPlayer player && attacker instanceof Mob mob) {
+            engageAdaptive(mob, player);
+        }
+    }
+
+    /**
+     * Records the spells a player casts while fighting an adaptive boss.
+     *
+     * <p>The boss is found through the player's own combat state rather than through a tracking
+     * area, so only bosses that actually fought the player end up remembering anything.</p>
+     */
+    @SubscribeEvent
+    public static void onSpellCast(SpellOnCastEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        ResourceLocation spellId = ResourceLocation.tryParse(event.getSpellId());
+        if (spellId == null) {
+            return;
+        }
+        rememberSpell(player, spellId, player.getLastHurtMob());
+        rememberSpell(player, spellId, player.getLastHurtByMob());
+    }
+
+    private static void rememberSpell(ServerPlayer player, ResourceLocation spellId, @Nullable Entity target) {
+        if (!(target instanceof Mob mob)) {
+            return;
+        }
+        SpellCaster caster = adaptiveCaster(mob);
+        if (caster != null) {
+            caster.recordPlayerSpell(player, spellId);
+        }
+    }
+
+    private static void engageAdaptive(Mob mob, Player player) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+        SpellCaster caster = adaptiveCaster(mob);
+        if (caster != null) {
+            caster.engage(serverPlayer);
+        }
+    }
+
+    /**
+     * @return the adaptive caster of a mob, or null when it cannot learn; avoids creating a
+     *         caster for the thousands of mobs that are not tagged bosses
+     */
+    @Nullable
+    private static SpellCaster adaptiveCaster(Mob mob) {
+        if (!SpellMobConfig.adaptiveEnabled() || SpellCasterRegistry.get(mob.getType()) == null) {
+            return null;
+        }
+        if (!mob.getTags().contains(SpellMobConfig.adaptiveTag())) {
+            return null;
+        }
+        return SpellCasterAttachments.get(mob) instanceof SpellCaster spellCaster ? spellCaster : null;
     }
 
     /**
@@ -207,11 +269,34 @@ public final class CasterEvents {
         Entity attacker = event.getSource().getEntity();
         LivingEntity killer = attacker instanceof LivingEntity living && living != victim ? living : null;
 
+        if (victim instanceof ServerPlayer player) {
+            markNearbyDefeated(player);
+        }
+
         if (victim instanceof Mob mob) {
             cast(mob, definition(mob, SpellCasterData::onDeath), killer, true);
         }
         if (killer instanceof Mob mob) {
             cast(mob, definition(mob, SpellCasterData::onKill), victim, false);
+        }
+    }
+
+    /**
+     * Remembers that an engaged boss beat the player, which unlocks learning their spells the
+     * next time the two meet.
+     */
+    private static void markNearbyDefeated(ServerPlayer player) {
+        if (!SpellMobConfig.adaptiveEnabled()) {
+            return;
+        }
+        String tag = SpellMobConfig.adaptiveTag();
+        List<Mob> nearby = player.level().getEntitiesOfClass(Mob.class,
+                player.getBoundingBox().inflate(48.0D), mob -> mob.getTags().contains(tag));
+        for (Mob mob : nearby) {
+            SpellCaster caster = adaptiveCaster(mob);
+            if (caster != null) {
+                caster.markPlayerDefeated(player);
+            }
         }
     }
 
