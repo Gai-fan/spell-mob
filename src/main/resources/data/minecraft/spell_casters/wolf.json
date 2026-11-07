@@ -1,0 +1,35 @@
+{
+  "_comment": "Bryan: a wolf renamed to 'Bryan' casts fang_strike every 4 seconds. Once tamed it keeps the fangs and may also learn spells from thrown scrolls ('learner'). Every other wolf is left untouched.",
+  "variants": [
+    {
+      "select": {
+        "name": "Bryan",
+        "tamed": true
+      },
+      "learner": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 20
+        }
+      ]
+    },
+    {
+      "select": {
+        "name": "Bryan"
+      },
+      "goals": [
+        {
+          "spell": "irons_spellbooks:fang_strike",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 20
+        }
+      ]
+    }
+  ]
+}

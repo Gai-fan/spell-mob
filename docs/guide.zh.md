@@ -376,6 +376,19 @@ saves/<世界>/datapacks/我的法术/
 - 改名会重置锁定（改名等于换了个体）；锁定状态写进存档，区块卸载再加载不会掉阶段。
 - 写在 `select` 里也认：`"select": { "healthBelow": 0.5, "sticky": true }`，效果相同。
 
+### 卷轴学习 `learner`
+
+变体写 `"learner": true` 之后，这只生物就能学卷轴上的法术，效果等同于给它打 `scrollLearning.learnerTag` 标签，但规则写在数据包里：
+
+```json
+{ "select": { "name": "Bryan", "tamed": true }, "learner": true,
+  "goals": [ { "spell": "irons_spellbooks:fang_strike", "cooldown": 80 } ] }
+```
+
+- 只有**已驯服**的生物能学卷轴，`learner` 本身不检查驯服，所以通常和 `select.tamed` 一起用。
+- 写在 `select` 里也认：`"select": { "name": "Bryan", "tamed": true, "learner": true }`。
+- jar 内置的 `wolf.json` 就是一个例子：野生的 Bryan 只会唤魔尖牙，被驯服后保留尖牙并获得学习能力。
+
 ## 掉落
 
 `dropRules` 给会施法的生物追加掉落，也可以用来做“只掉东西、不施法”的战利品变体。

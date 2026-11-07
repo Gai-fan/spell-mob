@@ -138,9 +138,12 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         if (bossBar == null) {
             bossBar = JsonHelper.optBooleanOrNull(select, "bossBar");
         }
+        // 'learner' follows the same "variant level, or inside select" rule so file authors do not
+        // have to remember which of the two blocks it belongs to.
+        boolean learner = JsonHelper.optBoolean(json, "learner", JsonHelper.optBoolean(select, "learner", false));
         SpellCasterData data = SpellCasterData.parse(json, where);
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
-        return new SpellCasterVariant(selector, override, sticky, bossBar,
+        return new SpellCasterVariant(selector, override, sticky, bossBar, learner,
                 data == null ? SpellCasterData.EMPTY : data, dropRules);
     }
 
@@ -176,6 +179,15 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
             }
         }
         return bossBar;
+    }
+
+    /**
+     * @param mob the mob
+     * @return true when the variant that currently matches this mob allows learning scroll spells
+     */
+    public boolean learner(Mob mob) {
+        int index = variantIndex(mob);
+        return index >= 0 && variants.get(index).learner();
     }
 
     /**
