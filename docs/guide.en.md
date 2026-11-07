@@ -465,6 +465,7 @@ With `presentation.bossBar = true`, casters carrying one of `bossBarTags` (defau
 - Only players within `bossBarRange` blocks (spectators excluded) receive it; the recipient list follows players in and out of range.
 - Independent from `presentation.enabled`: set `enabled` to `false` and `bossBar` to `true` to keep only the bar.
 - The bar is removed when the mob dies or its chunk unloads, and config edits apply immediately.
+- Data packs can override it per individual: put `"bossBar": true` or `"bossBar": false` in the root of a `spell_casters` file or inside a variant. That beats `bossBarTags` and `presentation.bossBar`; leave it out to follow the config. Two mobs of the same type can therefore show and hide the bar respectively (the bundled `zombie.json` demonstrates exactly that).
 
 ## Commands
 

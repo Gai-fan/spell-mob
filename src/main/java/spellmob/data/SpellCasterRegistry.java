@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 import spellmob.util.Logs;
@@ -48,7 +49,8 @@ public final class SpellCasterRegistry {
     public static void replaceConfig(Map<ResourceLocation, SpellCasterData> parsed) {
         Map<ResourceLocation, SpellCasterRules> wrapped = new LinkedHashMap<>();
         parsed.forEach((id, data) ->
-                wrapped.put(id, new SpellCasterRules(data, List.of(), List.of(), SpellCasterRules.SOURCE_CONFIG)));
+                wrapped.put(id, new SpellCasterRules(data, List.of(), List.of(), null,
+                        SpellCasterRules.SOURCE_CONFIG)));
         byConfig = Map.copyOf(wrapped);
         logShadowed();
         if (!byConfig.isEmpty()) {
@@ -78,6 +80,18 @@ public final class SpellCasterRegistry {
      */
     public static @Nullable SpellCasterRules get(EntityType<?> type) {
         return get(ForgeRegistries.ENTITY_TYPES.getKey(type));
+    }
+
+    /**
+     * Looks up the data pack boss bar override of a mob.
+     *
+     * @param mob the mob
+     * @return the override ({@code true}/{@code false}), or {@code null} when the mob has no rule
+     * or the rule leaves the choice to the presentation config
+     */
+    public static @Nullable Boolean bossBarOverride(Mob mob) {
+        SpellCasterRules rules = get(mob.getType());
+        return rules == null ? null : rules.bossBar(mob);
     }
 
     /** @return how many entity types are configured by either source */

@@ -422,6 +422,7 @@ saves/<世界>/datapacks/我的法术/
 - 只发给 `bossBarRange` 格以内、非旁观模式的玩家；玩家进出范围会自动增减。
 - 与 `presentation.enabled` 独立：只想关法阵、留血条，就把 `enabled` 设 `false`、`bossBar` 设 `true`。
 - 生物死亡或区块卸载时血条自动收起；改配置项即时生效，不用重启。
+- 数据包可以逐个体覆盖：在 `spell_casters` 文件的根节点或某个变体里写 `"bossBar": true` 或 `"bossBar": false`，优先级高于 `bossBarTags` 与 `presentation.bossBar`；不写就沿用配置。同一物种的两个个体因此可以一个显示、一个不显示（jar 内置的 `zombie.json` 就是这样演示的）。
 
 ## 配置
 

@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Mob;
 import spellmob.config.SpellMobConfig;
+import spellmob.data.SpellCasterRegistry;
 
 /**
  * The optional boss bar of one casting mob.
@@ -75,11 +76,16 @@ public final class CasterBossBar {
     }
 
     private boolean shouldShow() {
-        return SpellMobConfig.enabled()
-                && SpellMobConfig.bossBarEnabled()
-                && SpellMobConfig.isBossBarCaster(mob)
-                && mob.isAlive()
-                && !mob.isRemoved();
+        if (!SpellMobConfig.enabled() || !mob.isAlive() || mob.isRemoved()) {
+            return false;
+        }
+        // A data pack may force the bar on or off per variant, which wins over the tag based
+        // config switch. That is what makes "with bar" and "without bar" test setups possible.
+        Boolean override = SpellCasterRegistry.bossBarOverride(mob);
+        if (override != null) {
+            return override;
+        }
+        return SpellMobConfig.bossBarEnabled() && SpellMobConfig.isBossBarCaster(mob);
     }
 
     private void hide() {

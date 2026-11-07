@@ -63,4 +63,24 @@ public final class JsonHelper {
             throw new IllegalArgumentException("'" + key + "' must be a boolean");
         }
     }
+
+    /**
+     * Reads an optional boolean without inventing a default.
+     *
+     * @param object  the object
+     * @param key     the key
+     * @return the value, or {@code null} when the key is absent (three-state flags such as
+     * {@code bossBar}, where "absent" means "use the config default")
+     */
+    public static @Nullable Boolean optBooleanOrNull(JsonObject object, String key) {
+        JsonElement element = object.get(key);
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        try {
+            return element.getAsBoolean();
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("'" + key + "' must be a boolean");
+        }
+    }
 }
