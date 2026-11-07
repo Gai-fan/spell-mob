@@ -458,6 +458,7 @@ saves/<世界>/datapacks/我的法术/
 | `balance` | `cooldownMultiplier` | `1.0` | 缩放数据包里的所有冷却；`0` 会压到最短 1 tick。 |
 | | `maxRange` | `32` | 数据包 `range` 的硬上限（最高 128）。 |
 | | `interruptChannelsOnDamage` | `true` | 受伤是否打断引导法术。 |
+| | `globalCooldown` | `0` | 全局冷却（tick）：一次施法后该施法者的所有法术都要再等这么久；`0` 关闭，上限 400。 |
 | `filters` | `entityBlacklist` | 空 | 永不施法的实体 id。 |
 | | `dimensionBlacklist` | 空 | 禁用施法的维度。 |
 | `protection` | `protectedTags` | 空 | 带这些标签的生物不能被命名牌改名。 |
@@ -475,6 +476,7 @@ saves/<世界>/datapacks/我的法术/
 | | `bossBarColor` | `white` | 血条颜色：`pink` / `blue` / `red` / `green` / `yellow` / `purple` / `white`。 |
 | | `bossBarRange` | `48` | 这个距离内的玩家能看到血条（8–128）。 |
 | | `bossBarTags` | `["spellmob_boss"]` | 带这些标签的生物显示血条；留空表示所有配置了规则的生物都显示。 |
+| | `bossBarCastName` | `true` | 读条时血条名后面显示“正在施放 xxx”；关掉只显示生物名字。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。
@@ -489,12 +491,14 @@ saves/<世界>/datapacks/我的法术/
 | `/spellmob info <生物>` | 显示该生物实际生效的配置，包括命中的变体与剩余冷却。 |
 | `/spellmob resync [目标]` | 对指定生物重新生成施法目标（不给参数就是自己）；改完标签后执行。 |
 | `/spellmob validate` | 检查所有已加载的法术 id，并列出被数据包遮蔽的配置条目。 |
+| `/spellmob dump spells` | 把所有已注册的法术 id、施法类型、学派导出到 `config/spellmob-spells.txt`。 |
 
 ## 兼容性说明
 
 - **纯服务端。** 客户端不需要装模组；法阵是服务端发送的普通粒子。
 - **数据包路径必须镜像实体 id。** `data/mypack/` 下的文件永远影响不到 `minecraft:zombie`。
 - **未知 JSON 键会被忽略。** 字段名拼错不会报错——用 `validate` 和 `info` 抓。
+- **编辑器补全。** 仓库里的 `docs/spell_casters.schema.json` 是标准 JSON Schema，在 VS Code / IntelliJ 里给 `spell_casters/*.json` 绑定 `$schema` 后可以补全字段并标出拼错的键。
 - **ISS 版本。** 以 3.4.0.9 的 API 编译，已在 3.16.3 上验证；jar 声明 `[1.20.1-3.4.0.9,)`。
 
 ## 示例

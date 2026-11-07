@@ -41,6 +41,8 @@ public final class SpellMobConfig {
     private static boolean WARNED_BOSS_BAR_COLOR;
     private static final ModConfigSpec.BooleanValue INTERRUPT_FEEDBACK;
     private static final ModConfigSpec.BooleanValue INTERRUPT_CHANNELS_ON_DAMAGE;
+    private static final ModConfigSpec.IntValue GLOBAL_COOLDOWN;
+    private static final ModConfigSpec.BooleanValue BOSS_BAR_CAST_NAME;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> CHANNEL_IMMUNE_TAGS;
 
     public static final ModConfigSpec SPEC;
@@ -69,6 +71,11 @@ public final class SpellMobConfig {
                         "Normal casts keep using the per spell 'interruptOnDamage' flag instead.",
                         "（受伤是否打断引导型法术；普通吟唱仍由每个法术的 interruptOnDamage 决定）")
                 .define("interruptChannelsOnDamage", true);
+        GLOBAL_COOLDOWN = builder.comment("Global cooldown in ticks, shared by every spell of a caster.",
+                        "Useful to stop a burst of spells from landing in the same second.",
+                        "0 disables it.",
+                        "（全局冷却，单位 tick：一次施法后该施法者的所有法术都要再等这么久；0 关闭）")
+                .defineInRange("globalCooldown", 0, 0, 400);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -140,6 +147,10 @@ public final class SpellMobConfig {
                         "Leave empty to give every caster a bar.",
                         "（带有任一这些计分板标签的生物显示血条；留空表示所有配置了规则的生物都显示）")
                 .defineList("bossBarTags", List.of("spellmob_boss"), value -> value instanceof String);
+        BOSS_BAR_CAST_NAME = builder.comment("Append \"casting <spell>\" to the boss bar name while the mob casts.",
+                        "Turn it off to keep the plain mob name.",
+                        "（读条时在血条名后面显示“正在施放 xxx”；关掉只显示生物名字）")
+                .define("bossBarCastName", true);
         builder.pop();
 
         builder.comment("Species wide rules kept in this file instead of a data pack.",
@@ -329,6 +340,16 @@ public final class SpellMobConfig {
     /** @return whether damage interrupts a channeled (CONTINUOUS) spell */
     public static boolean interruptChannelsOnDamage() {
         return !ready() || INTERRUPT_CHANNELS_ON_DAMAGE.get();
+    }
+
+    /** @return the shared global cooldown in ticks, 0 when disabled */
+    public static int globalCooldownTicks() {
+        return ready() ? Math.max(0, GLOBAL_COOLDOWN.get()) : 0;
+    }
+
+    /** @return whether the boss bar should name the spell being cast */
+    public static boolean bossBarCastName() {
+        return !ready() || BOSS_BAR_CAST_NAME.get();
     }
 
     /**

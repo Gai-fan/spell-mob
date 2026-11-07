@@ -2,9 +2,15 @@ package spellmob.events;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
+import io.redspace.ironsspellbooks.api.registry.SpellRegistry;
 import io.redspace.ironsspellbooks.api.spells.AbstractSpell;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -16,6 +22,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -29,6 +36,7 @@ import spellmob.data.SpellCasterRegistry;
 import spellmob.data.SpellCasterRules;
 import spellmob.data.SpellCasterVariant;
 import spellmob.goal.CastGoalSync;
+import spellmob.util.Logs;
 
 /**
  * Operator commands used to inspect and refresh the loaded definitions.
@@ -68,7 +76,10 @@ public final class SpellMobCommands {
                 .then(Commands.literal("list")
                         .executes(context -> list(context.getSource())))
                 .then(Commands.literal("validate")
-                        .executes(context -> validate(context.getSource()))));
+                        .executes(context -> validate(context.getSource())))
+                .then(Commands.literal("dump")
+                        .then(Commands.literal("spells")
+                                .executes(context -> dumpSpells(context.getSource())))));
     }
 
     private static int resyncSelf(CommandContext<CommandSourceStack> context) {
@@ -160,13 +171,51 @@ public final class SpellMobCommands {
     }
 
     /**
+     * Writes every registered Iron's Spellbooks spell to a text file, so pack authors can copy
+     * exact ids instead of guessing them.
+     */
+    private static int dumpSpells(CommandSourceStack source) {
+        List<AbstractSpell> spells = new ArrayList<>();
+        for (AbstractSpell spell : SpellRegistry.REGISTRY) {
+            if (spell != null) {
+                spells.add(spell);
+            }
+        }
+        spells.sort(Comparator.comparing(AbstractSpell::getSpellId));
+
+        StringBuilder builder = new StringBuilder("id\tcastType\tschool\tenabled\n");
+        for (AbstractSpell spell : spells) {
+            String school;
+            try {
+                school = spell.getSchoolType() == null ? "?" : spell.getSchoolType().getId().toString();
+            } catch (RuntimeException exception) {
+                school = "?";
+            }
+            builder.append(spell.getSpellId()).append('\t')
+                    .append(spell.getCastType()).append('\t')
+                    .append(school).append('\t')
+                    .append(spell.isEnabled()).append('\n');
+        }
+
+        Path path = FMLPaths.CONFIGDIR.get().resolve("spellmob-spells.txt");
+        try {
+            Files.writeString(path, builder.toString(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            Logs.error("Could not write " + path, exception);
+            source.sendFailure(Component.literal("Could not write " + path));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Wrote " + spells.size() + " spell(s) to " + path), false);
+        return spells.size();
+    }
+
+    /**
      * Re-checks every loaded cast definition against the current Iron's Spellbooks spell registry.
      *
      * <p>Useful after updating the spell mod or toggling spells in its config: entries that were
      * valid when the data pack loaded can become unusable later.</p>
      */
-    private static int validate(CommandSourceStack source) {
-        List<SpellCastDefinition> definitions = new ArrayList<>();
+    private static int validate(CommandSourceStack source) {        List<SpellCastDefinition> definitions = new ArrayList<>();
         for (ResourceLocation id : SpellCasterRegistry.ids()) {
             SpellCasterRules rules = SpellCasterRegistry.get(id);
             if (rules == null) {

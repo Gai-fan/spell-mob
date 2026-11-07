@@ -453,6 +453,7 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | `balance` | `cooldownMultiplier` | `1.0` | Scales every data pack cooldown; `0` compresses it to the 1-tick minimum. |
 | | `maxRange` | `32` | Hard cap on `range` from data packs (up to 128). |
 | | `interruptChannelsOnDamage` | `true` | Damage interrupts channeled spells. |
+| | `globalCooldown` | `0` | Global cooldown in ticks: after one cast every spell of that caster waits this long. `0` disables it, max 400. |
 | `filters` | `entityBlacklist` | empty | Entity ids that never cast. |
 | | `dimensionBlacklist` | empty | Dimensions where casting is disabled. |
 | `protection` | `protectedTags` | empty | Mobs with these tags cannot be renamed with a name tag. |
@@ -470,6 +471,7 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `bossBarColor` | `white` | Bar colour: `pink` / `blue` / `red` / `green` / `yellow` / `purple` / `white`. |
 | | `bossBarRange` | `48` | Players within this distance see the bar (8–128). |
 | | `bossBarTags` | `["spellmob_boss"]` | Mobs with these tags get a bar; empty means every mob with rules. |
+| | `bossBarCastName` | `true` | Append "casting <spell>" to the bar name while the mob casts; turn it off to keep the plain name. |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).
@@ -494,12 +496,14 @@ Permission level 2 required.
 | `/spellmob info <mob>` | Shows the resolved configuration for that mob, including which variant matched and remaining cooldowns. |
 | `/spellmob resync [targets]` | Rebuilds casting goals for the given mobs (or yourself). Run after changing tags. |
 | `/spellmob validate` | Checks every loaded spell id and lists config entries shadowed by data packs. |
+| `/spellmob dump spells` | Writes every registered spell id, cast type and school to `config/spellmob-spells.txt`. |
 
 ## Compatibility notes
 
 - **Server-side only.** Clients do not need the mod; the circles are ordinary particles the server sends.
 - **Data pack paths mirror entity ids.** A file under `data/mypack/` can never affect `minecraft:zombie`.
 - **Unknown JSON keys are ignored.** Typos in field names fail silently — `validate` and `info` are the way to catch them.
+- **Editor completion.** `docs/spell_casters.schema.json` is a standard JSON Schema; bind it to `spell_casters/*.json` in VS Code or IntelliJ to get completion and typo detection.
 - **ISS versions.** Built against the 3.4.0.9 API and verified against 3.16.3; the jar declares `[1.20.1-3.4.0.9,)`.
 
 ## Examples

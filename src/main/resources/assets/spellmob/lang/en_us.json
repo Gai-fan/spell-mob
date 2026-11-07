@@ -1,3 +1,4 @@
 {
-  "spellmob.message.name_locked": "This creature's name is locked."
+  "spellmob.message.name_locked": "This creature's name is locked.",
+  "spellmob.boss_bar.casting": "Casting %s"
 }

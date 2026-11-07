@@ -536,6 +536,7 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `balance.cooldownMultiplier` | `1.0` | 全局冷却倍率；`0` 会压到最短 1 tick |
 | `balance.maxRange` | `32.0` | `range` 的硬上限（1–128） |
 | `balance.interruptChannelsOnDamage` | `true` | 引导法术是否被伤害打断（普通吟唱仍由每条法术的 `interruptOnDamage` 控制） |
+| `balance.globalCooldown` | `0` | 全局冷却（tick）：一次施法后该施法者的所有法术都要再等这么久；`0` 关闭，上限 400 |
 | `filters.entityBlacklist` | `[]` | 永不施法的实体 id |
 | `filters.dimensionBlacklist` | `[]` | 禁用施法的维度 id |
 | `protection.protectedTags` | `[]` | 名字受保护的计分板标签；普通玩家不能用命名牌覆盖已有名字 |
@@ -553,6 +554,7 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `presentation.bossBarColor` | `white` | 血条颜色：`pink`/`blue`/`red`/`green`/`yellow`/`purple`/`white` |
 | `presentation.bossBarRange` | `48` | 该距离内的玩家能看到血条（8–128） |
 | `presentation.bossBarTags` | `["spellmob_boss"]` | 带这些标签的生物显示血条；留空表示所有配置了规则的生物 |
+| `presentation.bossBarCastName` | `true` | 读条时血条名后面显示“正在施放 xxx”；关掉只显示生物名字 |
 | `species.extraRules` | `[]` | 直接写在配置里的物种级规则，一行一条 JSON |
 
 > 修改配置后重启游戏/服务器（或使用会触发 Forge 配置重载的工具）。数据包修改后执行 `/reload`。
@@ -595,6 +597,7 @@ extraRules = [
 | `/spellmob info <目标>` | 显示该生物命中的变体、最终施法配置、剩余冷却与当前吟唱 |
 | `/spellmob resync [目标]` | 重建目标（或执行者自己）的施法 Goal；改 tag 后使用 |
 | `/spellmob validate` | 用当前 ISS 法术表复查已加载配置，列出缺失/被禁用的法术与被数据包遮蔽的配置项 |
+| `/spellmob dump spells` | 把所有已注册的法术 id、施法类型、学派导出到 `config/spellmob-spells.txt`，写数据包时直接查 |
 
 > 加载阶段被丢弃的条目（例如拼错法术 id）只会出现在日志里，`/spellmob validate` 检查的是已经成功加载的定义。排错时两者一起看。
 

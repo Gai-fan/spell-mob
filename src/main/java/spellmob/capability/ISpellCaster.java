@@ -36,6 +36,20 @@ public interface ISpellCaster {
     int castTicksRemaining();
 
     /**
+     * @return the spell being cast, or null when nothing is being cast; used by the boss bar
+     */
+    default @Nullable io.redspace.ironsspellbooks.api.spells.AbstractSpell castingSpell() {
+        return null;
+    }
+
+    /**
+     * @return true while the optional global cooldown still blocks this caster
+     */
+    default boolean onGlobalCooldown() {
+        return false;
+    }
+
+    /**
      * @param definition the definition to check
      * @return true when the caster may start this spell right now
      */
