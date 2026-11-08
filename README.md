@@ -581,6 +581,9 @@ jar 内置了六份示例文件（共七套配置），全部采用“标签限�
 | `presentation.bossBarRange` | `48` | 该距离内的玩家能看到血条（8–128） |
 | `presentation.bossBarTags` | `["spellmob_boss"]` | 带这些标签的生物显示血条；留空表示所有配置了规则的生物 |
 | `presentation.bossBarCastName` | `true` | 读条时血条名后面显示“正在施放 xxx”；关掉只显示生物名字 |
+| `bosses.resetOnEscape` | `true` | 带 `presentation.bossTags` 标签的 Boss 在没人交战后回满血、清掉阶段锁（回到第一阶段）；不清除已学会的法术 |
+| `bosses.escapeRadius` | `32` | 玩家离 Boss 多近才算还在交战（8–128 格） |
+| `bosses.escapeGrace` | `600` | 连续多少 tick 没有玩家在 `escapeRadius` 内就重置（600 = 30 秒） |
 | `species.extraRules` | `[]` | 直接写在配置里的物种级规则，一行一条 JSON |
 
 > 修改配置后重启游戏/服务器（或使用会触发 Forge 配置重载的工具）。数据包修改后执行 `/reload`。

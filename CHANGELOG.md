@@ -7,6 +7,15 @@
 
 ---
 
+## [2.1.8] — 2026-11-08
+
+### 新增
+
+- **Boss 战后重置**：`[bosses]` 新增 `resetOnEscape`（默认开）、`escapeRadius`（32 格）、`escapeGrace`（600 tick）。带 `presentation.bossTags` 标签的 Boss 连续 `escapeGrace` 没有玩家在 `escapeRadius` 内时，回满血、清掉粘性阶段锁（回到第一阶段）、清空目标并取消在途施法；已学会的法术保留。
+- 文档（中/英/README）补充“Boss 重置”一节与三项配置说明。
+
+---
+
 ## [2.1.7] — 2026-11-08
 
 第三轮审查（`ScrollRituals` 与优先级语义）的修复：
