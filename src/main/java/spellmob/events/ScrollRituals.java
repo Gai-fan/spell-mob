@@ -82,9 +82,9 @@ public final class ScrollRituals {
     public static void tick(MinecraftServer server) {
         if (!SpellMobConfig.scrollLearningEnabled()) {
             // Nothing may linger while the feature is off, otherwise the queues only shrink when
-            // the server stops.
+            // the server stops. Scrolls of running rituals are handed back, never swallowed.
             PENDING.clear();
-            RITUALS.clear();
+            releaseScrolls(server);
             return;
         }
         Iterator<Map.Entry<UUID, Pending>> pending = PENDING.entrySet().iterator();
@@ -114,8 +114,35 @@ public final class ScrollRituals {
         tickRituals(server);
     }
 
-    public static void clear() {
+    public static void clear(MinecraftServer server) {
         PENDING.clear();
+        releaseScrolls(server);
+    }
+
+    /**
+     * Hands the scroll of every running ritual back to the pet owner, so disabling the feature or
+     * stopping the server never eats an item.
+     */
+    private static void releaseScrolls(MinecraftServer server) {
+        for (Ritual ritual : RITUALS.values()) {
+            ServerLevel level = server.getLevel(ritual.dimension());
+            if (level == null) {
+                continue;
+            }
+            if (!(level.getEntity(ritual.itemId()) instanceof ItemEntity item) || item.getItem().isEmpty()) {
+                continue;
+            }
+            if (level.getEntity(ritual.petId()) instanceof TamableAnimal pet
+                    && pet.getOwner() instanceof ServerPlayer owner
+                    && owner.level() == level) {
+                ItemStack stack = item.getItem().copy();
+                if (!owner.getInventory().add(stack)) {
+                    owner.drop(stack, false);
+                }
+                item.discard();
+            }
+            // Otherwise the item simply stays where it is: it was never consumed by the ritual.
+        }
         RITUALS.clear();
     }
 
@@ -249,12 +276,16 @@ public final class ScrollRituals {
             return true;
         }
         SpellCasterRules rules = SpellCasterRegistry.get(pet.getType());
-        if (rules == null) {
+        if (rules == null || !rules.hasLearnerVariants()) {
             return false;
         }
+        // No sticky variant means the raw selection is already the effective one, so nothing has
+        // to allocate a caster just to answer "can this pet learn?".
+        if (!rules.hasStickyVariants()) {
+            return rules.learner(rules.variantIndex(pet));
+        }
         SpellCaster caster = casterOf(pet);
-        int index = caster == null ? rules.variantIndex(pet) : caster.effectiveVariantIndex();
-        return rules.learner(index);
+        return rules.learner(caster == null ? rules.variantIndex(pet) : caster.effectiveVariantIndex());
     }
 
     @Nullable

@@ -206,6 +206,30 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     }
 
     /**
+     * @return true when at least one variant of this species allows learning scroll spells
+     */
+    public boolean hasLearnerVariants() {
+        for (SpellCasterVariant variant : variants) {
+            if (variant.learner()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return true when at least one variant of this species can lock its phase
+     */
+    public boolean hasStickyVariants() {
+        for (SpellCasterVariant variant : variants) {
+            if (variant.sticky()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Resolves the configuration that applies to one mob.
      *
      * @param mob the mob

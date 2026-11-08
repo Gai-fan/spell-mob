@@ -87,26 +87,25 @@ public final class CastGoalSync {
                 ? -1
                 : (spellCaster == null ? rules.variantIndex(mob) : spellCaster.effectiveVariantIndex());
         SpellCasterData data = rules == null ? null : rules.resolve(index);
-        int added = 0;
-        if (data != null) {
-            // Vanilla runs the first goal whose canUse() returns true in insertion order; the
-            // priority only decides whether a running goal may be replaced. Sorting by priority
-            // keeps the documented "lower first" order for our own goals, stable for ties.
-            List<SpellCastDefinition> goals = new ArrayList<>(data.goals());
-            goals.sort(Comparator.comparingInt(SpellCastDefinition::priority));
-            for (SpellCastDefinition definition : goals) {
-                mob.goalSelector.addGoal(definition.priority(), new CastSpellGoal(mob, definition));
-                added++;
-            }
-        }
         // Learned spells live outside the data pack: they are rebuilt from the caster state on
-        // every sync so a /reload or a variant change never wipes what a boss has learned.
-        if (spellCaster != null) {
-            for (SpellCastDefinition learned : spellCaster.learnedDefinitions()) {
-                mob.goalSelector.addGoal(learned.priority(), new CastSpellGoal(mob, learned));
-                added++;
-            }
+        // every sync so a /reload or a variant change never wipes what a boss has learned. They
+        // share the ordering with the data pack goals, so learnedPriority really applies; ties
+        // keep the data pack spell first because the sort is stable.
+        List<SpellCastDefinition> goals = new ArrayList<>();
+        if (data != null) {
+            goals.addAll(data.goals());
         }
+        if (spellCaster != null) {
+            goals.addAll(spellCaster.learnedDefinitions());
+        }
+        // Vanilla runs the first goal whose canUse() returns true in insertion order; the
+        // priority only decides whether a running goal may be replaced. Sorting by priority
+        // keeps the documented "lower first" order for our own goals, stable for ties.
+        goals.sort(Comparator.comparingInt(SpellCastDefinition::priority));
+        for (SpellCastDefinition definition : goals) {
+            mob.goalSelector.addGoal(definition.priority(), new CastSpellGoal(mob, definition));
+        }
+        int added = goals.size();
         if (added == 0) {
             // A reload removed the rules, or the resolved variant no longer carries any spell: an
             // event triggered cast would stay frozen forever, because nothing ticks a mob without
