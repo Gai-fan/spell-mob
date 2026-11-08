@@ -19,14 +19,9 @@
 /summon minecraft:horse ~ ~ ~ {CustomName:'"rocky"'}
 ```
 
-刷怪笼（每 5 秒刷一只会火焰箭的僵尸，初始化后就不用手动放了）：
-
-```
-/setblock ~ ~ ~ minecraft:spawner{SpawnData:{entity:{id:"minecraft:zombie",CustomName:'"spawner_fire"'}},SpawnCount:1,SpawnRange:4,Delay:20,MinSpawnDelay:100,MaxSpawnDelay:100,RequiredPlayerRange:16} replace
-```
-
 ## 备注
 
 - 红色血条是**全局配置**（`config/spellmob-common.toml` 里 `bossBar = true`、`bossBarColor = "red"`），不是数据包字段；改完要重启游戏。
 - 学习能力：Boss 要打死玩家一次（或玩家死在它 48 格内）才算“失败”，下次交手才会从你上次用过的法术里随机学一个；黑名单/数量上限/冷却都在配置里。
 - 驯服后的宠物才会学法术；`learner: true` 写在变体上等价于给这只怪打 `spellmob_learner` 标签。
+- 本包只定义了 king / summer / rocky 三个名字，其它同种生物行为不变；不要在这个包里放 `husk.json`/`zombie.json`，那会顶掉模组内置的同名规则。
