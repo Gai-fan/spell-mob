@@ -16,6 +16,7 @@
 ### 文档
 
 - `README.md` 的“内置内容”表更新为当前 11 份内置示例（含 `wolf.json` 的 `Bryan` 与新增的 `iron_golem.json`）。
+- 新增 `docs/tutorial.zh.md`：面向数据包作者的完整教程，覆盖数据包结构与加载、根节点字段、优先级与原版 Goal、五种触发器、目标与过滤、瞄准模式（含 `BEHIND_TARGET` 与 `placement`）、世界与施法者条件、变体（`sticky`/`bar`/`learner`/`adaptive`）、掉落、Boss 血条与自适应学习、宠物卷轴教学、命令与全部配置默认值。
 
 ---
 
