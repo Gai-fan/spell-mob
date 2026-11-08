@@ -154,7 +154,7 @@ public final class CasterEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         // Ritual bookkeeping lives in static maps; a stopped server must not leak the previous
         // world's entities into the next one (single player keeps the same JVM).
-        ScrollRituals.clear();
+        ScrollRituals.clear(event.getServer());
     }
 
     @SubscribeEvent
