@@ -15,6 +15,8 @@ SpellMob 是 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/
 
 **你不需要写 Java，也不需要安装客户端模组。** 一个 JSON 文件就能让僵尸变成火法师、让幻翼变成雷暴 Boss，或者只让某一只被命名的 Boss 施法。
 
+> 第一次接触？先读 [完整教程（中文）](docs/tutorial.zh.md)——从数据包结构到 Boss、宠物与自适应学习，逐节带示例。
+
 ---
 
 ## 目录
@@ -726,7 +728,7 @@ JAVA_HOME=/path/to/jdk-21 ./gradlew build
   - `src/main/java/spellmob/presentation`：服务端粒子表现；
   - `src/main/resources/data/...`：内置示例定义；
   - `examples/`：可直接安装的数据包示例；
-  - `docs/`：中英文详细指南。
+  - `docs/`：中英文详细指南；`docs/tutorial.zh.md` 是面向数据包作者的完整教程。
 
 ## 贡献与许可
 
