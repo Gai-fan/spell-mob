@@ -505,17 +505,22 @@ my_spellmob_pack/
 
 ## 内置内容
 
-jar 内置了六份示例文件（共七套配置），全部采用“标签限定”的方式：只有带有对应标签的生物才会施法，野生同类完全不受影响。
+jar 内置了 11 份示例文件（共 15 套配置）：大部分用“标签限定”，只有带对应标签的生物才会施法；`wolf.json` 与 `iron_golem.json` 用“改名限定”（分别对应 `Bryan` 与 `king`），野生同类完全不受影响。
 
-| 实体 | 需要的标签 | 说明 |
+| 实体 | 触发方式 | 说明 |
 |---|---|---|
-| `minecraft:husk` | `husk_boss` + `spellmob_boss` | 沙海 Boss（12 种法术，Boss 表现，引导免打断） |
-| `minecraft:husk` | `husk_elite` | 沙海精英（另一套 12 种法术） |
-| `minecraft:drowned` | `spellmob_boss` + `spellmob_jack` | 雷系溺尸 Boss |
-| `minecraft:phantom` | `spellmob_boss` + `spellmob_phantom` | 雷系幻翼 Boss |
-| `twilightforest:naga` | `spellmob_boss` + `spellmob_naga` | 自然系娜迦（需要 Twilight Forest） |
-| `twilightforest:lich` | `spellmob_boss` + `spellmob_lich` | 巫妖（需要 Twilight Forest） |
-| `twilightforest:alpha_yeti` | `spellmob_boss` + `spellmob_yeti` | 冰系雪怪首领（需要 Twilight Forest） |
+| `minecraft:husk` | 标签 `husk_boss` + `spellmob_boss` | 沙海 Boss（12 种法术，Boss 表现，引导免打断） |
+| `minecraft:husk` | 标签 `husk_elite` | 沙海精英（另一套 12 种法术） |
+| `minecraft:drowned` | 标签 `spellmob_boss` + `spellmob_jack` | 雷系溺尸 Boss |
+| `minecraft:phantom` | 标签 `spellmob_boss` + `spellmob_phantom` | 雷系幻翼 Boss |
+| `minecraft:iron_golem` | 命名牌改成 `king` | 音爆 + 火焰吐息，红色 Boss 血条，会学习打败过的玩家的法术 |
+| `minecraft:wolf` | 命名牌改成 `Bryan` | 4 秒一次的唤魔尖牙；驯服后可喂卷轴学新法术 |
+| `minecraft:zombie` | 标签 `spellmob_test_state` / `spellmob_test_state_nobar` / `spellmob_test_world` | 施法者状态、无血条对比、世界状态三套测试规则 |
+| `minecraft:blaze` | 标签 `spellmob_test_lava` | 着火 / 泡岩浆时的法术切换 |
+| `minecraft:stray` | 标签 `spellmob_test_frozen` | 冻结（细雪）状态的法术切换 |
+| `twilightforest:naga` | 标签 `spellmob_boss` + `spellmob_naga` | 自然系娜迦（需要 Twilight Forest） |
+| `twilightforest:lich` | 标签 `spellmob_boss` + `spellmob_lich` | 巫妖（需要 Twilight Forest） |
+| `twilightforest:alpha_yeti` | 标签 `spellmob_boss` + `spellmob_yeti` | 冰系雪怪首领（需要 Twilight Forest） |
 
 召唤示例：
 
