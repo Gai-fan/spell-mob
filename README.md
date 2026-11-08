@@ -432,6 +432,7 @@ my_spellmob_pack/
 | `sticky` | `false` | `true` 时该变体一旦命中就锁定：血量被奶回阈值以上也不退回（阶段只往前走）；写在 `select` 里也认 |
 | `bossBar` | 无 | `true`/`false` 强制这个变体显示或不显示 Boss 血条，优先于 `presentation.bossBar` 与 `bossBarTags`；不写则沿用配置。根节点也可写，作用于整族 |
 | `learner` | `false` | `true` 时该生物可以学卷轴上的法术，等同于给它打 `scrollLearning.learnerTag` 标签；通常与 `select.tamed` 一起用（只有已驯服的生物能学）；写在 `select` 里也认 |
+| `adaptive` | `false` | `true` 时该生物会学习打败过的玩家的法术，等同于给它打 `adaptive.adaptiveTag` 标签；写在 `select` 里也认 |
 | `goals` / `onHurt` / `onTarget` / `onDeath` / `onKill` | 无 | 与顶层同名字段一致；全都不写表示“这个变体什么都不放” |
 
 `select` 支持以下条件，同时存在时要求全部满足：
@@ -644,7 +645,7 @@ extraRules = [
 
 ## 会学习的 Boss
 
-`[adaptive]` 让带 `spellmob_adaptive` 标签的 Boss 记住打败过的玩家：下次再遇到同一玩家，它会从对方上次用过的法术里随机学一个，永远以 `getMaxLevel()` 释放。交战期间玩家放的每个法术都会被记下（每人最多 `rememberedSpells` 条）；玩家死给它（或死在它 48 格内）才算“失败”，下次交手才触发学习。默认一生只学 `maxLearnedSpells = 1` 个（填 0 = 不学，调大可累积），黑名单 `spellBlacklist` 默认排除传送、血步、闪避；学到的法术用 `learnedCooldown`（`-1` = 跟随该法术自身冷却）与 `learnedPriority` 参与正常施法，并同样受 `balance.cooldownMultiplier` 缩放。状态写在生物 NBT 的 `adaptive` 子标签里，`/reload` 后由施法者状态重建 Goal，不会丢。
+`[adaptive]` 让带 `spellmob_adaptive` 标签（或变体里写了 `"adaptive": true`）的 Boss 记住打败过的玩家：下次再遇到同一玩家，它会从对方上次用过的法术里随机学一个，永远以 `getMaxLevel()` 释放。交战期间玩家放的每个法术都会被记下（每人最多 `rememberedSpells` 条）；玩家死给它（或死在它 48 格内）才算“失败”，下次交手才触发学习。默认一生只学 `maxLearnedSpells = 1` 个（填 0 = 不学，调大可累积），黑名单 `spellBlacklist` 默认排除传送、血步、闪避；学到的法术用 `learnedCooldown`（`-1` = 跟随该法术自身冷却）与 `learnedPriority` 参与正常施法，并同样受 `balance.cooldownMultiplier` 缩放。状态写在生物 NBT 的 `adaptive` 子标签里，`/reload` 后由施法者状态重建 Goal，不会丢。
 
 ```mcfunction
 /tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive

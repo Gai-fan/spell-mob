@@ -228,10 +228,14 @@ public final class CasterEvents {
      */
     @Nullable
     private static SpellCaster adaptiveCaster(Mob mob) {
-        if (!SpellMobConfig.adaptiveEnabled() || SpellCasterRegistry.get(mob.getType()) == null) {
+        if (!SpellMobConfig.adaptiveEnabled()) {
             return null;
         }
-        if (!mob.getTags().contains(SpellMobConfig.adaptiveTag())) {
+        SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
+        if (rules == null) {
+            return null;
+        }
+        if (!mob.getTags().contains(SpellMobConfig.adaptiveTag()) && !rules.adaptive(mob)) {
             return null;
         }
         return SpellCasterAttachments.get(mob) instanceof SpellCaster spellCaster ? spellCaster : null;
@@ -314,8 +318,14 @@ public final class CasterEvents {
         }
         String tag = SpellMobConfig.adaptiveTag();
         List<Mob> nearby = player.level().getEntitiesOfClass(Mob.class,
-                player.getBoundingBox().inflate(48.0D), mob -> mob.getTags().contains(tag));
+                player.getBoundingBox().inflate(48.0D), mob -> true);
         for (Mob mob : nearby) {
+            if (!mob.getTags().contains(tag)) {
+                SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
+                if (rules == null || !rules.adaptive(mob)) {
+                    continue;
+                }
+            }
             SpellCaster caster = adaptiveCaster(mob);
             if (caster != null) {
                 caster.markPlayerDefeated(player);

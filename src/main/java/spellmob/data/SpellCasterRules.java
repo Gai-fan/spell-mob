@@ -141,9 +141,12 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         // 'learner' follows the same "variant level, or inside select" rule so file authors do not
         // have to remember which of the two blocks it belongs to.
         boolean learner = JsonHelper.optBoolean(json, "learner", JsonHelper.optBoolean(select, "learner", false));
+        // 'adaptive' mirrors 'learner': either level works, and it saves boss authors from having to
+        // tag every summon or spawn egg by hand.
+        boolean adaptive = JsonHelper.optBoolean(json, "adaptive", JsonHelper.optBoolean(select, "adaptive", false));
         SpellCasterData data = SpellCasterData.parse(json, where);
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
-        return new SpellCasterVariant(selector, override, sticky, bossBar, learner,
+        return new SpellCasterVariant(selector, override, sticky, bossBar, learner, adaptive,
                 data == null ? SpellCasterData.EMPTY : data, dropRules);
     }
 
@@ -206,10 +209,25 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     }
 
     /**
+     * @param mob the mob
+     * @return true when the variant that currently matches this mob lets it learn player spells
+     */
+    public boolean adaptive(Mob mob) {
+        return adaptive(variantIndex(mob));
+    }
+
+    /**
+     * @param index a resolved variant index, or -1 for the species default
+     * @return true when that variant lets the mob learn player spells
+     */
+    public boolean adaptive(int index) {
+        return index >= 0 && variants.get(index).adaptive();
+    }
+
+    /**
      * @return true when at least one variant of this species allows learning scroll spells
      */
-    public boolean hasLearnerVariants() {
-        for (SpellCasterVariant variant : variants) {
+    public boolean hasLearnerVariants() {        for (SpellCasterVariant variant : variants) {
             if (variant.learner()) {
                 return true;
             }

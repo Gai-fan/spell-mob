@@ -481,9 +481,14 @@ public final class SpellCaster implements ISpellCaster {
      *     is on, the mob carries the adaptive tag and it has data pack rules
      */
     public boolean isAdaptive() {
-        return SpellMobConfig.adaptiveEnabled()
-                && SpellCasterRegistry.get(mob.getType()) != null
-                && mob.getTags().contains(SpellMobConfig.adaptiveTag());
+        if (!SpellMobConfig.adaptiveEnabled()) {
+            return false;
+        }
+        SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
+        if (rules == null) {
+            return false;
+        }
+        return mob.getTags().contains(SpellMobConfig.adaptiveTag()) || rules.adaptive(mob);
     }
 
     /**

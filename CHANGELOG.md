@@ -7,6 +7,18 @@
 
 ---
 
+## [2.1.9] — 2026-11-08
+
+### 新增
+
+- 变体级 `adaptive` 字段：写 `"adaptive": true` 的变体等同于给这只生物打 `adaptive.adaptiveTag` 标签，让数据包自己就能声明"这只 Boss 会学习玩家法术"，不必再靠召唤命令加标签。
+
+### 文档
+
+- `docs/guide.zh.md`、`docs/guide.en.md`、`README.md` 的会学习 Boss 一节与变体字段表同步 `adaptive` 字段；`docs/spell_casters.schema.json` 增加对应属性。
+
+---
+
 ## [2.1.8] — 2026-11-08
 
 ### 新增

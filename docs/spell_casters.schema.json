@@ -54,6 +54,11 @@
           "default": false,
           "description": "Lets a tamed mob learn spells from thrown scrolls without giving it the learner tag."
         },
+        "adaptive": {
+          "type": "boolean",
+          "default": false,
+          "description": "Lets a boss learn the spells of players that lose to it without giving it the adaptive tag."
+        },
         "dropRules": {
           "type": "array",
           "items": { "$ref": "#/definitions/dropRule" }

@@ -1,0 +1,49 @@
+{
+  "variants": [
+    {
+      "select": { "name": "rocky", "tamed": false },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:charge",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ray_of_frost",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    },
+    {
+      "select": { "name": "rocky", "tamed": true },
+      "override": true,
+      "learner": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:charge",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:ray_of_frost",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}

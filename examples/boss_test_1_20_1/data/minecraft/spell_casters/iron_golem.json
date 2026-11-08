@@ -1,0 +1,40 @@
+{
+  "variants": [
+    {
+      "select": { "name": "king" },
+      "override": true,
+      "bossBar": true,
+      "adaptive": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:sonic_boom",
+          "level": 3,
+          "cooldown": 120,
+          "castTime": 30,
+          "priority": 0,
+          "range": 24.0,
+          "target": "ATTACK_TARGET"
+        },
+        {
+          "spell": "irons_spellbooks:fire_breath",
+          "level": 3,
+          "cooldown": 200,
+          "castTime": 60,
+          "priority": 0,
+          "range": 20.0,
+          "target": "ATTACK_TARGET"
+        }
+      ],
+      "dropRules": [
+        {
+          "select": { "tags": ["spellmob_boss"] },
+          "chance": 1.0,
+          "drops": [
+            { "item": "minecraft:emerald", "min": 8, "max": 16, "looting": true },
+            { "item": "minecraft:gold_block", "min": 1, "max": 2 }
+          ]
+        }
+      ]
+    }
+  ]
+}

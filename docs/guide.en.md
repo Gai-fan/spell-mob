@@ -542,7 +542,7 @@ A boss tagged with `presentation.bossTags` returns to its pre-fight state once n
 
 This is the "second encounter" mechanic: after a boss defeats a player, the next time they meet the boss learns one of the spells that player used last time, always at that spell's maximum level.
 
-- Gate: `adaptive.enabled` must be on and the boss must carry the scoreboard tag named by `adaptive.adaptiveTag` (default `spellmob_adaptive`). `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` turns a mob into a learner.
+- Gate: `adaptive.enabled` must be on and the boss must carry the scoreboard tag named by `adaptive.adaptiveTag` (default `spellmob_adaptive`). `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` turns a mob into a learner; writing `"adaptive": true` inside a variant does the same from the data pack.
 - Recording: a fight starts when either side hits the other; every spell the player casts during it is remembered, up to `rememberedSpells` per player.
 - Learning: if the player dies to the boss (or within 48 blocks of it) the fight counts as a loss; on the next fight the boss randomly learns one remembered spell that it does not know yet and that is not in `spellBlacklist`.
 - Limits: at most `maxLearnedSpells` per boss (default 1, `0` disables learning); learned spells use `learnedCooldown` and `learnedPriority` and take part in the same priority ordering as the data pack spells (a data pack spell wins a tie), and always cast at `getMaxLevel()`. `learnedCooldown = -1` follows the spell's own default cooldown, `>= 0` pins a fixed tick value; either way `balance.cooldownMultiplier` still applies.
