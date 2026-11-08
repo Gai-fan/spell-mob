@@ -62,6 +62,9 @@ public final class ScrollRituals {
         if (event.getEntity().level().isClientSide()) {
             return;
         }
+        if (!SpellMobConfig.scrollLearningEnabled()) {
+            return;
+        }
         ItemEntity item = event.getEntity();
         ItemStack stack = item.getItem();
         if (!(stack.getItem() instanceof Scroll) || !ISpellContainer.isSpellContainer(stack)) {
@@ -78,6 +81,10 @@ public final class ScrollRituals {
 
     public static void tick(MinecraftServer server) {
         if (!SpellMobConfig.scrollLearningEnabled()) {
+            // Nothing may linger while the feature is off, otherwise the queues only shrink when
+            // the server stops.
+            PENDING.clear();
+            RITUALS.clear();
             return;
         }
         Iterator<Map.Entry<UUID, Pending>> pending = PENDING.entrySet().iterator();
@@ -242,7 +249,12 @@ public final class ScrollRituals {
             return true;
         }
         SpellCasterRules rules = SpellCasterRegistry.get(pet.getType());
-        return rules != null && rules.learner(pet);
+        if (rules == null) {
+            return false;
+        }
+        SpellCaster caster = casterOf(pet);
+        int index = caster == null ? rules.variantIndex(pet) : caster.effectiveVariantIndex();
+        return rules.learner(index);
     }
 
     @Nullable

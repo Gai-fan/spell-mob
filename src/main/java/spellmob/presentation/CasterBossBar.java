@@ -32,6 +32,7 @@ public final class CasterBossBar {
     private final Mob mob;
     private ServerBossEvent bar;
     private int ticks;
+    private int variantIndex = -1;
     private BossEvent.BossBarColor colour;
     private String nameText = "";
 
@@ -40,7 +41,8 @@ public final class CasterBossBar {
     }
 
     /** Refreshes the bar, or hides it when the mob no longer qualifies. */
-    public void tick() {
+    public void tick(int variantIndex) {
+        this.variantIndex = variantIndex;
         if (!(mob.level() instanceof ServerLevel level) || !shouldShow()) {
             hide();
             return;
@@ -107,7 +109,7 @@ public final class CasterBossBar {
         }
         // A data pack may force the bar on or off per variant, which wins over the tag based
         // config switch. That is what makes "with bar" and "without bar" test setups possible.
-        Boolean override = SpellCasterRegistry.bossBarOverride(mob);
+        Boolean override = SpellCasterRegistry.bossBarOverride(mob, variantIndex);
         if (override != null) {
             return override;
         }

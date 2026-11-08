@@ -45,11 +45,10 @@ public final class RitualCircle {
 
         for (int i = 0; i < RING_SEGMENTS; i++) {
             double angle = Math.PI * 2.0D * i / RING_SEGMENTS;
-            level.sendParticles(dust,
+            CastingPresentation.send(level, new Vec3(
                     centre.x + Math.cos(angle) * RING_RADIUS,
                     centre.y,
-                    centre.z + Math.sin(angle) * RING_RADIUS,
-                    1, 0.0D, 0.0D, 0.0D, 0.0D);
+                    centre.z + Math.sin(angle) * RING_RADIUS), dust);
         }
 
         drawStar(level, centre, dust);
@@ -76,9 +75,10 @@ public final class RitualCircle {
             double y = 0.10D + 1.45D * t;
             double x = centre.x + Math.cos(angle) * radius;
             double z = centre.z + Math.sin(angle) * radius;
-            level.sendParticles(dust, x, centre.y + y, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            Vec3 point = new Vec3(x, centre.y + y, z);
+            CastingPresentation.send(level, point, dust);
             if (i % 3 == 0) {
-                level.sendParticles(ParticleTypes.ENCHANT, x, centre.y + y, z, 0,
+                CastingPresentation.send(level, point, ParticleTypes.ENCHANT,
                         0.0D, 0.05D, 0.0D, 0.02D);
             }
         }
@@ -106,23 +106,18 @@ public final class RitualCircle {
                              DustParticleOptions dust) {
         float x = Mth.lerp(t, from.x, to.x);
         float z = Mth.lerp(t, from.z, to.z);
-        level.sendParticles(dust, centre.x + x, centre.y, centre.z + z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        CastingPresentation.send(level, new Vec3(centre.x + x, centre.y, centre.z + z), dust);
     }
 
     /** Enchant runes drift up from random spots inside the circle, like the crystal effect. */
     private static void drawRune(ServerLevel level, Vec3 centre, Vector3f colour) {
         double angle = level.random.nextDouble() * Math.PI * 2.0D;
         double radius = Math.sqrt(level.random.nextDouble()) * RING_RADIUS;
-        level.sendParticles(ParticleTypes.ENCHANT,
-                centre.x + Math.cos(angle) * radius,
-                centre.y + 0.2D,
-                centre.z + Math.sin(angle) * radius,
-                0, 0.0D, 1.0D, 0.0D, 0.04D);
+        Vec3 rune = new Vec3(centre.x + Math.cos(angle) * radius, centre.y + 0.2D,
+                centre.z + Math.sin(angle) * radius);
+        CastingPresentation.send(level, rune, ParticleTypes.ENCHANT, 0.0D, 1.0D, 0.0D, 0.04D);
         // A single coloured spark ties the runes back to the school colour.
-        level.sendParticles(new DustParticleOptions(colour, 0.7F),
-                centre.x + Math.cos(angle) * radius,
-                centre.y + 0.35D,
-                centre.z + Math.sin(angle) * radius,
-                1, 0.0D, 0.02D, 0.0D, 0.0D);
+        CastingPresentation.send(level,
+                new Vec3(rune.x, centre.y + 0.35D, rune.z), new DustParticleOptions(colour, 0.7F));
     }
 }

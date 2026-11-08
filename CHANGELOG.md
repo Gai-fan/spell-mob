@@ -7,6 +7,28 @@
 
 ---
 
+## [2.1.6] — 2026-11-08
+
+第二轮代码审查的修复，重点在“重建路径”和“边界条件”：
+
+### 修复
+
+- **粘性变体锁在重建 Goal 时被绕过**：`SpellCasterRules.resolve/bossBar/learner` 都只做裸匹配，区块重载后二阶段 Boss 会被换回一阶段技能、血条标题与“能否学习”也会跳回。新增 `effectiveIndex(mob, locked)` 与按索引解析的重载，Goal 重建、Boss 血条、卷轴学习判定统一走锁定后的索引。
+- **数据为空时学会的法术被一起丢掉**：`CastGoalSync.sync` 在 `data.isEmpty()` 时提前返回，宠物只要没有数据包规则就不再施放学会的法术。改为先挂学会的法术，再判断是否真的一个 Goal 都没有。
+- **`/reload` 删掉规则后事件触发的施法永久卡死**：重建后没有任何 Goal 时，顺手取消在途施法并移除 Boss 血条，不再依赖区块卸载。
+- **卷轴等级没有按法术上限钳制**：`learnScrollSpell` 与 NBT 读取都会把等级夹到 `1..spell.getMaxLevel()`，被改过的卷轴也写不进非法等级。
+- **关闭卷轴学习后待处理队列不再清理**：`onItemToss` 直接忽略，`tick` 在功能关闭时清空投掷与仪式队列。
+- **吟唱被原版 Goal 打断**：`CastSpellGoal#isInterruptable()` 在施法期间返回 false，浮水、逃跑等低优先级 Goal 不会再让 `stop()` 取消法术；受伤打断仍由配置控制。
+- **区块卸载给普通生物凭空建施法者**：`onEntityLeaveLevel` 先按“有规则或有施法者标签”过滤，再取能力，懒分配不再被破坏。
+- **仪式粒子全维度广播**：`RitualCircle` 改用 `CastingPresentation.send(level, pos, particle)`，与脚下法阵共用 `presentation.distance` 的距离裁剪，不再给几千格外的玩家发包。
+
+### 变更
+
+- 同一生物的多条法术在注册前按 `priority` 稳定排序，`priority` 因此对“先试哪条”也生效；文档同步说明原版 `GoalSelector` 的真正规则（顺序看注册，数字只决定能否抢占），并明确学会的法术排在数据包法术之后。
+- **`spellmob_caster` 标签**：宠物学会第一个法术后自动获得，用于让没有数据包规则的宠物继续被 tick。
+
+---
+
 ## [2.1.5] — 2026-11-08
 
 ### 新增

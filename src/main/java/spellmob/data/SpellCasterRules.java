@@ -171,7 +171,15 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
      * otherwise {@code null} meaning "follow the presentation config"
      */
     public @Nullable Boolean bossBar(Mob mob) {
-        int index = variantIndex(mob);
+        return bossBar(variantIndex(mob));
+    }
+
+    /**
+     * @param index a resolved variant index, or -1 for the species default
+     * @return the matched variant's override when it has one, otherwise the species wide override,
+     * otherwise {@code null} meaning "follow the presentation config"
+     */
+    public @Nullable Boolean bossBar(int index) {
         if (index >= 0) {
             Boolean override = variants.get(index).bossBar();
             if (override != null) {
@@ -186,7 +194,14 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
      * @return true when the variant that currently matches this mob allows learning scroll spells
      */
     public boolean learner(Mob mob) {
-        int index = variantIndex(mob);
+        return learner(variantIndex(mob));
+    }
+
+    /**
+     * @param index a resolved variant index, or -1 for the species default
+     * @return true when that variant allows learning scroll spells
+     */
+    public boolean learner(int index) {
         return index >= 0 && variants.get(index).learner();
     }
 
@@ -198,12 +213,49 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
      * {@link SpellCasterData#isEmpty() empty}
      */
     public SpellCasterData resolve(Mob mob) {
-        int index = variantIndex(mob);
+        return resolve(variantIndex(mob));
+    }
+
+    /**
+     * Resolves the configuration of one variant index.
+     *
+     * <p>Every rebuild path (goal sync, boss bar, learner flag) has to go through this overload
+     * with {@link #effectiveIndex(Mob, int)} so a sticky phase survives chunk reloads and health
+     * regeneration.</p>
+     *
+     * @param index a variant index, or -1 for the species default
+     * @return the effective configuration, never null
+     */
+    public SpellCasterData resolve(int index) {
         if (index < 0) {
             return fallback;
         }
         SpellCasterVariant variant = variants.get(index);
         return variant.override() ? variant.data() : variant.data().mergeWith(fallback);
+    }
+
+    /**
+     * Resolves the variant index while honouring a sticky lock.
+     *
+     * <p>{@link #variantIndex(Mob)} is a raw selector match: it happily falls back to an earlier
+     * phase once the mob heals above the threshold. A sticky phase must survive that, so rebuilds
+     * have to use the lock stored on the caster.</p>
+     *
+     * @param mob    the mob
+     * @param locked the locked variant index, or -1 when nothing is locked
+     * @return the index to use, -1 when the species default applies
+     */
+    public int effectiveIndex(Mob mob, int locked) {
+        int matched = variantIndex(mob);
+        if (locked >= 0) {
+            if (locked >= variants.size() || !variants.get(locked).sticky()) {
+                return matched;
+            }
+            if (matched < locked) {
+                return locked;
+            }
+        }
+        return matched;
     }
 
     /**

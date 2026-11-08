@@ -108,6 +108,22 @@ public final class CastSpellGoal extends Goal {
         // Cast progression happens in ISpellCaster#tick; the goal only keeps the flags.
     }
 
+    /**
+     * A running cast must not be cancelled by an unrelated vanilla goal.
+     *
+     * <p>Vanilla replaces a goal whenever a higher priority goal becomes usable; {@code stop()}
+     * then cancels the cast, so a mob standing in water (float goal, priority 0) or panicking
+     * could drop a 40 tick cast. Damage based interruption is handled by the caster settings
+     * instead, which keeps "a boss should not lose its cast to pathfinding" and "a player can
+     * interrupt by hitting it" separate.</p>
+     *
+     * @return false while this goal owns a cast, true otherwise
+     */
+    @Override
+    public boolean isInterruptable() {
+        return !this.started;
+    }
+
     @Override
     public void stop() {
         ISpellCaster caster = caster();

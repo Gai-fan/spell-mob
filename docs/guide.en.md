@@ -90,7 +90,7 @@ Every cast object — inside `goals`, `onHurt`, `onTarget`, `onDeath`, `onKill`,
 
 ### Priority and vanilla AI
 
-The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelector` at `priority`. Vanilla `GoalSelector` lets a goal with a **lower number preempt** the running one, so the field is not just our internal ordering: it decides whether casting can beat melee or ranged AI:
+The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelector` at `priority`. Vanilla actually has two rules: ① `tick()` runs the first goal whose `canUse()` returns true in **registration order** — the number itself does not sort anything; ② a goal with a **lower number** may preempt the running one. So the field decides whether casting can beat melee/ranged AI, not which of several spells on one mob goes first — that follows the JSON order.
 
 | Mob | Vanilla attack goal | Priority |
 |---|---|---|
@@ -102,6 +102,7 @@ The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelect
 - `priority: 2` or higher: ties with zombie melee. The melee goal was registered first by the mob itself in `registerGoals()`, and on a tie the earlier registration wins, so **casting never gets a turn and the mob only chases**. Keep melee mobs at `1`.
 - `priority: 0`: rarely needed; only mobs that ship a movement goal at priority 0–1 (some `PanicGoal`/`FloatGoal`) require it.
 - A target farther than `range` also fails `canUse()` and hands control back to melee. Raise `range` (capped by the `maxRange` config, default 32) if the caster should open fire from farther away.
+- When one mob has several spells, we sort them by `priority` (stable) before registering, so lower numbers are tried first and equal numbers keep the JSON order; learned spells (scroll or boss learning) come after every data pack spell. To make one spell win, give it a lower `priority` or put it in an earlier variant.
 
 The melee goal belongs to the vanilla mob, so this mod can only preempt it, never remove it. Today the only ways to keep a caster out of melee are `teleport`-style spells or a larger `range`.
 

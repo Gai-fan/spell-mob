@@ -94,6 +94,16 @@ public final class SpellCasterRegistry {
         return rules == null ? null : rules.bossBar(mob);
     }
 
+    /**
+     * @param mob          the mob
+     * @param variantIndex the resolved (sticky aware) variant index
+     * @return the data pack override for the boss bar, or {@code null} to follow the config
+     */
+    public static @Nullable Boolean bossBarOverride(Mob mob, int variantIndex) {
+        SpellCasterRules rules = get(mob.getType());
+        return rules == null ? null : rules.bossBar(variantIndex);
+    }
+
     /** @return how many entity types are configured by either source */
     public static int size() {
         return ids().size();
