@@ -4,13 +4,14 @@
       "select": { "name": "king" },
       "override": true,
       "bossBar": true,
+      "adaptive": true,
       "goals": [
         {
           "spell": "irons_spellbooks:sonic_boom",
           "level": 3,
           "cooldown": 120,
           "castTime": 30,
-          "priority": 1,
+          "priority": 0,
           "range": 24.0,
           "target": "ATTACK_TARGET"
         },
@@ -19,7 +20,7 @@
           "level": 3,
           "cooldown": 200,
           "castTime": 60,
-          "priority": 1,
+          "priority": 0,
           "range": 20.0,
           "target": "ATTACK_TARGET"
         }

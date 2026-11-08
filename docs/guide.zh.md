@@ -468,7 +468,7 @@ saves/<世界>/datapacks/我的法术/
 
 这是给“第二次挑战”准备的机制：Boss 打败过某个玩家后，下次再遇到这个玩家时，会从对方上次用过的法术里随机学会一个，并且总以该法术的最高等级释放。
 
-- 门控：`adaptive.enabled` 打开，且这只 Boss 带 `adaptive.adaptiveTag` 指定的计分板标签（默认 `spellmob_adaptive`）；用 `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` 就能让它开始学。
+- 门控：`adaptive.enabled` 打开，且这只 Boss 带 `adaptive.adaptiveTag` 指定的计分板标签（默认 `spellmob_adaptive`）；用 `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` 就能让它开始学；在数据包里给变体写 `"adaptive": true` 等价于打标签。
 - 记录：Boss 与玩家交手（任一方打到对方）时算“交战”；玩家交战中释放的每一个法术都会被记下，每个玩家最多 `rememberedSpells` 条。
 - 学会：玩家被它打死（或死在它 48 格内）时，这次交战记为“失败”；下次再交手，只要该玩家上次记下的法术里还有没学过的、也没在 `spellBlacklist` 里的，Boss 就随机学一个。
 - 上限：一个 Boss 最多 `maxLearnedSpells` 个（默认 1，填 0 = 完全不学）；学到的法术按 `learnedCooldown` 参与正常施法，`-1` 表示跟随该法术自己的默认冷却，填 ≥0 则用固定 tick；冷却同样受 `balance.cooldownMultiplier` 缩放。等级固定 `getMaxLevel()`。
