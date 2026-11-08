@@ -80,8 +80,13 @@ public final class CasterEvents {
             return;
         }
         if (event.getEntity() instanceof Mob mob) {
-            // Deliberately ungated: an event triggered cast never runs through a goal, so this is
-            // the only place guaranteed to end it after a reload removed the mob's rules.
+            // Same gate as the tick handler: a mob that never had a caster must not allocate one
+            // just because its chunk unloaded. Casts of mobs whose rules were removed by a reload
+            // are cancelled by CastGoalSync#sync instead.
+            if (SpellCasterRegistry.get(mob.getType()) == null
+                    && !mob.getTags().contains(SpellCaster.CASTER_TAG)) {
+                return;
+            }
             mob.getCapability(SpellCasterCapability.capability())
                     .ifPresent(caster -> {
                         caster.cancel(CancelReason.UNLOADED);

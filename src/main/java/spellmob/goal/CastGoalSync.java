@@ -1,11 +1,15 @@
 package spellmob.goal;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
+import org.jetbrains.annotations.Nullable;
+import spellmob.capability.CancelReason;
 import spellmob.capability.ISpellCaster;
 import spellmob.capability.SpellCaster;
 import spellmob.capability.SpellCasterCapability;
@@ -72,22 +76,54 @@ public final class CastGoalSync {
             }
         }
         SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
-        SpellCasterData data = rules == null ? null : rules.resolve(mob);
-        if (data == null || data.isEmpty()) {
-            Logs.debug("{} has no casting spells", mob);
+        // Pets that learned a scroll have no data pack rules, but their learned goals still have to
+        // be rebuilt, hence the tag check. Mobs without rules and without the tag never own a
+        // caster, so returning early keeps them allocation free.
+        if (rules == null && !mob.getTags().contains(SpellCaster.CASTER_TAG)) {
             return;
         }
-        for (SpellCastDefinition definition : data.goals()) {
-            mob.goalSelector.addGoal(definition.priority(), new CastSpellGoal(mob, definition));
+        SpellCaster spellCaster = casterOf(mob);
+        int index = rules == null
+                ? -1
+                : (spellCaster == null ? rules.variantIndex(mob) : spellCaster.effectiveVariantIndex());
+        SpellCasterData data = rules == null ? null : rules.resolve(index);
+        int added = 0;
+        if (data != null) {
+            // Vanilla runs the first goal whose canUse() returns true in insertion order; the
+            // priority only decides whether a running goal may be replaced. Sorting by priority
+            // keeps the documented "lower first" order for our own goals, stable for ties.
+            List<SpellCastDefinition> goals = new ArrayList<>(data.goals());
+            goals.sort(Comparator.comparingInt(SpellCastDefinition::priority));
+            for (SpellCastDefinition definition : goals) {
+                mob.goalSelector.addGoal(definition.priority(), new CastSpellGoal(mob, definition));
+                added++;
+            }
         }
         // Learned spells live outside the data pack: they are rebuilt from the caster state on
         // every sync so a /reload or a variant change never wipes what a boss has learned.
-        ISpellCaster caster = mob.getCapability(SpellCasterCapability.capability()).resolve().orElse(null);
-        if (caster instanceof SpellCaster spellCaster) {
+        if (spellCaster != null) {
             for (SpellCastDefinition learned : spellCaster.learnedDefinitions()) {
                 mob.goalSelector.addGoal(learned.priority(), new CastSpellGoal(mob, learned));
+                added++;
             }
         }
-        Logs.debug("{} now knows {} casting goal(s) [{}]", mob, data.goals().size(), rules.describeMatch(mob));
+        if (added == 0) {
+            // A reload removed the rules, or the resolved variant no longer carries any spell: an
+            // event triggered cast would stay frozen forever, because nothing ticks a mob without
+            // rules and its old boss bar would stay on screen.
+            if (spellCaster != null) {
+                spellCaster.cancel(CancelReason.TARGET_LOST);
+                spellCaster.removeBossBar();
+            }
+            Logs.debug("{} has no casting spells", mob);
+            return;
+        }
+        Logs.debug("{} now knows {} casting goal(s) [{}]", mob, added,
+                rules == null ? "learned only" : rules.describeMatch(mob));
+    }
+
+    private static @Nullable SpellCaster casterOf(Mob mob) {
+        ISpellCaster caster = mob.getCapability(SpellCasterCapability.capability()).orElse(null);
+        return caster instanceof SpellCaster spellCaster ? spellCaster : null;
     }
 }

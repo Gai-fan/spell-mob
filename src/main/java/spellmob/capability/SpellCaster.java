@@ -318,21 +318,24 @@ public final class SpellCaster implements ISpellCaster {
             this.lockedVariant = -1;
             return -1;
         }
-        int matched = rules.variantIndex(mob);
-        int locked = this.lockedVariant;
-        if (locked >= 0) {
-            if (locked >= rules.variantCount() || !rules.isSticky(locked)) {
-                // The data pack changed (variant removed or no longer sticky): forget the lock.
-                this.lockedVariant = -1;
-            } else if (matched < locked) {
-                // Health came back above the threshold, but a phase is one way once entered.
-                return locked;
-            }
+        if (this.lockedVariant >= 0
+                && (this.lockedVariant >= rules.variantCount() || !rules.isSticky(this.lockedVariant))) {
+            // The data pack changed (variant removed or no longer sticky): forget the lock.
+            this.lockedVariant = -1;
         }
-        if (matched >= 0 && rules.isSticky(matched) && matched > this.lockedVariant) {
-            this.lockedVariant = matched;
+        int raw = rules.variantIndex(mob);
+        if (raw >= 0 && rules.isSticky(raw) && raw > this.lockedVariant) {
+            this.lockedVariant = raw;
         }
-        return matched;
+        // Health came back above the threshold, but a phase is one way once entered.
+        return rules.effectiveIndex(mob, this.lockedVariant);
+    }
+
+    /**
+     * @return the variant index that currently applies, honouring the sticky lock
+     */
+    public int effectiveVariantIndex() {
+        return currentVariantIndex();
     }
 
     /**
@@ -348,7 +351,7 @@ public final class SpellCaster implements ISpellCaster {
             }
             this.bossBar = new CasterBossBar(this.mob);
         }
-        this.bossBar.tick();
+        this.bossBar.tick(currentVariantIndex());
     }
 
     @Override
@@ -534,13 +537,16 @@ public final class SpellCaster implements ISpellCaster {
      * @return true when the spell is new or replaced a weaker copy
      */
     public boolean learnScrollSpell(ResourceLocation spellId, int level) {
+        AbstractSpell spell = SpellRegistry.getSpell(spellId);
+        int max = spell == null ? 1 : Math.max(1, spell.getMaxLevel());
+        int clamped = Math.max(1, Math.min(level, max));
         int current = learnedSpells.getOrDefault(spellId, 0);
-        if (level <= current) {
+        if (clamped <= current) {
             return false;
         }
-        learnedSpells.put(spellId, level);
+        learnedSpells.put(spellId, clamped);
         mob.addTag(CASTER_TAG);
-        Logs.debug("{} learned {} level {} from a scroll", mob, spellId, level);
+        Logs.debug("{} learned {} level {} from a scroll", mob, spellId, clamped);
         return true;
     }
 
@@ -997,7 +1003,9 @@ public final class SpellCaster implements ISpellCaster {
                 CompoundTag entry = list.getCompound(i);
                 ResourceLocation id = ResourceLocation.tryParse(entry.getString("id"));
                 if (id != null) {
-                    learnedSpells.put(id, Math.max(1, entry.getInt("level")));
+                    AbstractSpell spell = SpellRegistry.getSpell(id);
+                    int max = spell == null ? 1 : Math.max(1, spell.getMaxLevel());
+                    learnedSpells.put(id, Math.max(1, Math.min(entry.getInt("level"), max)));
                 }
                 continue;
             }

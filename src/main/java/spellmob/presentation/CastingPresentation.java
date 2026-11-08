@@ -300,6 +300,42 @@ public final class CastingPresentation {
         }
     }
 
+    /**
+     * Sends one particle to every player close enough to see it.
+     *
+     * <p>{@code ServerLevel#sendParticles} without a player argument broadcasts to the whole
+     * dimension; a ritual that emits dozens of points per tick would then cost a packet to every
+     * player thousands of blocks away. This overload mirrors {@link #send(ServerLevel,
+     * ParticleOptions, double, double, double)} so both effects share one range rule.</p>
+     *
+     * @param level    the server level
+     * @param position where the particle appears
+     * @param particle the particle to show
+     */
+    public static void send(ServerLevel level, Vec3 position, ParticleOptions particle) {
+        send(level, position, particle, 0.0D, 0.0D, 0.0D, 0.0D);
+    }
+
+    /**
+     * @param level    the server level
+     * @param position where the particle appears
+     * @param particle the particle to show
+     * @param dx       x velocity, also used by particles that colour themselves from the speed
+     * @param dy       y velocity
+     * @param dz       z velocity
+     * @param speed    the particle's speed parameter
+     */
+    public static void send(ServerLevel level, Vec3 position, ParticleOptions particle,
+                            double dx, double dy, double dz, double speed) {
+        double limitSqr = limitSqr();
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(position.x, position.y, position.z) <= limitSqr) {
+                level.sendParticles(player, particle, false, position.x, position.y, position.z,
+                        1, dx, dy, dz, speed);
+            }
+        }
+    }
+
     private static double ringRadius(Mob mob, float pulse) {
         double base = 0.5D + mob.getBbWidth() * 0.85D;
         return base * SpellMobConfig.ringScale() * (0.8D + 0.45D * pulse);
