@@ -1,0 +1,32 @@
+{
+  "variants": [
+    {
+      "select": { "name": "spawner_fire" },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:firebolt",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    },
+    {
+      "select": { "name": "spawner_ice" },
+      "override": true,
+      "goals": [
+        {
+          "spell": "irons_spellbooks:icicle",
+          "level": 2,
+          "cooldown": 80,
+          "priority": 1,
+          "range": 16.0,
+          "target": "ATTACK_TARGET"
+        }
+      ]
+    }
+  ]
+}
