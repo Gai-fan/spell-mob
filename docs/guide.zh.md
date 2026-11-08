@@ -455,6 +455,15 @@ saves/<世界>/datapacks/我的法术/
 - 生物死亡或区块卸载时血条自动收起；改配置项即时生效，不用重启。
 - 数据包可以逐个体覆盖：在 `spell_casters` 文件的根节点或某个变体里写 `"bossBar": true` 或 `"bossBar": false`，优先级高于 `bossBarTags` 与 `presentation.bossBar`；不写就沿用配置。同一物种的两个个体因此可以一个显示、一个不显示（jar 内置的 `zombie.json` 就是这样演示的）。
 
+## Boss 重置
+
+带 `presentation.bossTags` 标签的 Boss 在“没人打了”之后会自动回到开战前的状态，这样玩家死亡或逃跑后再回来，面对的是同样干净的 Boss，而不是残血卡在二阶段的对手：
+
+- 连续 `bosses.escapeGrace` tick（默认 600，即 30 秒）没有任何玩家在 `bosses.escapeRadius` 格（默认 32）以内，就触发一次重置。
+- 重置内容：回满血、清掉粘性阶段锁（回到第一阶段）、清空目标、取消在途施法、重建法术 Goal。
+- **不**清除已学会的法术：滚动学习与 Boss 学习都是跨场次积累的设计，重置只负责“这一场重新开始”。
+- 想关掉就设 `bosses.resetOnEscape = false`。
+
 ## 会学习的 Boss
 
 这是给“第二次挑战”准备的机制：Boss 打败过某个玩家后，下次再遇到这个玩家时，会从对方上次用过的法术里随机学会一个，并且总以该法术的最高等级释放。
@@ -541,6 +550,9 @@ saves/<世界>/datapacks/我的法术/
 | | `bossBarRange` | `48` | 这个距离内的玩家能看到血条（8–128）。 |
 | | `bossBarTags` | `["spellmob_boss"]` | 带这些标签的生物显示血条；留空表示所有配置了规则的生物都显示。 |
 | | `bossBarCastName` | `true` | 读条时血条名后面显示“正在施放 xxx”；关掉只显示生物名字。 |
+| `bosses` | `resetOnEscape` | `true` | 带 `presentation.bossTags` 标签的 Boss 在没人交战时是否自动回满血、清掉阶段锁（回到第一阶段）。 |
+| | `escapeRadius` | `32` | 玩家离 Boss 多近才算“还在交战”（8–128 格）。 |
+| | `escapeGrace` | `600` | 连续多少 tick 没有任何玩家在 `escapeRadius` 内就重置（600 = 30 秒）。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。

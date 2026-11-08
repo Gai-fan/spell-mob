@@ -127,6 +127,8 @@ public final class SpellCaster implements ISpellCaster {
      * rename because that changes which individual the selectors are looking at.</p>
      */
     private int lockedVariant;
+    /** Ticks this boss has spent without any player nearby, see {@link #tickEscapeReset()}. */
+    private int escapeTicks;
 
     /** False until the first tick has read health, which cannot happen during construction. */
     private boolean variantInitialized;
@@ -172,6 +174,7 @@ public final class SpellCaster implements ISpellCaster {
             return;
         }
         tickCooldowns();
+        tickEscapeReset();
 
         ActiveCast cast = this.active;
         if (cast == null) {
@@ -233,6 +236,38 @@ public final class SpellCaster implements ISpellCaster {
             this.magicData = data;
         }
         return this.magicData;
+    }
+
+    /**
+     * Heals a boss back to full and drops its phase lock after the fight was abandoned, so a player
+     * who died or ran away finds the same clean fight instead of a half dead boss stuck in a later
+     * phase. Learned spells are intentionally kept: learning is meant to pile up across fights.
+     */
+    private void tickEscapeReset() {
+        if (!SpellMobConfig.bossResetOnEscape() || !SpellMobConfig.isBossCaster(this.mob)
+                || !(this.mob.level() instanceof ServerLevel level)) {
+            this.escapeTicks = 0;
+            return;
+        }
+        if (level.getNearestPlayer(this.mob, SpellMobConfig.bossEscapeRadius()) != null) {
+            this.escapeTicks = 0;
+            return;
+        }
+        if (++this.escapeTicks < SpellMobConfig.bossEscapeGrace()) {
+            return;
+        }
+        this.escapeTicks = 0;
+        if (this.mob.getHealth() >= this.mob.getMaxHealth() && this.lockedVariant < 0
+                && this.mob.getTarget() == null) {
+            return;
+        }
+        this.mob.setHealth(this.mob.getMaxHealth());
+        this.lockedVariant = -1;
+        this.mob.setTarget(null);
+        this.mob.getNavigation().stop();
+        cancel(CancelReason.TARGET_LOST);
+        CastGoalSync.sync(this.mob);
+        Logs.debug("{} reset after the fight was abandoned", this.mob);
     }
 
     private void tickCooldowns() {

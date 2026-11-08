@@ -72,6 +72,9 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.DoubleValue PETS_MANA_MULTIPLIER;
     private static final ModConfigSpec.IntValue PETS_MANA_PERCENT;
     private static final ModConfigSpec.ConfigValue<List<? extends String>> PETS_CAST_PRIORITY_OVERRIDES;
+    private static final ModConfigSpec.BooleanValue BOSS_RESET_ON_ESCAPE;
+    private static final ModConfigSpec.DoubleValue BOSS_ESCAPE_RADIUS;
+    private static final ModConfigSpec.IntValue BOSS_ESCAPE_GRACE;
 
     public static final ModConfigSpec SPEC;
 
@@ -210,6 +213,20 @@ public final class SpellMobConfig {
         PETS_CAST_PRIORITY_OVERRIDES = builder.comment("Per entity type cast priority, e.g. \"minecraft:wolf=2\" (lower runs first).",
                         "（按生物类型单独设置宠物施法优先级，例如 \"minecraft:wolf=2\"；没列出的用 castPriority）")
                 .defineList("castPriorityOverrides", List.<String>of(), value -> value instanceof String);
+        builder.pop();
+
+        builder.comment("How bosses behave when the fight is abandoned.",
+                        "（Boss 在玩家离开或团灭后的行为）").push("bosses");
+        BOSS_RESET_ON_ESCAPE = builder.comment(
+                        "Heal a boss back to full and drop its phase lock once no player has been near it for escapeGrace ticks.",
+                        "（没有任何玩家在 escapeRadius 内持续 escapeGrace tick 后，Boss 回满血并解除阶段锁，也就是回到第一阶段）")
+                .define("resetOnEscape", true);
+        BOSS_ESCAPE_RADIUS = builder.comment("How far a player still counts as fighting the boss, in blocks.",
+                        "（玩家离 Boss 多近才算还在交战，单位方块）")
+                .defineInRange("escapeRadius", 32.0D, 8.0D, 128.0D);
+        BOSS_ESCAPE_GRACE = builder.comment("How long the boss waits without players before it resets, in ticks.",
+                        "（Boss 无人交战多久后重置，单位 tick；600 = 30 秒）")
+                .defineInRange("escapeGrace", 600, 20, 7200);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -487,6 +504,18 @@ public final class SpellMobConfig {
 
     public static double petCastRange() {
         return ready() ? PETS_CAST_RANGE.get() : 16.0D;
+    }
+
+    public static boolean bossResetOnEscape() {
+        return !ready() || BOSS_RESET_ON_ESCAPE.get();
+    }
+
+    public static double bossEscapeRadius() {
+        return ready() ? BOSS_ESCAPE_RADIUS.get() : 32.0D;
+    }
+
+    public static int bossEscapeGrace() {
+        return ready() ? BOSS_ESCAPE_GRACE.get() : 600;
     }
 
     public static boolean shareOwnerMana() {

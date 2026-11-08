@@ -512,6 +512,9 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `bossBarRange` | `48` | Players within this distance see the bar (8鈥?28). |
 | | `bossBarTags` | `["spellmob_boss"]` | Mobs with these tags get a bar; empty means every mob with rules. |
 | | `bossBarCastName` | `true` | Append "casting <spell>" to the bar name while the mob casts; turn it off to keep the plain name. |
+| `bosses` | `resetOnEscape` | `true` | A boss tagged with `presentation.bossTags` heals to full and drops its phase lock once no player has been near it for `escapeGrace` ticks. |
+| | `escapeRadius` | `32` | How close a player must be to count as "still fighting" (8–128 blocks). |
+| | `escapeGrace` | `600` | How long the boss waits without players before resetting (600 = 30 seconds). |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).
@@ -525,6 +528,15 @@ With `presentation.bossBar = true`, casters carrying one of `bossBarTags` (defau
 - Independent from `presentation.enabled`: set `enabled` to `false` and `bossBar` to `true` to keep only the bar.
 - The bar is removed when the mob dies or its chunk unloads, and config edits apply immediately.
 - Data packs can override it per individual: put `"bossBar": true` or `"bossBar": false` in the root of a `spell_casters` file or inside a variant. That beats `bossBarTags` and `presentation.bossBar`; leave it out to follow the config. Two mobs of the same type can therefore show and hide the bar respectively (the bundled `zombie.json` demonstrates exactly that).
+
+## Boss reset
+
+A boss tagged with `presentation.bossTags` returns to its pre-fight state once nobody is fighting it any more, so a player who died or fled finds the same clean fight instead of a half dead boss stuck in a later phase:
+
+- When no player has been within `bosses.escapeRadius` blocks (default 32) for `bosses.escapeGrace` ticks (default 600, i.e. 30 seconds), the boss resets once.
+- The reset heals it to full, drops the sticky phase lock (back to phase one), clears its target, cancels a running cast and rebuilds its spell goals.
+- It does **not** forget learned spells: scroll learning and boss learning are meant to pile up across fights; the reset only restarts the current fight.
+- Set `bosses.resetOnEscape = false` to turn it off.
 
 ## Adaptive bosses
 
