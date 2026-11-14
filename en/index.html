@@ -7063,7 +7063,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       + (flattened.length
         ? '<p class="note warn">' + esc(flattened.join(" / ")) + " on the target object is ignored; the parser only reads filters.</p>"
         : "")
-      + "<div class=\"group-title\">Filters filters</div>"
+      + "<div class=\"group-title\">Filters</div>"
       + '<div class="fields">'
       + textField(path + "/filters/entityTypes", "entityTypes (any match)", csvText(filters && filters.entityTypes), "minecraft:player", null, { type: "csvarr", wide: true })
       + textField(path + "/filters/entityTags", "entityTags (any match)", csvText(filters && filters.entityTags), "#minecraft:skeletons", null, { type: "csvarr", wide: true })
@@ -7074,7 +7074,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       + triField(path + "/filters/ignoreCreative", "Ignore creative", filters && filters.ignoreCreative, "Ignore", "Do not ignore", "Default (ignore)")
       + triField(path + "/filters/requireNoShield", "Only targets without a shield", filters && filters.requireNoShield, "Require no shield", "Ignore shields", "Default (ignore)")
       + '</div>'
-      + "<div class=\"group-title\">Placement placement</div>"
+      + "<div class=\"group-title\">Placement</div>"
       + '<div class="fields">'
       + triField(path + "/placement/avoidFluid", "Avoid fluid avoidFluid", placement && placement.avoidFluid, "Avoid", "Do not care", "Default (ignore)")
       + triField(path + "/placement/avoidLava", "Avoid lava avoidLava", placement && placement.avoidLava, "Avoid", "Do not care", "Default (ignore)")
@@ -7109,14 +7109,14 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
         ? "<p class=\"note warn\">This variant's spells still contain legacy health conditions (healthBelow / healthAbove). The controls are hidden, but the values are kept in the export. Remove them if you do not need them."
           + '<button class="btn ghost mini" data-act="drop-conditions-health" data-path="' + esc(path) + "\">Remove these two</button></p>"
         : "")
-      + "<div class=\"group-title\">Self self</div>"
+      + "<div class=\"group-title\">Self</div>"
       + '<div class="fields">'
       + triField(path + "/self/onFire", "On fire onFire", self.onFire, "Require on fire", "Require not on fire", "Any")
       + triField(path + "/self/inWater", "In water inWater", self.inWater, "Require in water", "Require not in water", "Any")
       + triField(path + "/self/inLava", "In lava inLava", self.inLava, "Require", "Do not require", "Any")
       + triField(path + "/self/frozen", "Frozen", self.frozen, "Require frozen", "Require not frozen", "Any")
       + '</div>'
-      + "<div class=\"group-title\">World world" + (hasWorld ? " · set" : "") + '</div>'
+      + "<div class=\"group-title\">World" + (hasWorld ? " · set" : "") + '</div>'
       + '<div class="fields">'
       + textField(path + "/world/time", "time (multiple allowed)", csvText(world.time !== undefined ? world.time : world.timeOfDay), "night, dusk", null, { type: "csv" })
       + textField(path + "/world/weather", "weather", csvText(world.weather), "rain, thunder", null, { type: "csv" })
@@ -7139,7 +7139,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
     var burst = isObj(p.burst) ? p.burst : {};
     var summon = isObj(p.summon) ? p.summon : null;
     var body = '<div class="fields">'
-      + textField(path + "/title", "Title title (%s = name)", p.title, "%s goes berserk", null, { wide: true })
+      + textField(path + "/title", "Title (%s = name)", p.title, "%s goes berserk", null, { wide: true })
       + textField(path + "/subtitle", "Subtitle", p.subtitle, "Phase 2", null, { wide: true })
       + textField(path + "/sound", "Sound", p.sound, "minecraft:entity.wither.spawn", null, { wide: true })
       + textField(path + "/bossBarName", "Boss bar title bossBarName", p.bossBarName, "Optional")
@@ -7152,17 +7152,17 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       + numField(path + "/phaseTicks", "Phase duration phaseTicks", p.phaseTicks, 40, { min: 10, max: 1200 })
       + triField(path + "/replay", "Allow replay", p.replay, "Allow", "Cast once", "Default (play once)")
       + '</div>'
-      + "<div class=\"group-title\">Shake shake</div>"
+      + "<div class=\"group-title\">Shake</div>"
       + '<div class="fields">'
       + numField(path + "/shake/duration", "Duration", shake.duration, 15, { min: 1, max: 200 })
       + numField(path + "/shake/radius", "Radius", shake.radius, 16, { min: 1, max: 64, step: 0.5 })
       + '</div>'
-      + "<div class=\"group-title\">Burst burst</div>"
+      + "<div class=\"group-title\">Burst</div>"
       + '<div class="fields">'
       + numField(path + "/burst/radius", "Radius", burst.radius, 4, { min: 1, max: 16, step: 0.5 })
       + textField(path + "/burst/color", "Color", burst.color !== undefined ? burst.color : burst.colour, "#ff8800 or auto")
       + '</div>'
-      + "<div class=\"group-title\">Summon summon</div>"
+      + "<div class=\"group-title\">Summon</div>"
       + (summon
         ? '<div class="fields">'
           + textField(path + "/summon/entity", "Entity", summon.entity, "minecraft:zombie", "entity-id-list", { wide: true })
