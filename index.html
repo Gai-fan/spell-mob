@@ -1303,6 +1303,33 @@ body.col-resizing * { cursor: col-resize !important; }
 .pick-zh { color: var(--text); }
 .pick-en { color: var(--muted); font-size: 11.5px; }
 .pick-id { margin-left: auto; color: var(--dim); font-family: var(--mono); font-size: 11px; }
+.pick.off .pick-zh { color: var(--err); }
+.chip.bad { color: var(--err); border-color: #6a2c2c; background: #2a1717; }
+.spell-zh.disabled { color: var(--err); }
+
+/* 法术表 / spellmob dump spells 导入 */
+.catalog-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.catalog-tools .btn { width: auto; margin: 0; }
+.catalog-tools .hint { margin-left: auto; font-size: 10.5px; color: var(--dim); white-space: nowrap; }
+.catalog-source { margin: 0 0 8px; font-size: 11.5px; line-height: 1.65; color: var(--muted); }
+.catalog-source code { font-size: 11px; color: #c9d3e4; }
+.catalog-picker { max-height: 52vh; margin-top: 8px; }
+.dump-box { display: flex; flex-direction: column; gap: 8px; }
+.dump-box textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.dump-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dump-actions .btn { width: auto; margin: 0; }
 
 /* ------------------------------------------------------------ v2：统计 */
 
@@ -1678,6 +1705,11 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
 }
 ::-webkit-scrollbar-thumb:hover { background: #414a5e; }
 
+/* 英文版：英文标签比中文长，给侧栏标签更宽的固定列，物种标签不换行 */
+
+html[lang="en"] .side-fields .fld > span { flex: 0 0 70px; font-size: 10px; }
+html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
+
 /* ------------------------------------------------------------ 窄屏兜底 */
 
 @media (max-width: 1180px) {
@@ -1717,6 +1749,7 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
     <button class="btn mini" id="undo-btn" data-act="undo" title="撤销（Ctrl+Z）" disabled>↶</button>
     <button class="btn mini" id="redo-btn" data-act="redo" title="重做（Ctrl+Shift+Z）" disabled>↷</button>
     <button class="btn" data-act="batch" title="批量更改">批量更改</button>
+    <button class="btn" data-act="spell-catalog" title="查看法术表，导入 /spellmob dump spells 的输出">法术表</button>
     <button class="btn" data-act="open-project">打开工程</button>
     <button class="btn" data-act="save-project" title="存成 .project.json（Ctrl+S）">保存工程</button>
     <button class="btn primary" data-act="export-zip" title="先看文件清单再下载（Ctrl+Shift+E）">导出 zip</button>
@@ -2083,7 +2116,8 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
     },
     {
       id: "ui", title: "界面与快捷键", items: [
-        { k: "界面布局", text: "左边是实体列表，中间是编辑区，右边是 JSON / 检查 / 统计 / 模拟器 / 帮助 / 文件。顶栏只放全局动作：撤销重做、批量更改、打开 / 保存工程、导出 zip。" },
+        { k: "界面布局", text: "左边是实体列表，中间是编辑区，右边是 JSON / 检查 / 统计 / 模拟器 / 帮助 / 文件。顶栏只放全局动作：撤销重做、批量更改、法术表、打开 / 保存工程、导出 zip。" },
+        { k: "法术表与 dump 导入", text: "顶栏「法术表」列出当前能识别的法术。装了 Iron's Spellbooks 附属模组时，在游戏里执行 /spellmob dump spells，把 config/spellmob-spells.txt 导入，就能补上附属法术的 id、施法类型和学派。导入结果只存浏览器本地，不写进工程文件；「恢复内置」清掉导入。" },
         { k: "折叠与展开", text: "点卡片标题折叠整栏；点「法术 spell」标题折叠单条施法；点变体标题折叠单条变体。变体卡右上角有「全部展开 / 全部收起」。折叠只影响显示，不改 JSON。" },
         { k: "快捷键", text: "Ctrl+Z 撤销；Ctrl+Shift+Z 或 Ctrl+Y 重做；Ctrl+S 保存工程；Ctrl+Shift+E 导出 zip；Ctrl+Shift+K 或 / 聚焦实体搜索（输入框里不触发）。" },
         { k: "检查页", text: "检查页会列出 error / warn / note。可按「全部 / 错误+警告 / 只看错误」过滤；每条带文件路径与字段路径，点一下跳到中栏对应控件。" },
@@ -2101,7 +2135,7 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
         { k: "路径怎么读", text: "路径从文件名开始，例如 data/minecraft/spell_casters/husk.json › variants[0].select.healthBelow。检查页点条目会跳到对应卡片。" },
         { k: "只写 disableAttackGoals 的文件", text: "根对象只写 disableAttackGoals 也算有效文件（hasDefault 认这个键）；只写 bossBar 也算。但变体的 select 仍然必须有真实条件，单写 disableAttackGoals 的变体会被丢弃。" },
         { k: "未知键", text: "根层、变体、施法条目、target 的未知键通常是 warn 并被忽略；world 和 onPhase 是例外，未知键直接 error 并丢掉外层对象。" },
-        { k: "注册表查不到", text: "法术 / 物品 / 实体 id 不在内置表里时，本工具只给 note，不会判 error——模组或数据包可能注册了表里没有的 id。真正加载时以游戏日志为准。" },
+        { k: "注册表查不到", text: "法术 id 不在当前法术表里是 warn；dump 里明确 enabled=false 的则是 error。物品 / 实体 id 只给 note——模组或数据包可能注册了表里没有的 id。真正加载时以游戏日志为准。" },
         { k: "requirePlayerKill 提示", text: "掉落默认 requirePlayerKill=true，防刷怪塔。要让非玩家击杀也掉，显式写 false；同一个文件里的多条提醒会合并成一条。" },
         { k: "一键修复会改什么", text: "只改能确定更安全的东西：把阶段阈值按从深到浅排好、把写反的 healthBelow / healthAbove 调换。它不会猜法术 id，也不会改数值平衡。" },
         { k: "和游戏不一致", text: "本工具的校验对齐 Java 解析器（白名单、范围、默认值），但无法验证法术是否在你当前的 ISS 版本里启用、物品是否注册。最终以 /reload 后的 [SpellMob] 日志为准。" }
@@ -2188,7 +2222,7 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
   ];
 
   SMGEN.DATA = {
-    version: "1.0.0",
+    version: "1.0.1",
     modVersion: "2.2.0",
     PACK_FORMATS: PACK_FORMATS,
     VERSIONS: ["1.20.1", "1.21.1"],
@@ -3301,7 +3335,12 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
       note("err", path + ".spell", "法术 id 不合法：'" + cast.spell + "'。");
     } else if (!ctx.spellIndex[cast.spell]) {
       note("warn", path + ".spell",
-        "不在内置的 " + ctx.spellCount + " 个法术里。拼错、或该法术在 ISS 配置里被禁用，都会让整条失效。");
+        "不在当前法术表里（共 " + ctx.spellCount + " 条）。拼错、或该法术在 ISS 配置里被禁用，都会让整条失效。",
+        "装了附属模组的话，先在顶栏「法术表」里导入 /spellmob dump spells 的输出。");
+    } else if (ctx.spellIndex[cast.spell].enabled === false) {
+      note("err", path + ".spell",
+        "这个法术在 SpellMob dump 里是 enabled=false，ISS 会拒绝，整条施法会被丢弃。",
+        "在 ISS 配置里启用这个法术，或者换一个。");
     }
     checkNumbers(cast, ["level", "cooldown", "priority", "range", "castTime", "checkInterval", "chance"], path, note);
     checkBool(cast, "interruptOnDamage", path, note);
@@ -3693,6 +3732,102 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
       rows.push({ healthFraction: fraction, matched: matched, effective: effective, locked: locked });
     }
     return rows;
+  };
+
+  /* ------------------------------------------------------ 法术表 / dump */
+
+  /** 附属模组新法术没有语言文件可用：把 id 的 path 变成可读名字，例如 custom_spell -> Custom Spell。 */
+  C.prettySpellName = function (id) {
+    var path = String(id == null ? "" : id).replace(/^.*:/, "").replace(/_/g, " ").trim();
+    if (!path) return String(id == null ? "" : id);
+    return path.replace(/\b[a-z]/g, function (ch) { return ch.toUpperCase(); });
+  };
+
+  /**
+   * 解析游戏里 /spellmob dump spells 写出的 config/spellmob-spells.txt。
+   * 前两行是 # 注释；数据行是 id<TAB>castType<TAB>school<TAB>enabled。
+   * 返回 { rows, errors }：坏行记进 errors，不影响其它行；重复 id 以最后一行为准。
+   */
+  C.parseSpellDump = function (text) {
+    var rows = [];
+    var errors = [];
+    var at = {};
+    var lines = String(text == null ? "" : text).replace(/^\uFEFF/, "").split(/\r?\n/);
+    lines.forEach(function (raw, lineIndex) {
+      var line = raw.trim();
+      if (!line || line.charAt(0) === "#") return;
+      var cells = line.split("\t");
+      if (cells.length < 4) {
+        errors.push({ line: lineIndex + 1, msg: "只有 " + cells.length + " 列，需要 id / castType / school / enabled 四列。" });
+        return;
+      }
+      var id = cells[0].trim();
+      if (id === "id") return;
+      if (!C.isId(id)) {
+        errors.push({ line: lineIndex + 1, msg: "法术 id 不合法：" + id });
+        return;
+      }
+      var enabledText = cells[3].trim().toLowerCase();
+      if (enabledText !== "true" && enabledText !== "false") {
+        errors.push({ line: lineIndex + 1, msg: "enabled 必须是 true 或 false，现在是 " + cells[3].trim() });
+        return;
+      }
+      var school = cells[2].trim();
+      if (!school || school === "?") school = "unknown";
+      else if (school.indexOf(":") >= 0) school = school.slice(school.lastIndexOf(":") + 1);
+      school = school.toLowerCase();
+      var row = {
+        id: id,
+        castType: cells[1].trim().toUpperCase() || "UNKNOWN",
+        school: school || "unknown",
+        enabled: enabledText === "true"
+      };
+      if (Object.prototype.hasOwnProperty.call(at, id)) rows[at[id]] = row;
+      else {
+        at[id] = rows.length;
+        rows.push(row);
+      }
+    });
+    return { rows: rows, errors: errors };
+  };
+
+  /**
+   * 把 dump 合并进当前法术表：已有 id 只更新 castType / school / enabled，
+   * 保留内置的显示名；dump 里没有的内置法术也保留。新 id 用 prettySpellName 造名字。
+   */
+  C.mergeSpellDump = function (base, rows) {
+    var out = (C.isArr(base) ? base : []).map(function (entry) { return C.clone(entry); });
+    var at = {};
+    out.forEach(function (entry, index) { if (entry && entry.id) at[entry.id] = index; });
+    var enriched = 0;
+    var extra = 0;
+    (C.isArr(rows) ? rows : []).forEach(function (row) {
+      if (!row || !row.id) return;
+      var index = at[row.id];
+      if (index == null) {
+        var name = C.prettySpellName(row.id);
+        out.push({
+          id: row.id, en: name, zh: name,
+          castType: row.castType || "UNKNOWN",
+          school: row.school || "unknown",
+          enabled: row.enabled !== false
+        });
+        at[row.id] = out.length - 1;
+        extra++;
+        return;
+      }
+      var target = out[index];
+      target.castType = row.castType || target.castType || "UNKNOWN";
+      target.school = row.school || target.school || "unknown";
+      target.enabled = row.enabled !== false;
+      enriched++;
+    });
+    out.sort(function (a, b) {
+      var left = String(a && a.id || "");
+      var right = String(b && b.id || "");
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
+    return { spells: out, enriched: enriched, extra: extra };
   };
 
   /* ------------------------------------------------------------ 统计 */
@@ -4106,6 +4241,10 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
 
   var spellIndex = null;
 
+  /** 内置表的原始副本：导入 dump 时只覆盖 D.SPELLS，「恢复内置」用它还原。 */
+  var BASE_SPELLS = (D.SPELLS || []).slice();
+  var spellDumpMeta = null;
+
   function spells() {
     return D.SPELLS || [];
   }
@@ -4121,8 +4260,11 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
   function spellLabel(id) {
     if (!id) return "还没填法术 id";
     var info = spellInfo(id);
-    if (info) return info.zh + (info.zh !== info.en ? " · " + info.en : "");
-    return "不在内置列表里 —— 检查拼写，或该法术在 ISS 配置里被禁用";
+    if (info) {
+      return info.zh + (info.zh !== info.en ? " · " + info.en : "")
+        + (info.enabled === false ? "（ISS 配置里已禁用）" : "");
+    }
+    return "不在当前法术表里 —— 检查拼写，或先导入 /spellmob dump spells 的输出";
   }
 
   function entityInfo(id) {
@@ -4950,10 +5092,11 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
   /** 法术名前面那个学派色点 + 名字。两者放在同一个 inline-flex 里，圆点才和文字垂直居中对齐，而不是掉在左下角。 */
   function spellTagHtml(path, spell) {
     var info = spellInfo(spell);
-    var color = CORE.schoolColor(info ? info.school : "");
+    var disabled = !!(info && info.enabled === false);
+    var color = disabled ? "#ff6b6b" : CORE.schoolColor(info ? info.school : "");
     return '<span class="spell-tag">'
       + '<span class="school-dot" data-dotof="' + esc(path) + '" style="background:' + esc(color) + '"></span>'
-      + '<span class="spell-zh' + (info ? "" : " bad") + '" data-zhof="' + esc(path) + '"'
+      + '<span class="spell-zh' + (info ? "" : " bad") + (disabled ? " disabled" : "") + '" data-zhof="' + esc(path) + '"'
       + (info ? ' style="color:' + esc(color) + '"' : "") + '>'
       + esc(spellLabel(spell)) + '</span></span>';
   }
@@ -5452,6 +5595,211 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
     return true;
   }
 
+  /* ------------------------------------------------ v2：法术表 / dump 导入 */
+
+  function spellStorageKey() {
+    return STORAGE_KEY + ".spells";
+  }
+
+  /** 启动时把上次导入的 dump 合并进内置表；坏数据静默忽略，页面照常打开。 */
+  function loadSpellDump() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(spellStorageKey()); } catch (error) { return false; }
+    if (!raw) return false;
+    var saved = null;
+    try { saved = JSON.parse(raw); } catch (error) { return false; }
+    if (!saved || !isArr(saved.rows) || !saved.rows.length) return false;
+    var merged = null;
+    try { merged = CORE.mergeSpellDump(BASE_SPELLS, saved.rows); } catch (error) { return false; }
+    D.SPELLS = merged.spells;
+    spellIndex = null;
+    spellDumpMeta = {
+      rows: saved.rows,
+      savedAt: saved.savedAt || Date.now(),
+      source: saved.source || "config/spellmob-spells.txt",
+      enriched: merged.enriched,
+      extra: merged.extra
+    };
+    return true;
+  }
+
+  function saveSpellDump(rows) {
+    try {
+      window.localStorage.setItem(spellStorageKey(), JSON.stringify({
+        rows: rows,
+        savedAt: Date.now(),
+        source: "config/spellmob-spells.txt"
+      }));
+    } catch (error) {
+      // 隐私模式 / 配额满：本次导入仍然生效，只是下次打开不会自动恢复
+    }
+  }
+
+  function refreshSpellList() {
+    var host = $("#spell-list");
+    if (!host) return;
+    host.innerHTML = spells().map(function (entry) {
+      return '<option value="' + esc(entry.id) + '">' + esc(spellLabel(entry.id)) + '</option>';
+    }).join("");
+  }
+
+  function spellSourceHtml() {
+    var builtin = BASE_SPELLS.length;
+    if (!spellDumpMeta) {
+      return "当前是内置表：<b>" + builtin + "</b> 条，来自 irons_spellbooks 1.20.1-3.16.3 的语言文件。"
+        + "装了附属模组、或想刷新版本时，在游戏里执行 <code>/spellmob dump spells</code>，把生成的 "
+        + "<code>config/spellmob-spells.txt</code> 导入进来。";
+    }
+    return "当前表 = 内置 " + builtin + " 条 + 上次导入的 dump：更新 <b>" + spellDumpMeta.enriched
+      + "</b> 条，新增 <b>" + spellDumpMeta.extra + "</b> 条，共 <b>" + spells().length + "</b> 条。"
+      + "导入时间 " + new Date(spellDumpMeta.savedAt).toLocaleString() + "；dump 里没有的内置法术仍保留。";
+  }
+
+  function catalogRows(query) {
+    var q = String(query || "").trim().toLowerCase();
+    return spells().filter(function (entry) {
+      if (!q) return true;
+      return (entry.id + " " + entry.en + " " + entry.zh).toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function catalogRowHtml(entry) {
+    var color = entry.enabled === false ? "#ff6b6b" : CORE.schoolColor(entry.school);
+    var type = entry.castType && D.CAST_TYPES[entry.castType] ? D.CAST_TYPES[entry.castType] : null;
+    var typeLabel = type && typeof type === "object" ? type.zh : type;
+    return '<button class="pick' + (entry.enabled === false ? " off" : "") + '" data-act="copy-spell" data-spell="' + esc(entry.id) + '" title="点一下复制法术 id">'
+      + '<span class="school-dot" style="background:' + esc(color) + '"></span>'
+      + '<span class="pick-zh">' + esc(entry.zh) + '</span>'
+      + (entry.en && entry.en !== entry.zh ? '<span class="pick-en">' + esc(entry.en) + '</span>' : "")
+      + '<span class="pick-id">' + esc(entry.id.replace("irons_spellbooks:", "")) + '</span>'
+      + (typeLabel ? '<span class="chip">' + esc(typeLabel) + '</span>' : "")
+      + (entry.enabled === false ? '<span class="chip bad">ISS 已禁用</span>' : "")
+      + '</button>';
+  }
+
+  function renderCatalog(query) {
+    var host = $("#catalog-list");
+    if (!host) return;
+    var rows = catalogRows(query);
+    var count = $("#catalog-count");
+    if (count) count.textContent = rows.length === spells().length ? ("共 " + spells().length + " 条") : (rows.length + " / " + spells().length + " 条");
+    if (!rows.length) {
+      host.innerHTML = '<p class="empty">没有匹配的法术。导入的 dump 里可能也没有这一条。</p>';
+      return;
+    }
+    host.innerHTML = rows.map(catalogRowHtml).join("");
+  }
+
+  function spellCatalogDialog() {
+    pendingSpellPath = null;
+    openModal("法术表 · " + spells().length + " 条",
+      '<div class="catalog-tools">'
+      + '<button class="btn" data-act="dump-import">导入 /spellmob dump spells 输出</button>'
+      + '<button class="btn ghost" data-act="spell-reset">恢复内置</button>'
+      + '<span class="hint" id="catalog-count"></span>'
+      + '</div>'
+      + '<p class="catalog-source">' + spellSourceHtml() + '</p>'
+      + '<input id="catalog-q" class="picker-input" placeholder="搜索 id / 中文名 / 英文名" spellcheck="false" autocomplete="off">'
+      + '<div class="picker catalog-picker" id="catalog-list"></div>'
+      + '<p class="hint">点一行复制法术 id。标红的是 dump 里 enabled=false 的法术：ISS 不会加载它们，写进施法会被丢弃。</p>');
+    renderCatalog("");
+    var input = $("#catalog-q");
+    if (!input) return;
+    input.focus();
+    input.addEventListener("input", function () { renderCatalog(this.value); });
+  }
+
+  function openDumpImport() {
+    openModal("导入 /spellmob dump spells",
+      '<p class="modal-note">在游戏里执行 <code>/spellmob dump spells</code>，然后把 <code>config/spellmob-spells.txt</code> 拖进来或粘贴内容。'
+      + '格式是 TSV，四列：<code>id</code>、<code>castType</code>、<code>school</code>、<code>enabled</code>。'
+      + '第四列是 false 的法术会标红，并在校验里报错。</p>'
+      + '<div class="dump-box">'
+      + '<textarea id="dump-text" spellcheck="false" placeholder="id&#9;castType&#9;school&#9;enabled"></textarea>'
+      + '<div class="dump-actions">'
+      + '<label class="btn ghost" for="dump-file">选择文件…</label>'
+      + '<button class="btn" data-act="apply-dump">导入</button>'
+      + '</div>'
+      + '<input id="dump-file" class="sr-only" type="file" accept=".txt,text/plain">'
+      + '</div>');
+    var file = $("#dump-file");
+    if (!file) return;
+    file.addEventListener("change", function () {
+      var picked = this.files && this.files[0];
+      if (!picked) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var area = $("#dump-text");
+        if (area) area.value = String(reader.result == null ? "" : reader.result);
+      };
+      reader.readAsText(picked, "UTF-8");
+    });
+  }
+
+  function applyDumpImport() {
+    var area = $("#dump-text");
+    var text = area ? area.value : "";
+    if (!String(text).trim()) {
+      alert("先把 /spellmob dump spells 的输出粘贴进来，或者选择一个 .txt 文件。");
+      return;
+    }
+    var parsed = CORE.parseSpellDump(text);
+    if (!parsed.rows.length) {
+      var first = parsed.errors.length ? "\n第 " + parsed.errors[0].line + " 行：" + parsed.errors[0].msg : "";
+      alert("没有读到有效的法术行。" + first);
+      return;
+    }
+    var merged = CORE.mergeSpellDump(BASE_SPELLS, parsed.rows);
+    D.SPELLS = merged.spells;
+    spellIndex = null;
+    spellDumpMeta = {
+      rows: parsed.rows,
+      savedAt: Date.now(),
+      source: "config/spellmob-spells.txt",
+      enriched: merged.enriched,
+      extra: merged.extra
+    };
+    saveSpellDump(parsed.rows);
+    refreshSpellList();
+    renderAll();
+    var backToPicker = pendingSpellPath;
+    closeModal();
+    if (backToPicker) spellPickerDialog(backToPicker);
+    else spellCatalogDialog();
+    toast("已合并：更新 " + merged.enriched + " 条，新增 " + merged.extra + " 条"
+      + (parsed.errors.length ? "，忽略 " + parsed.errors.length + " 行" : ""));
+  }
+
+  function resetSpellDump() {
+    if (!spellDumpMeta) {
+      toast("现在用的就是内置法术表");
+      return;
+    }
+    if (!confirm("恢复内置的法术表？导入的 dump 会被清掉，工程里的法术 id 不会改。")) return;
+    try { window.localStorage.removeItem(spellStorageKey()); } catch (error) { /* 忽略 */ }
+    D.SPELLS = BASE_SPELLS.slice();
+    spellIndex = null;
+    spellDumpMeta = null;
+    refreshSpellList();
+    renderAll();
+    spellCatalogDialog();
+    toast("已恢复内置法术表（" + BASE_SPELLS.length + " 条）");
+  }
+
+  function copySpellId(id) {
+    if (!id) return;
+    var area = document.createElement("textarea");
+    area.value = id;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (error) { ok = false; }
+    document.body.removeChild(area);
+    toast(ok ? ("已复制 " + id) : ("复制失败，请手动选中 " + id));
+  }
+
   /* --------------------------------------------------- v2：法术选择器 */
 
   var pendingSpellPath = null;
@@ -5472,7 +5820,7 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
       if (!q) return true;
       return (entry.id + " " + entry.en + " " + entry.zh).toLowerCase().indexOf(q) >= 0;
     });
-    return rows.slice(0, 200);
+    return rows.slice(0, 500);
   }
 
   function renderPicker(query) {
@@ -5484,27 +5832,30 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
       return;
     }
     host.innerHTML = rows.map(function (entry) {
-      var color = CORE.schoolColor(entry.school);
+      var disabled = entry.enabled === false;
+      var color = disabled ? "#ff6b6b" : CORE.schoolColor(entry.school);
       var type = entry.castType && D.CAST_TYPES[entry.castType] ? D.CAST_TYPES[entry.castType] : null;
       var typeLabel = type && typeof type === "object" ? type.zh : type;
-      return '<button class="pick" data-act="pick-spell" data-spell="' + esc(entry.id) + '">'
+      return '<button class="pick' + (disabled ? " off" : "") + '" data-act="pick-spell" data-spell="' + esc(entry.id) + '">'
         + '<span class="school-dot" style="background:' + esc(color) + '"></span>'
         + '<span class="pick-zh">' + esc(entry.zh) + '</span>'
-        + '<span class="pick-en">' + esc(entry.en) + '</span>'
+        + (entry.en && entry.en !== entry.zh ? '<span class="pick-en">' + esc(entry.en) + '</span>' : "")
         + '<span class="pick-id">' + esc(entry.id.replace("irons_spellbooks:", "")) + '</span>'
         + (typeLabel ? '<span class="chip">' + esc(typeLabel) + '</span>' : "")
+        + (disabled ? '<span class="chip bad">ISS 已禁用</span>' : "")
         + '</button>';
     }).join("");
   }
 
   function spellPickerDialog(path) {
     pendingSpellPath = path;
-    openModal("选法术 · " + (D.SPELLS || []).length + " 条内置",
+    openModal("选法术 · " + (D.SPELLS || []).length + " 条",
       '<div class="picker-box">'
       + '<input id="picker-q" class="picker-input" placeholder="搜中文 / 英文 / id，回车选第一条" spellcheck="false" autocomplete="off">'
       + '<div class="picker" id="picker-list"></div>'
       + '</div>'
-      + '<p class="hint">列表来自 irons_spellbooks 1.20.1-3.16.3 的语言文件，只用来显示和检索，不校验注册表。别的模组的法术直接在编辑区手输 id。</p>');
+      + '<div class="picker-actions"><button class="btn ghost" data-act="dump-import">导入 /spellmob dump spells</button></div>'
+      + '<p class="hint">当前法术表 = 内置 115 条 + 你导入的 dump。列表只用来显示和检索，不校验注册表；标红的法术在 ISS 配置里是 enabled=false。</p>');
     renderPicker("");
     var input = $("#picker-q");
     if (!input) return;
@@ -5521,6 +5872,7 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
   function pickSpell(id) {
     if (!pendingSpellPath || !id) return;
     setNode(pendingSpellPath, id);
+    pendingSpellPath = null;
     closeModal();
     renderAll();
     toast("法术设成 " + id);
@@ -6570,7 +6922,8 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
       var known = spellInfo(value);
       nodes[i].textContent = spellLabel(value);
       nodes[i].classList.toggle("bad", !!value && !known);
-      nodes[i].style.color = known ? CORE.schoolColor(known.school) : "";
+      nodes[i].classList.toggle("disabled", !!(known && known.enabled === false));
+      nodes[i].style.color = known && known.enabled !== false ? CORE.schoolColor(known.school) : "";
     }
     var dots = document.querySelectorAll("[data-dotof]");
     for (var j = 0; j < dots.length; j++) {
@@ -6989,6 +7342,11 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
       case "confirm-export": downloadZip(); return;
       case "spell-picker": spellPickerDialog(path); return;
       case "pick-spell": pickSpell(el.getAttribute("data-spell")); return;
+      case "spell-catalog": spellCatalogDialog(); return;
+      case "spell-reset": resetSpellDump(); return;
+      case "dump-import": openDumpImport(); return;
+      case "apply-dump": applyDumpImport(); return;
+      case "copy-spell": copySpellId(el.getAttribute("data-spell")); return;
       case "sort-variants": sortVariantsNow(); return;
       case "apply-batch": applyBatch(el.getAttribute("data-mode")); return;
       default: return;
@@ -7297,9 +7655,8 @@ button.var-row:focus-visible { outline: 2px solid var(--accent); outline-offset:
 
   function init() {
     $("#ver").textContent = "v" + D.version + " · 对齐SpellMob " + D.modVersion + " 的解析器";
-    $("#spell-list").innerHTML = spells().map(function (entry) {
-      return '<option value="' + esc(entry.id) + '">' + esc(entry.zh + " · " + entry.en) + '</option>';
-    }).join("");
+    loadSpellDump();
+    refreshSpellList();
     $("#entity-id-list").innerHTML = (D.ENTITIES || []).map(function (entry) {
       return '<option value="' + esc(entry.id) + '">' + esc(entry.zh + (entry.group ? " · " + entry.group : "")) + '</option>';
     }).join("");

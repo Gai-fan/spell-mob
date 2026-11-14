@@ -1303,6 +1303,33 @@ body.col-resizing * { cursor: col-resize !important; }
 .pick-zh { color: var(--text); }
 .pick-en { color: var(--muted); font-size: 11.5px; }
 .pick-id { margin-left: auto; color: var(--dim); font-family: var(--mono); font-size: 11px; }
+.pick.off .pick-zh { color: var(--err); }
+.chip.bad { color: var(--err); border-color: #6a2c2c; background: #2a1717; }
+.spell-zh.disabled { color: var(--err); }
+
+/* 法术表 / spellmob dump spells 导入 */
+.catalog-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.catalog-tools .btn { width: auto; margin: 0; }
+.catalog-tools .hint { margin-left: auto; font-size: 10.5px; color: var(--dim); white-space: nowrap; }
+.catalog-source { margin: 0 0 8px; font-size: 11.5px; line-height: 1.65; color: var(--muted); }
+.catalog-source code { font-size: 11px; color: #c9d3e4; }
+.catalog-picker { max-height: 52vh; margin-top: 8px; }
+.dump-box { display: flex; flex-direction: column; gap: 8px; }
+.dump-box textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.dump-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.dump-actions .btn { width: auto; margin: 0; }
 
 /* ------------------------------------------------------------ v2：统计 */
 
@@ -1722,6 +1749,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
     <button class="btn mini" id="undo-btn" data-act="undo" title="Undo (Ctrl+Z)" disabled>↶</button>
     <button class="btn mini" id="redo-btn" data-act="redo" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
     <button class="btn" data-act="batch" title="Batch changes">Batch changes</button>
+    <button class="btn" data-act="spell-catalog" title="Spell catalog and /spellmob dump spells import">Spells</button>
     <button class="btn" data-act="open-project">Open project</button>
     <button class="btn" data-act="save-project" title="Save as .project.json (Ctrl+S)">Save project</button>
     <button class="btn primary" data-act="export-zip" title="Review files before download (Ctrl+Shift+E)">Export zip</button>
@@ -1817,7 +1845,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
   "use strict";
   var SMGEN = root.SMGEN || (root.SMGEN = {});
   SMGEN.DATA = {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "modVersion": "2.2.0",
   "PACK_FORMATS": {
     "1.20.1": 15,
@@ -2729,7 +2757,11 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       "items": [
         {
           "k": "Layout",
-          "text": "Entities on the left, editor in the middle, and JSON / Problems / Stats / Simulator / Help / Files on the right. The top bar only holds global actions: undo/redo, batch changes, open/save project, export zip."
+          "text": "The left panel lists entities, the middle is the editor, and the right holds JSON / Problems / Stats / Simulator / Help / Files. The top bar keeps global actions only: undo/redo, batch changes, spell catalog, open/save project, export zip."
+        },
+        {
+          "k": "Spell catalog and dump import",
+          "text": "The Spells button in the top bar lists every spell this tool knows. When Iron's Spellbooks add-ons are installed, run /spellmob dump spells in game and import config/spellmob-spells.txt to add their ids, cast types, and schools. The import is stored only in this browser, not in the project file; Restore built-in clears it."
         },
         {
           "k": "Collapse and expand",
@@ -2791,7 +2823,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
         },
         {
           "k": "Not found in the registry",
-          "text": "When a spell / item / entity id is not in the built-in list, this tool only emits a note, not an error — a mod or data pack may register ids that are not in the list. Trust the game log at load time."
+          "text": "A spell id missing from the current catalog is a warning; an explicit enabled=false from the dump is an error. Item / entity ids only produce notes — a mod or data pack may register ids the table does not know. Trust the game log when loading."
         },
         {
           "k": "requirePlayerKill note",
@@ -5346,7 +5378,12 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       note("err", path + ".spell", "Invalid spell id: '" + cast.spell + "'.");
     } else if (!ctx.spellIndex[cast.spell]) {
       note("warn", path + ".spell",
-        "is not one of the " + ctx.spellCount + " built-in spells. A typo, or a spell disabled in the ISS config, makes the whole entry fail.");
+        "Not in the current spell table (" + ctx.spellCount + " entries). A typo, or a spell disabled in the ISS config, discards the whole entry.",
+        "If add-on mods are installed, open Spells in the top bar and import the output of /spellmob dump spells first.");
+    } else if (ctx.spellIndex[cast.spell].enabled === false) {
+      note("err", path + ".spell",
+        "This spell has enabled=false in the SpellMob dump, so ISS rejects it and the whole cast is discarded.",
+        "Enable it in the ISS config, or pick another spell.");
     }
     checkNumbers(cast, ["level", "cooldown", "priority", "range", "castTime", "checkInterval", "chance"], path, note);
     checkBool(cast, "interruptOnDamage", path, note);
@@ -5738,6 +5775,102 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       rows.push({ healthFraction: fraction, matched: matched, effective: effective, locked: locked });
     }
     return rows;
+  };
+
+  /* ------------------------------------------------------ 法术表 / dump */
+
+  /** 附属模组新法术没有语言文件可用：把 id 的 path 变成可读名字，例如 custom_spell -> Custom Spell。 */
+  C.prettySpellName = function (id) {
+    var path = String(id == null ? "" : id).replace(/^.*:/, "").replace(/_/g, " ").trim();
+    if (!path) return String(id == null ? "" : id);
+    return path.replace(/\b[a-z]/g, function (ch) { return ch.toUpperCase(); });
+  };
+
+  /**
+   * 解析游戏里 /spellmob dump spells 写出的 config/spellmob-spells.txt。
+   * 前两行是 # 注释；数据行是 id<TAB>castType<TAB>school<TAB>enabled。
+   * 返回 { rows, errors }：坏行记进 errors，不影响其它行；重复 id 以最后一行为准。
+   */
+  C.parseSpellDump = function (text) {
+    var rows = [];
+    var errors = [];
+    var at = {};
+    var lines = String(text == null ? "" : text).replace(/^\uFEFF/, "").split(/\r?\n/);
+    lines.forEach(function (raw, lineIndex) {
+      var line = raw.trim();
+      if (!line || line.charAt(0) === "#") return;
+      var cells = line.split("\t");
+      if (cells.length < 4) {
+        errors.push({ line: lineIndex + 1, msg: "Only " + cells.length + " columns; expected four: id / castType / school / enabled." });
+        return;
+      }
+      var id = cells[0].trim();
+      if (id === "id") return;
+      if (!C.isId(id)) {
+        errors.push({ line: lineIndex + 1, msg: "Invalid spell id: " + id });
+        return;
+      }
+      var enabledText = cells[3].trim().toLowerCase();
+      if (enabledText !== "true" && enabledText !== "false") {
+        errors.push({ line: lineIndex + 1, msg: "enabled must be true or false, got " + cells[3].trim() });
+        return;
+      }
+      var school = cells[2].trim();
+      if (!school || school === "?") school = "unknown";
+      else if (school.indexOf(":") >= 0) school = school.slice(school.lastIndexOf(":") + 1);
+      school = school.toLowerCase();
+      var row = {
+        id: id,
+        castType: cells[1].trim().toUpperCase() || "UNKNOWN",
+        school: school || "unknown",
+        enabled: enabledText === "true"
+      };
+      if (Object.prototype.hasOwnProperty.call(at, id)) rows[at[id]] = row;
+      else {
+        at[id] = rows.length;
+        rows.push(row);
+      }
+    });
+    return { rows: rows, errors: errors };
+  };
+
+  /**
+   * 把 dump 合并进当前法术表：已有 id 只更新 castType / school / enabled，
+   * 保留内置的显示名；dump 里没有的内置法术也保留。新 id 用 prettySpellName 造名字。
+   */
+  C.mergeSpellDump = function (base, rows) {
+    var out = (C.isArr(base) ? base : []).map(function (entry) { return C.clone(entry); });
+    var at = {};
+    out.forEach(function (entry, index) { if (entry && entry.id) at[entry.id] = index; });
+    var enriched = 0;
+    var extra = 0;
+    (C.isArr(rows) ? rows : []).forEach(function (row) {
+      if (!row || !row.id) return;
+      var index = at[row.id];
+      if (index == null) {
+        var name = C.prettySpellName(row.id);
+        out.push({
+          id: row.id, en: name, zh: name,
+          castType: row.castType || "UNKNOWN",
+          school: row.school || "unknown",
+          enabled: row.enabled !== false
+        });
+        at[row.id] = out.length - 1;
+        extra++;
+        return;
+      }
+      var target = out[index];
+      target.castType = row.castType || target.castType || "UNKNOWN";
+      target.school = row.school || target.school || "unknown";
+      target.enabled = row.enabled !== false;
+      enriched++;
+    });
+    out.sort(function (a, b) {
+      var left = String(a && a.id || "");
+      var right = String(b && b.id || "");
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
+    return { spells: out, enriched: enriched, extra: extra };
   };
 
   /* ------------------------------------------------------------ 统计 */
@@ -6159,6 +6292,10 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
 
   var spellIndex = null;
 
+  /** 内置表的原始副本：导入 dump 时只覆盖 D.SPELLS，「恢复内置」用它还原。 */
+  var BASE_SPELLS = (D.SPELLS || []).slice();
+  var spellDumpMeta = null;
+
   function spells() {
     return D.SPELLS || [];
   }
@@ -6174,8 +6311,11 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
   function spellLabel(id) {
     if (!id) return "No spell id yet";
     var info = spellInfo(id);
-    if (info) return info.en || info.zh;
-    return "Not in the built-in list — check the spelling, or the spell is disabled in the ISS config";
+    if (info) {
+      return info.zh + (info.zh !== info.en ? " · " + info.en : "")
+        + (info.enabled === false ? " (disabled in the ISS config)" : "");
+    }
+    return "Not in the current spell table — check the spelling, or import /spellmob dump spells first";
   }
 
   function entityInfo(id) {
@@ -7003,10 +7143,11 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
   /** 法术名前面那个学派色点 + 名字。两者放在同一个 inline-flex 里，圆点才和文字垂直居中对齐，而不是掉在左下角。 */
   function spellTagHtml(path, spell) {
     var info = spellInfo(spell);
-    var color = CORE.schoolColor(info ? info.school : "");
+    var disabled = !!(info && info.enabled === false);
+    var color = disabled ? "#ff6b6b" : CORE.schoolColor(info ? info.school : "");
     return '<span class="spell-tag">'
       + '<span class="school-dot" data-dotof="' + esc(path) + '" style="background:' + esc(color) + '"></span>'
-      + '<span class="spell-zh' + (info ? "" : " bad") + '" data-zhof="' + esc(path) + '"'
+      + '<span class="spell-zh' + (info ? "" : " bad") + (disabled ? " disabled" : "") + '" data-zhof="' + esc(path) + '"'
       + (info ? ' style="color:' + esc(color) + '"' : "") + '>'
       + esc(spellLabel(spell)) + '</span></span>';
   }
@@ -7505,6 +7646,211 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
     return true;
   }
 
+  /* ------------------------------------------------ v2：法术表 / dump 导入 */
+
+  function spellStorageKey() {
+    return STORAGE_KEY + ".spells";
+  }
+
+  /** 启动时把上次导入的 dump 合并进内置表；坏数据静默忽略，页面照常打开。 */
+  function loadSpellDump() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(spellStorageKey()); } catch (error) { return false; }
+    if (!raw) return false;
+    var saved = null;
+    try { saved = JSON.parse(raw); } catch (error) { return false; }
+    if (!saved || !isArr(saved.rows) || !saved.rows.length) return false;
+    var merged = null;
+    try { merged = CORE.mergeSpellDump(BASE_SPELLS, saved.rows); } catch (error) { return false; }
+    D.SPELLS = merged.spells;
+    spellIndex = null;
+    spellDumpMeta = {
+      rows: saved.rows,
+      savedAt: saved.savedAt || Date.now(),
+      source: saved.source || "config/spellmob-spells.txt",
+      enriched: merged.enriched,
+      extra: merged.extra
+    };
+    return true;
+  }
+
+  function saveSpellDump(rows) {
+    try {
+      window.localStorage.setItem(spellStorageKey(), JSON.stringify({
+        rows: rows,
+        savedAt: Date.now(),
+        source: "config/spellmob-spells.txt"
+      }));
+    } catch (error) {
+      // 隐私模式 / 配额满：本次导入仍然生效，只是下次打开不会自动恢复
+    }
+  }
+
+  function refreshSpellList() {
+    var host = $("#spell-list");
+    if (!host) return;
+    host.innerHTML = spells().map(function (entry) {
+      return '<option value="' + esc(entry.id) + '">' + esc(spellLabel(entry.id)) + '</option>';
+    }).join("");
+  }
+
+  function spellSourceHtml() {
+    var builtin = BASE_SPELLS.length;
+    if (!spellDumpMeta) {
+      return "This is the built-in table: <b>" + builtin + "</b> entries from the irons_spellbooks 1.20.1-3.16.3 language files."
+        + "When add-ons are installed, or you want a fresh version, run <code>/spellmob dump spells</code> in game and import the generated "
+        + "<code>config/spellmob-spells.txt</code>.";
+    }
+    return "Current table = built-in " + builtin + " entries + the last imported dump: updated <b>" + spellDumpMeta.enriched
+      + "</b>, added <b>" + spellDumpMeta.extra + "</b>, <b>" + spells().length + "</b> total."
+      + "Imported " + new Date(spellDumpMeta.savedAt).toLocaleString() + "; built-in spells absent from the dump are kept.";
+  }
+
+  function catalogRows(query) {
+    var q = String(query || "").trim().toLowerCase();
+    return spells().filter(function (entry) {
+      if (!q) return true;
+      return (entry.id + " " + entry.en + " " + entry.zh).toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function catalogRowHtml(entry) {
+    var color = entry.enabled === false ? "#ff6b6b" : CORE.schoolColor(entry.school);
+    var type = entry.castType && D.CAST_TYPES[entry.castType] ? D.CAST_TYPES[entry.castType] : null;
+    var typeLabel = type && typeof type === "object" ? type.zh : type;
+    return '<button class="pick' + (entry.enabled === false ? " off" : "") + '" data-act="copy-spell" data-spell="' + esc(entry.id) + "\" title=\"Click to copy the spell id\">"
+      + '<span class="school-dot" style="background:' + esc(color) + '"></span>'
+      + '<span class="pick-zh">' + esc(entry.zh) + '</span>'
+      + (entry.en && entry.en !== entry.zh ? '<span class="pick-en">' + esc(entry.en) + '</span>' : "")
+      + '<span class="pick-id">' + esc(entry.id.replace("irons_spellbooks:", "")) + '</span>'
+      + (typeLabel ? '<span class="chip">' + esc(typeLabel) + '</span>' : "")
+      + (entry.enabled === false ? "<span class=\"chip bad\">Disabled in ISS</span>" : "")
+      + '</button>';
+  }
+
+  function renderCatalog(query) {
+    var host = $("#catalog-list");
+    if (!host) return;
+    var rows = catalogRows(query);
+    var count = $("#catalog-count");
+    if (count) count.textContent = rows.length === spells().length ? ("Total " + spells().length + " entries") : (rows.length + " / " + spells().length + " entries");
+    if (!rows.length) {
+      host.innerHTML = "<p class=\"empty\">No matching spells. The imported dump may not contain this one either.</p>";
+      return;
+    }
+    host.innerHTML = rows.map(catalogRowHtml).join("");
+  }
+
+  function spellCatalogDialog() {
+    pendingSpellPath = null;
+    openModal("Spell catalog · " + spells().length + " entries",
+      '<div class="catalog-tools">'
+      + "<button class=\"btn\" data-act=\"dump-import\">Import /spellmob dump spells output</button>"
+      + "<button class=\"btn ghost\" data-act=\"spell-reset\">Restore built-in</button>"
+      + '<span class="hint" id="catalog-count"></span>'
+      + '</div>'
+      + '<p class="catalog-source">' + spellSourceHtml() + '</p>'
+      + "<input id=\"catalog-q\" class=\"picker-input\" placeholder=\"Search id / name / English name\" spellcheck=\"false\" autocomplete=\"off\">"
+      + '<div class="picker catalog-picker" id="catalog-list"></div>'
+      + "<p class=\"hint\">Click a row to copy the spell id. Red rows are enabled=false in the dump: ISS will not load them, and casts using them are discarded.</p>");
+    renderCatalog("");
+    var input = $("#catalog-q");
+    if (!input) return;
+    input.focus();
+    input.addEventListener("input", function () { renderCatalog(this.value); });
+  }
+
+  function openDumpImport() {
+    openModal("Import /spellmob dump spells",
+      "<p class=\"modal-note\">Run <code>/spellmob dump spells</code> in game, then drop <code>config/spellmob-spells.txt</code> here or paste its contents."
+      + "The format is TSV with four columns: <code>id</code>, <code>castType</code>, <code>school</code>, <code>enabled</code>."
+      + "Spells with false in the fourth column are marked red and reported as errors.</p>"
+      + '<div class="dump-box">'
+      + '<textarea id="dump-text" spellcheck="false" placeholder="id&#9;castType&#9;school&#9;enabled"></textarea>'
+      + '<div class="dump-actions">'
+      + "<label class=\"btn ghost\" for=\"dump-file\">Choose file…</label>"
+      + "<button class=\"btn\" data-act=\"apply-dump\">Import</button>"
+      + '</div>'
+      + '<input id="dump-file" class="sr-only" type="file" accept=".txt,text/plain">'
+      + '</div>');
+    var file = $("#dump-file");
+    if (!file) return;
+    file.addEventListener("change", function () {
+      var picked = this.files && this.files[0];
+      if (!picked) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var area = $("#dump-text");
+        if (area) area.value = String(reader.result == null ? "" : reader.result);
+      };
+      reader.readAsText(picked, "UTF-8");
+    });
+  }
+
+  function applyDumpImport() {
+    var area = $("#dump-text");
+    var text = area ? area.value : "";
+    if (!String(text).trim()) {
+      alert("Paste the output of /spellmob dump spells first, or choose a .txt file.");
+      return;
+    }
+    var parsed = CORE.parseSpellDump(text);
+    if (!parsed.rows.length) {
+      var first = parsed.errors.length ? "\nLine " + parsed.errors[0].line + ": " + parsed.errors[0].msg : "";
+      alert("No valid spell rows were found." + first);
+      return;
+    }
+    var merged = CORE.mergeSpellDump(BASE_SPELLS, parsed.rows);
+    D.SPELLS = merged.spells;
+    spellIndex = null;
+    spellDumpMeta = {
+      rows: parsed.rows,
+      savedAt: Date.now(),
+      source: "config/spellmob-spells.txt",
+      enriched: merged.enriched,
+      extra: merged.extra
+    };
+    saveSpellDump(parsed.rows);
+    refreshSpellList();
+    renderAll();
+    var backToPicker = pendingSpellPath;
+    closeModal();
+    if (backToPicker) spellPickerDialog(backToPicker);
+    else spellCatalogDialog();
+    toast("Merged: " + merged.enriched + " updated, " + merged.extra + " added"
+      + (parsed.errors.length ? ", ignored " + parsed.errors.length + " rows" : ""));
+  }
+
+  function resetSpellDump() {
+    if (!spellDumpMeta) {
+      toast("The built-in spell table is already active");
+      return;
+    }
+    if (!confirm("Restore the built-in spell table? The imported dump will be cleared; spell ids in the project will not change.")) return;
+    try { window.localStorage.removeItem(spellStorageKey()); } catch (error) { /* 忽略 */ }
+    D.SPELLS = BASE_SPELLS.slice();
+    spellIndex = null;
+    spellDumpMeta = null;
+    refreshSpellList();
+    renderAll();
+    spellCatalogDialog();
+    toast("Restored the built-in spell table (" + BASE_SPELLS.length + " entries)");
+  }
+
+  function copySpellId(id) {
+    if (!id) return;
+    var area = document.createElement("textarea");
+    area.value = id;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (error) { ok = false; }
+    document.body.removeChild(area);
+    toast(ok ? ("Copied " + id) : ("Copy failed; select it manually: " + id));
+  }
+
   /* --------------------------------------------------- v2：法术选择器 */
 
   var pendingSpellPath = null;
@@ -7525,7 +7871,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       if (!q) return true;
       return (entry.id + " " + entry.en + " " + entry.zh).toLowerCase().indexOf(q) >= 0;
     });
-    return rows.slice(0, 200);
+    return rows.slice(0, 500);
   }
 
   function renderPicker(query) {
@@ -7537,27 +7883,30 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       return;
     }
     host.innerHTML = rows.map(function (entry) {
-      var color = CORE.schoolColor(entry.school);
+      var disabled = entry.enabled === false;
+      var color = disabled ? "#ff6b6b" : CORE.schoolColor(entry.school);
       var type = entry.castType && D.CAST_TYPES[entry.castType] ? D.CAST_TYPES[entry.castType] : null;
       var typeLabel = type && typeof type === "object" ? type.zh : type;
-      return '<button class="pick" data-act="pick-spell" data-spell="' + esc(entry.id) + '">'
+      return '<button class="pick' + (disabled ? " off" : "") + '" data-act="pick-spell" data-spell="' + esc(entry.id) + '">'
         + '<span class="school-dot" style="background:' + esc(color) + '"></span>'
         + '<span class="pick-zh">' + esc(entry.zh) + '</span>'
-        
+        + (entry.en && entry.en !== entry.zh ? '<span class="pick-en">' + esc(entry.en) + '</span>' : "")
         + '<span class="pick-id">' + esc(entry.id.replace("irons_spellbooks:", "")) + '</span>'
         + (typeLabel ? '<span class="chip">' + esc(typeLabel) + '</span>' : "")
+        + (disabled ? "<span class=\"chip bad\">Disabled in ISS</span>" : "")
         + '</button>';
     }).join("");
   }
 
   function spellPickerDialog(path) {
     pendingSpellPath = path;
-    openModal("Choose spell · " + (D.SPELLS || []).length + " built-in",
+    openModal("Choose spell · " + (D.SPELLS || []).length + " entries",
       '<div class="picker-box">'
       + "<input id=\"picker-q\" class=\"picker-input\" placeholder=\"Search name / id; Enter picks the first result\" spellcheck=\"false\" autocomplete=\"off\">"
       + '<div class="picker" id="picker-list"></div>'
       + '</div>'
-      + "<p class=\"hint\">The list comes from the irons_spellbooks 1.20.1-3.16.3 language files. It is for display and search only, not registry validation. For spells from other mods, type the id directly in the editor.</p>");
+      + "<div class=\"picker-actions\"><button class=\"btn ghost\" data-act=\"dump-import\">Import /spellmob dump spells</button></div>"
+      + "<p class=\"hint\">Current catalog = the 115 built-in spells + any imported dump. The list is only for display and search, not registry validation; red spells have enabled=false in the ISS config.</p>");
     renderPicker("");
     var input = $("#picker-q");
     if (!input) return;
@@ -7574,6 +7923,7 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
   function pickSpell(id) {
     if (!pendingSpellPath || !id) return;
     setNode(pendingSpellPath, id);
+    pendingSpellPath = null;
     closeModal();
     renderAll();
     toast("Spell set to " + id);
@@ -8623,7 +8973,8 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       var known = spellInfo(value);
       nodes[i].textContent = spellLabel(value);
       nodes[i].classList.toggle("bad", !!value && !known);
-      nodes[i].style.color = known ? CORE.schoolColor(known.school) : "";
+      nodes[i].classList.toggle("disabled", !!(known && known.enabled === false));
+      nodes[i].style.color = known && known.enabled !== false ? CORE.schoolColor(known.school) : "";
     }
     var dots = document.querySelectorAll("[data-dotof]");
     for (var j = 0; j < dots.length; j++) {
@@ -9042,6 +9393,11 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
       case "confirm-export": downloadZip(); return;
       case "spell-picker": spellPickerDialog(path); return;
       case "pick-spell": pickSpell(el.getAttribute("data-spell")); return;
+      case "spell-catalog": spellCatalogDialog(); return;
+      case "spell-reset": resetSpellDump(); return;
+      case "dump-import": openDumpImport(); return;
+      case "apply-dump": applyDumpImport(); return;
+      case "copy-spell": copySpellId(el.getAttribute("data-spell")); return;
       case "sort-variants": sortVariantsNow(); return;
       case "apply-batch": applyBatch(el.getAttribute("data-mode")); return;
       default: return;
@@ -9350,9 +9706,8 @@ html[lang="en"] .ed-title .tag { flex: 0 0 auto; white-space: nowrap; }
 
   function init() {
     $("#ver").textContent = "v" + D.version + " · aligned with SpellMob " + D.modVersion + " parser";
-    $("#spell-list").innerHTML = spells().map(function (entry) {
-      return '<option value="' + esc(entry.id) + '">' + esc(entry.en || entry.zh) + '</option>';
-    }).join("");
+    loadSpellDump();
+    refreshSpellList();
     $("#entity-id-list").innerHTML = (D.ENTITIES || []).map(function (entry) {
       return '<option value="' + esc(entry.id) + '">' + esc(entry.en + (entry.group ? " · " + entry.group : "")) + '</option>';
     }).join("");
