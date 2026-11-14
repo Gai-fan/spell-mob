@@ -2,6 +2,8 @@ package spellmob.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
 /** Defensive helpers for reading the data pack format. */
@@ -29,7 +31,8 @@ public final class JsonHelper {
         return element.getAsString();
     }
 
-    public static int optInt(JsonObject object, String key, int fallback) {        JsonElement element = object.get(key);
+    public static int optInt(JsonObject object, String key, int fallback) {
+        JsonElement element = object.get(key);
         if (element == null || element.isJsonNull()) {
             return fallback;
         }
@@ -81,6 +84,27 @@ public final class JsonHelper {
             return element.getAsBoolean();
         } catch (RuntimeException exception) {
             throw new IllegalArgumentException("'" + key + "' must be a boolean");
+        }
+    }
+
+    /**
+     * Logs keys the parser does not understand.
+     *
+     * <p>The format stays forgiving on purpose: one typo should not throw away a whole boss. It
+     * must not be silent either, otherwise {@code "cooldownTick": 100} looks like a mod bug
+     * instead of a spelling mistake. Keys starting with {@code _} are treated as comments.</p>
+     *
+     * @param object  the object to inspect
+     * @param where   path prefix used in the log line
+     * @param allowed the keys the parser actually reads
+     */
+    public static void warnUnknown(JsonObject object, String where, String... allowed) {
+        Set<String> known = new LinkedHashSet<>(java.util.List.of(allowed));
+        for (String key : object.keySet()) {
+            if (key.startsWith("_") || known.contains(key)) {
+                continue;
+            }
+            Logs.warn("{}: unknown key '{}' was ignored", where, key);
         }
     }
 }

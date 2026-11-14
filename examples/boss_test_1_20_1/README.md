@@ -33,4 +33,4 @@
 
 - 红色血条是**全局配置**（`config/spellmob-common.toml` 里 `bossBar = true`、`bossBarColor = "red"`），不是数据包字段；改完要重启游戏。
 - 驯服后的宠物才会学法术；`learner: true` 写在变体上等价于给这只怪打 `spellmob_learner` 标签。
-- 本包只定义了 king / summer / rocky 三个名字，其它同种生物行为不变；不要在这个包里放 `husk.json`/`zombie.json`，那会顶掉模组内置的同名规则。
+- 本包只定义了 king / summer / rocky 三个名字，其它同种生物行为不变；jar 不再内置 `husk.json`/`zombie.json`，新增同名文件只会作为本包自己的规则加载。

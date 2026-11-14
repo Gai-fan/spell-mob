@@ -43,6 +43,10 @@ public final class ConfigRuleLoader {
                     continue;
                 }
                 JsonObject json = element.getAsJsonObject();
+                // Key validation lives in the caller now: SpellCasterData.parse is shared by file
+                // roots and variants, which legitimately carry keys this block cannot know about.
+                JsonHelper.warnUnknown(json, where, "entity", "goals", "onHurt", "onTarget",
+                        "onDeath", "onKill");
                 String rawId = JsonHelper.requireString(json, "entity", where);
                 ResourceLocation id = ResourceLocation.tryParse(rawId);
                 if (id == null) {

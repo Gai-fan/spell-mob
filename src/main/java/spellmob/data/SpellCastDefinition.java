@@ -90,6 +90,9 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
      * @throws IllegalArgumentException when the object is not usable
      */
     public static SpellCastDefinition parse(JsonObject json, String where) {
+        JsonHelper.warnUnknown(json, where, "spell", "level", "cooldown", "priority", "range", "target",
+                "castTime", "checkInterval", "conditions", "interruptOnDamage", "cooldownGroup", "chance",
+                "repeatOnCast");
         String rawSpell = JsonHelper.requireString(json, "spell", where);
         ResourceLocation spellId = ResourceLocation.tryParse(rawSpell);
         if (spellId == null) {
@@ -145,6 +148,10 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
         }
 
         JsonObject object = element.getAsJsonObject();
+        JsonHelper.warnUnknown(object, where, "type", "positionMode", "sort", "lineOfSight",
+                "relativeOffset", "placement", "filters", "entityTypes", "entityTags", "excludeTags",
+                "excludeCasterTeam", "ignoreCreative", "minHealthPercent", "maxHealthPercent",
+                "requireNoShield");
         TargetType type = object.has("type") ? requireType(object.get("type").getAsString(), where)
                 : TargetType.ATTACK_TARGET;
         PositionMode mode = PositionMode.RELATIVE;
@@ -207,6 +214,9 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
                 throw new IllegalArgumentException(where + ": 'filters' must be an object");
             }
             object = element.getAsJsonObject();
+            JsonHelper.warnUnknown(object, where + "/filters", "entityTypes", "entityTags", "excludeTags",
+                    "excludeCasterTeam", "ignoreCreative", "minHealthPercent", "maxHealthPercent",
+                    "requireNoShield");
         }
         List<ResourceLocation> types = readIds(object, "entityTypes", where);
         List<ResourceLocation> tags = readIds(object, "entityTags", where);
@@ -273,6 +283,8 @@ public record SpellCastDefinition(ResourceLocation spellId, int level, int coold
             throw new IllegalArgumentException(where + ": 'conditions' must be an object");
         }
         JsonObject object = element.getAsJsonObject();
+        JsonHelper.warnUnknown(object, where, "healthBelow", "healthAbove", "minTargetDistance",
+                "maxTargetDistance", "self", "target", "world");
         JsonObject self = readObject(object, "self");
         JsonObject target = readObject(object, "target");
         double healthBelow = object.has("healthBelow") ? JsonHelper.optDouble(object, "healthBelow", 1.0D)

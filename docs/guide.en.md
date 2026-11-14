@@ -1,8 +1,8 @@
 # SpellMob
 
-**Data-driven spellcasting for any mob 鈥?no new content, no client mod, just JSON.**
+**Data-driven spellcasting for any mob — no new content, no client mod, just JSON.**
 
-SpellMob is an addon for *Iron's Spells 'n Spellbooks* (ISS). It adds no blocks, items, or entities: it binds ISS spells to any mob from vanilla or other mods through data packs. Casting goes through ISS's own pipeline with `CastSource.MOB`, so cast times, cast sounds and spell behaviour match ISS itself. Mobs do not spend mana and are not limited by ISS's own cooldowns 鈥?cooldowns are part of the data pack.
+SpellMob is an addon for *Iron's Spells 'n Spellbooks* (ISS). It adds no blocks, items, or entities: it binds ISS spells to any mob from vanilla or other mods through data packs. Casting goes through ISS's own pipeline with `CastSource.MOB`, so cast times, cast sounds and spell behaviour match ISS itself. Mobs do not spend mana and are not limited by ISS's own cooldowns — cooldowns are part of the data pack.
 
 - Install the mod alone and nothing changes in your world.
 - Server-side only: clients can join without the mod. Casting circles are vanilla particles sent by the server.
@@ -16,7 +16,7 @@ SpellMob is an addon for *Iron's Spells 'n Spellbooks* (ISS). It adds no blocks,
 | Forge | 47.x |
 | Iron's Spells 'n Spellbooks | `1.20.1-3.4.0.9` or newer (verified up to `3.16.3`) |
 
-SpellMob itself has no other dependencies. If you run ISS 3.15+, install the extra dependencies ISS asks for (newer Forge, GeckoLib, Curios, `irons_lib`) 鈥?those are ISS's requirements, not SpellMob's.
+SpellMob itself has no other dependencies. If you run ISS 3.15+, install the extra dependencies ISS asks for (newer Forge, GeckoLib, Curios, `irons_lib`) — those are ISS's requirements, not SpellMob's.
 
 ## Installation
 
@@ -26,11 +26,11 @@ SpellMob itself has no other dependencies. If you run ISS 3.15+, install the ext
 
 ```
 saves/<world>/datapacks/my_spells/
-鈹溾攢鈹€ pack.mcmeta
-鈹斺攢鈹€ data/<entity namespace>/spell_casters/<entity path>.json
+├── pack.mcmeta
+└── data/<entity namespace>/spell_casters/<entity path>.json
 ```
 
-The folder path **must mirror the entity id** 鈥?the data pack's own name is irrelevant:
+The folder path **must mirror the entity id** — the data pack's own name is irrelevant:
 
 | Entity | File |
 |---|---|
@@ -70,27 +70,27 @@ Every zombie now casts a level-2 fireball with a 30-tick wind-up, every 200 tick
 
 ## Cast fields
 
-Every cast object 鈥?inside `goals`, `onHurt`, `onTarget`, `onDeath`, `onKill`, or a variant 鈥?accepts the same fields.
+Every cast object — inside `goals`, `onHurt`, `onTarget`, `onDeath`, `onKill`, or a variant — accepts the same fields.
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
-| `spell` | string | 鈥?| **Required.** ISS spell id. |
+| `spell` | string | — | **Required.** ISS spell id. |
 | `level` | int | `1` | Clamped to the spell's max level. |
 | `cooldown` | int (ticks) | the spell's own | 20 ticks = 1 second. After the config multiplier the minimum is 1 tick. |
-| `priority` | int 0鈥? | `1` | Lower runs first, and decides whether the cast beats vanilla AI; see [Priority and vanilla AI](#priority-and-vanilla-ai). |
+| `priority` | int 0–9 | `1` | Lower runs first, and decides whether the cast beats vanilla AI; see [Priority and vanilla AI](#priority-and-vanilla-ai). |
 | `range` | number | `16` | Blocks, capped by the config's `maxRange` (32 by default). |
 | `castTime` | int (ticks) | ISS's value | `0` = instant, `> 0` = wind-up or channel. Overrides ISS's cast-time reduction attribute. |
 | `checkInterval` | int (ticks) | `10` | How often the goal re-checks whether it can cast. |
-| `chance` | number 0鈥? | `1.0` | Rolled right before the cast starts; a failed roll does not consume the cooldown. |
-| `cooldownGroup` | string | 鈥?| `[a-z0-9_.-]{1,32}`. Spells sharing a group share one cooldown 鈥?useful for phase changes. |
+| `chance` | number 0–1 | `1.0` | Rolled right before the cast starts; a failed roll does not consume the cooldown. |
+| `cooldownGroup` | string | — | `[a-z0-9_.-]{1,32}`. Spells sharing a group share one cooldown — useful for phase changes. |
 | `interruptOnDamage` | bool | `false` | Normal casts only. Channeled spells use the global switch instead. |
 | `repeatOnCast` | bool | `true` | Channeled (CONTINUOUS) spells only: re-run `onCast` every 10 ticks, like ISS's own casters. |
 | `target` | string or object | `ATTACK_TARGET` | See [Targets](#targets). |
-| `conditions` | object | 鈥?| Health, target distance, plus the `world` and `self` groups below. |
+| `conditions` | object | — | Health, target distance, plus the `world` and `self` groups below. |
 
 ### Priority and vanilla AI
 
-The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelector` at `priority`. Vanilla actually has two rules: 鈶?`tick()` runs the first goal whose `canUse()` returns true in **registration order** 鈥?the number itself does not sort anything; 鈶?a goal with a **lower number** may preempt the running one. So the field decides whether casting can beat melee/ranged AI, not which of several spells on one mob goes first 鈥?that follows the JSON order.
+The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelector` at `priority`. Vanilla actually has two rules: ① `tick()` runs the first goal whose `canUse()` returns true in **registration order** — the number itself does not sort anything; ② a goal with a **lower number** may preempt the running one. So the field decides whether casting can beat melee/ranged AI, not which of several spells on one mob goes first — that follows the JSON order.
 
 | Mob | Vanilla attack goal | Priority |
 |---|---|---|
@@ -98,13 +98,32 @@ The cast goal holds `MOVE + LOOK` and is registered into the vanilla `goalSelect
 | Skeleton, stray | `RangedBowAttackGoal` | 4 |
 | Blaze | `BlazeAttackGoal` | 4 |
 
-- `priority: 1` (default): preempts melee whenever a spell is ready, so the mob stops chasing while it casts. During cooldown, or when the conditions fail, `canUse()` returns false and melee takes over again 鈥?the "stop, cast, keep chasing" loop is expected.
+- `priority: 1` (default): preempts melee whenever a spell is ready, so the mob stops chasing while it casts. During cooldown, or when the conditions fail, `canUse()` returns false and melee takes over again — the "stop, cast, keep chasing" loop is expected.
 - `priority: 2` or higher: ties with zombie melee. The melee goal was registered first by the mob itself in `registerGoals()`, and on a tie the earlier registration wins, so **casting never gets a turn and the mob only chases**. Keep melee mobs at `1`.
-- `priority: 0`: rarely needed; only mobs that ship a movement goal at priority 0鈥? (some `PanicGoal`/`FloatGoal`) require it.
+- `priority: 0`: rarely needed; only mobs that ship a movement goal at priority 0–1 (some `PanicGoal`/`FloatGoal`) require it.
 - A target farther than `range` also fails `canUse()` and hands control back to melee. Raise `range` (capped by the `maxRange` config, default 32) if the caster should open fire from farther away.
 - When one mob has several spells, we sort them by `priority` (stable) before registering, so lower numbers are tried first and equal numbers keep the JSON order; learned spells (scroll or boss learning) are sorted together with the data pack spells, and the data pack spell wins a tie. To make one spell win, give it a lower `priority` or put it in an earlier variant.
 
-The melee goal belongs to the vanilla mob, so this mod can only preempt it, never remove it. Today the only ways to keep a caster out of melee are `teleport`-style spells or a larger `range`.
+The melee/ranged goals belong to the vanilla mob, so by default this mod can only preempt them. To switch them off entirely, use `disableAttackGoals` below.
+
+### Disable vanilla attacks (`disableAttackGoals`)
+
+With `disableAttackGoals` set to `true`, the mob stops using its vanilla melee/ranged attack goals. The default is `false`, which keeps vanilla attacks; put it at the root to affect the whole species, or inside a variant to affect only the individuals that match. Variants are tri-state: `true` removes, `false` restores, and omitting it follows the root value.
+
+```json
+{
+  "disableAttackGoals": true,
+  "goals": [
+    { "spell": "irons_spellbooks:magic_missile", "cooldown": 60, "range": 24 }
+  ]
+}
+```
+
+- It covers `MeleeAttackGoal`, `RangedAttackGoal`, `RangedBowAttackGoal`, `RangedCrossbowAttackGoal` and their subclasses (such as `ZombieAttackGoal` and `DrownedAttackGoal`). Custom goals from other mods are left alone.
+- **Only attack goals are removed; target goals stay.** The mob can still acquire a target and cast, but it no longer punches, shoots, or chases through the vanilla attack goal. Keep `range` high or use teleport spells if it should stay at a distance.
+- A root `true` with `false` on one variant restores normal attacks for that individual; phase changes and data-pack removal put the previously removed goals back at their original priority.
+- Prefer the variant object or the root. It is also accepted inside `select`, but `select` still needs at least one real condition; a flag-only selector is discarded.
+- After editing, run `/reload` and then `/spellmob resync` (or let the mob reload).
 
 ### Conditions
 
@@ -213,9 +232,9 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 | `OWNER` | The owner of a tamed mob. |
 | `NEAREST_ALLY` | Nearest mob of the same type, or on the same team. |
 | `RANDOM_HOSTILE` | A random hostile in range. |
-| `POSITION` | A point in the world 鈥?see aim modes. |
+| `POSITION` | A point in the world — see aim modes. |
 
-> 鈿狅笍 **`SELF` means "the target is me".** A caster can always find itself, so a `SELF` goal fires as soon as its cooldown is up, whether or not any enemy is around.
+> ⚠️ **`SELF` means "the target is me".** A caster can always find itself, so a `SELF` goal fires as soon as its cooldown is up, whether or not any enemy is around.
 > If you want "only summon/heal while fighting", change that line's `target` to `ATTACK_TARGET`:
 
 ```json
@@ -233,9 +252,9 @@ A mob only gets one event cast at a time: if it is already casting, further trig
 | `sort` | `NEAREST` | `NEAREST`, `FARTHEST`, `LOWEST_HEALTH`, `HIGHEST_HEALTH`, `RANDOM`. |
 | `lineOfSight` | `true` | Entity targets must be visible (ignored for `POSITION`). |
 | `maxHealthPercent` | `1.0` | Only accept targets at or below this health fraction; same as `filters.maxHealthPercent`. |
-| `positionMode` | `RELATIVE` | `POSITION` only 鈥?see below. |
+| `positionMode` | `RELATIVE` | `POSITION` only — see below. |
 | `relativeOffset` | `[0,0,0]` | `POSITION` only; `RELATIVE` uses all three axes, `BEHIND_TARGET` uses `x` (distance) and `y` (vertical offset). |
-| `placement` | empty | `POSITION` only 鈥?safety checks for the computed point, see below. |
+| `placement` | empty | `POSITION` only — safety checks for the computed point, see below. |
 | `filters` | empty | Target filters, see below. |
 
 #### Target filters
@@ -270,7 +289,7 @@ Filters run after a candidate is resolved and before the cast starts; `POSITION`
 
 ### Aim modes (`POSITION` only)
 
-> **Get this straight first: `POSITION` is not a landing spot 鈥?it only decides where the caster looks.**
+> **Get this straight first: `POSITION` is not a landing spot — it only decides where the caster looks.**
 >
 > Iron's Spells has no coordinate parameter in its cast API. Projectiles always spawn at the caster's
 > eye/body and fly along its current look direction. The point resolved here is fed to `lookAt`;
@@ -283,13 +302,13 @@ Filters run after a candidate is resolved and before the cast starts; `POSITION`
 > - Self-casts / buffs / summons: completely unaffected.
 >
 > If you want "keep hitting the target", use an entity target such as `ATTACK_TARGET` or
-> `NEAREST_HOSTILE` 鈥?`POSITION + TARGET_ENTITY` throws away line-of-sight checks and `filters`.
+> `NEAREST_HOSTILE` — `POSITION + TARGET_ENTITY` throws away line-of-sight checks and `filters`.
 
 | Mode | Where it aims |
 |---|---|
 | `RELATIVE` | Caster's position + `relativeOffset`. |
-| `EYES_LOOK` | Eye position + look direction 脳 `range`. |
-| `FEET_LOOK` | Feet position + look direction 脳 `range` (a different ray origin than `EYES_LOOK`). |
+| `EYES_LOOK` | Eye position + look direction × `range`. |
+| `FEET_LOOK` | Feet position + look direction × `range` (a different ray origin than `EYES_LOOK`). |
 | `TARGET_ENTITY` | The target's position; if there is no target the cast is skipped. |
 | `BEHIND_TARGET` | Behind the target: `relativeOffset.x` is the distance (default `2` blocks) and `relativeOffset.y` the vertical offset. Lets a teleport land behind the player instead of on top of them. |
 | `RANDOM_IN_RANGE` | A random point within `range` blocks. |
@@ -316,7 +335,7 @@ Filters run after a candidate is resolved and before the cast starts; `POSITION`
 
 ## Variants
 
-`variants` lets one entity file describe different rules for different individuals, and swap rules at a health threshold. Variants are only available in data packs 鈥?the config's `[species] extraRules` does not support them.
+`variants` lets one entity file describe different rules for different individuals, and swap rules at a health threshold. Variants are only available in data packs — the config's `[species] extraRules` does not support them.
 
 ```json
 {
@@ -359,28 +378,32 @@ Rules:
 - A variant with `override: true` and no spells means "this individual casts nothing".
 - `name` and `nameRegex` require the mob to have a custom name.
 
-**Renaming** a mob re-syncs its goals automatically within a tick. **Taming or untaming** does as well. **Changing tags does not** 鈥?run `/spellmob resync` afterwards.
+**Renaming** a mob re-syncs its goals automatically within a tick. **Taming or untaming** does as well. **Changing tags does not** — run `/spellmob resync` afterwards.
 
 ### Phase lock (`sticky`)
 
-Health bands are two-way by default: a boss that gets healed above the threshold falls back to the previous phase and swaps its whole spell list. Adding `"sticky": true` to a variant **locks it once it matched**, so healing does not undo it; dropping into a deeper phase is still allowed, and the lock only ever moves forward.
+Health bands are two-way by default: a boss that gets healed above the threshold falls back to the previous phase and swaps its whole spell list. Adding `"sticky": true` to a variant **locks it once it matched**, so healing does not undo it; dropping into a deeper phase is still allowed, and the lock only ever moves deeper.
+
+Order matters: variants are checked **top to bottom and the first match wins**, so the deeper phase (the lower threshold) has to be listed first or it never gets a chance.
 
 ```json
 {
   "variants": [
-    { "select": { "healthBelow": 0.5 }, "sticky": true,
-      "goals": [ { "spell": "irons_spellbooks:wither_skull", "cooldown": 100 } ] },
-
     { "select": { "healthBelow": 0.2 }, "sticky": true,
-      "goals": [ { "spell": "irons_spellbooks:black_hole", "cooldown": 200 } ] }
+      "goals": [ { "spell": "irons_spellbooks:black_hole", "cooldown": 200 } ] },
+
+    { "select": { "healthBelow": 0.5 }, "sticky": true,
+      "goals": [ { "spell": "irons_spellbooks:wither_skull", "cooldown": 100 } ] }
   ]
 }
 ```
 
 - `sticky` defaults to `false`, i.e. the old two-way behaviour.
 - Only variants marked `sticky` are remembered; the others keep matching both ways.
+- The lock stores the **deepest phase reached so far**: 30% HP locks the 0.5 variant, 10% HP moves the lock to the 0.2 variant, and healing back to 60% still keeps the deepest set.
 - Renaming resets the lock (it is a different individual now); the lock is saved with the mob, so unloading and reloading a chunk does not drop the phase.
 - It is also accepted inside `select`: `"select": { "healthBelow": 0.5, "sticky": true }`.
+- Once locked, event triggers (`onHurt`, `onTarget`, `onDeath`, `onKill`), drop rules and `/spellmob info` read the locked phase too, so healing the boss back up never resolves a trigger against the old phase.
 
 ### Scroll learning (`learner`)
 
@@ -393,24 +416,89 @@ Add `"learner": true` to a variant and the mob can learn spells from thrown scro
 
 - Only **tamed** mobs can learn; `learner` itself does not check taming, so pair it with `select.tamed`.
 - It is also accepted inside `select`: `"select": { "name": "Bryan", "tamed": true, "learner": true }`.
-- The bundled `wolf.json` is an example: a wild Bryan only casts fang strike, and once tamed it keeps the fangs and gains the ability to learn.
+- The `wolf.json` in `examples/classic` is an example: a wild Bryan only casts fang strike, and once tamed it keeps the fangs and gains the ability to learn.
+
+### Adaptive learning (`adaptive`)
+
+A boss normally becomes a learner only through the scoreboard tag named by `adaptive.adaptiveTag`. Data packs can mark a variant instead: `"adaptive": true` inside the variant (or inside its `select`) is equivalent to giving that individual the tag, so a data pack file can define an adaptive boss without asking the player to run a command:
+
+```json
+{ "select": { "name": "king" }, "adaptive": true, "bossBar": true,
+  "goals": [ { "spell": "irons_spellbooks:sonic_boom", "level": 3, "cooldown": 120 } ] }
+```
+
+### Phase shows (`onPhase`)
+
+`onPhase` sits on a **variant** and plays once, the first time a mob enters that variant (`replay: true` plays it on every entry). It is presentation only: it freezes the caster, shakes the camera, plays a sound, shows a title, bursts the ground, knocks players back, summons reinforcements and recolours or renames the boss bar.
+
+```json
+{
+  "variants": [
+    {
+      "select": { "name": "king", "healthBelow": 0.5 },
+      "sticky": true,
+      "onPhase": {
+        "title": "%s entered phase two",
+        "subtitle": "The ground begins to shake",
+        "sound": "minecraft:entity.wither.spawn",
+        "shake": { "duration": 15, "radius": 16.0 },
+        "burst": { "radius": 6.0, "color": "auto" },
+        "knockback": 5.0,
+        "invulnerableTicks": 40,
+        "freezeTicks": 40,
+        "summon": { "entity": "minecraft:iron_golem", "count": 2, "radius": 3.0, "tags": ["spellmob_king_guard"] },
+        "bossBarColor": "red",
+        "bossBarName": "%s - phase two",
+        "weather": "thunder",
+        "time": "night",
+        "phaseTicks": 40,
+        "replay": false
+      },
+      "goals": [ { "spell": "irons_spellbooks:chain_lightning", "level": 3, "cooldown": 160 } ]
+    }
+  ]
+}
+```
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| `title` / `subtitle` | none | Shown as a screen title to players within 32 blocks; `%s` becomes the mob name. |
+| `sound` | none | Sound played at the caster when the show starts. |
+| `shake` | none | `{ "duration": 15, "radius": 16.0 }` camera shake through the Iron's Spellbooks shake API (silently skipped if a client lacks it). |
+| `burst` | none | Ground shockwave; `radius` is the final radius, `color` accepts `auto` (school colour of the first spell) or `#RRGGBB`. |
+| `knockback` | `0` | Strength the players within 5 blocks are pushed away with 10 ticks into the show (0–16). |
+| `invulnerableTicks` | `40` | Invulnerability duration (0–1200); the previous state is restored afterwards. |
+| `freezeTicks` | same as invulnerable | How long horizontal movement is cleared. |
+| `summon` | none | `{ "entity": "...", "count": 1, "radius": 2.0, "tags": ["..."] }`, spawns in a ring (`count` 1–16, `radius` 1–16) and adds the tags. |
+| `bossBarColor` | none | Boss bar colour after the show starts. |
+| `bossBarName` | none | Boss bar name after the show starts; `%s` becomes the mob name. |
+| `weather` | none | `clear` / `rain` / `thunder`; requires `bosses.allowWeatherChange`. |
+| `time` | none | `day` / `noon` / `night` / `midnight`; also requires `bosses.allowWeatherChange`. |
+| `phaseTicks` | `40` | Total show length (10–1200). |
+| `replay` | `false` | Play on every entry when true; when false each mob plays it once and a reload never replays it. |
+
+Timeline: at t0 the title, sound and shake fire and the shockwave starts; at t+5 the reinforcements spawn; at t+10 players are knocked back; the shockwave expands over the first 10 ticks; when `phaseTicks` runs out the AI returns and the goals are rebuilt. During the show the caster cancels its cast, cannot move, cannot be hurt and cannot start a new cast.
+
+A variant with only `onPhase` and no `goals` is valid: the mob keeps its previous spell list and just changes appearance.
 
 ## Drops
 
-`dropRules` gives loot to casting mobs, and also lets a definition carry loot only (a 鈥渓oot variant鈥?that never casts).
+`dropRules` gives loot to casting mobs, and also lets a definition carry loot only (a “loot variant” that never casts).
 
 It may appear in two places:
 
 - **At the root of the file**: applies to every mob that resolves to the definition.
 - **Inside a `variants` entry**: applies only while that variant matches; the variant that matched when the mob died decides which rules are used.
 
-All rules whose `select` matches are rolled 鈥?from the matched variant first, then the root ones. Rules no longer stop after the first hit, so 鈥渁lways drop gold鈥?and 鈥?0% chance of a loot table鈥?can be two rules, even with the same `select`.
+All rules whose `select` matches are rolled — from the matched variant first, then the root ones. Rules no longer stop after the first hit, so “always drop gold” and “20% chance of a loot table” can be two rules, even with the same `select`.
 
-> 鈿狅笍 Notes
+> ⚠️ Notes
 >
-> - Rules no longer shadow each other: overlapping rules stack their loot. Put the conditions in `select` instead of relying on 鈥渢he first hit skips the rest鈥?
+> - Rules no longer shadow each other: overlapping rules stack their loot. Put the conditions in `select` instead of relying on “the first hit skips the rest”.
 > - A definition with only `dropRules` and no `goals` is valid: the mob casts nothing and still drops loot.
 > - If several variants share the same loot, put the rules at the root instead of repeating them.
+> - **Loot is rolled once, when the mob dies.** Nothing drops while it is merely in a low health phase, so rules inside a variant need no — and should not have — a `select`: the variant already matched, and repeating the condition only gives it a chance to never fire.
+> - **Do not put health conditions in `select`.** By the time drops are rolled the mob is dead and its health fraction is 0, so `healthBelow` always matches (it decides nothing) and `healthAbove` never matches (nothing drops). Loading such a rule logs a warning. For phase loot, put the rules inside the matching `variants[i].dropRules` — the death event uses the variant it resolved.
 
 ```json
 "dropRules": [
@@ -431,7 +519,7 @@ All rules whose `select` matches are rolled 鈥?from the matched variant first, 
 ]
 ```
 
-Inside a variant the structure is identical:
+Inside a variant the structure is the same, but **no `select` is needed**:
 
 ```json
 "variants": [
@@ -439,7 +527,8 @@ Inside a variant the structure is identical:
     "select": { "tags": ["spellmob_boss"] },
     "goals": [ ... ],
     "dropRules": [
-      { "select": { "tags": ["spellmob_boss"] }, "chance": 1.0, "drops": [ ... ] }
+      { "chance": 1.0, "drops": [ { "item": "minecraft:gold_block", "min": 3, "max": 6 } ] },
+      { "chance": 0.2, "drops": [ { "lootTable": "minecraft:chests/desert_pyramid" } ] }
     ]
   }
 ]
@@ -452,12 +541,12 @@ Inside a variant the structure is identical:
 
 ## Configuration
 
-The config lives at `config/spellmob-common.toml` (COMMON type 鈥?one file for the whole installation, not per world).
+The config lives at `config/spellmob-common.toml` (COMMON type — one file for the whole installation, not per world).
 
 It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configured** can read it and edit it:
 
-- Ordinary values (switches, cooldown multiplier, blacklists, particle settings) apply immediately 鈥?they are read on use, never cached.
-- The `[species]` rule text (`extraRules`, `spawnEgg`, 鈥? is parsed into rule objects at startup; after editing it run `/spellmob resync`, or restart.
+- Ordinary values (switches, cooldown multiplier, blacklists, particle settings) apply immediately — they are read on use, never cached.
+- The `[species]` rule text (`extraRules`, `spawnEgg`, …) is parsed into rule objects at startup; after editing it run `/spellmob resync`, or restart.
 - Data packs always win over a config rule for the same entity: if a data pack defines it, the config rule is ignored (`/spellmob info` shows the source, and a line is logged).
 
 | Section | Key | Default | Meaning |
@@ -470,16 +559,16 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `globalCooldown` | `0` | Global cooldown in ticks: after one cast every spell of that caster waits this long. `0` disables it, max 400. |
 | `adaptive` | `enabled` | `true` | Master switch for bosses learning spells from players they defeated. |
 | | `adaptiveTag` | `spellmob_adaptive` | Scoreboard tag that marks a boss as able to learn; the boss must have it. |
-| | `maxLearnedSpells` | `1` | How many spells one boss may learn in total (0鈥?); `0` disables learning. |
-| | `rememberedSpells` | `6` | How many spells of one player are remembered per fight (1鈥?6). |
-| | `learnedCooldown` | `-1` | Cooldown of a learned spell in ticks (-1鈥?200); `-1` follows the spell's own cooldown (seconds 脳 20), `>= 0` uses a fixed value. |
-| | `learnedPriority` | `2` | Goal priority of a learned spell (0鈥?, lower runs first). |
+| | `maxLearnedSpells` | `1` | How many spells one boss may learn in total (0–8); `0` disables learning. |
+| | `rememberedSpells` | `6` | How many spells of one player are remembered per fight (1–16). |
+| | `learnedCooldown` | `-1` | Cooldown of a learned spell in ticks (-1–1200); `-1` follows the spell's own cooldown (seconds × 20), `>= 0` uses a fixed value. |
+| | `learnedPriority` | `2` | Goal priority of a learned spell (0–9, lower runs first). |
 | | `spellBlacklist` | teleport/blood_step/evasion | Spells a boss may never learn. |
 | `scrollLearning` | `enabled` | `true` | Whether a tossed scroll can teach a pet. |
 | | `learnerTag` | `spellmob_learner` | Pets that may learn must carry this tag. |
-| | `maxSpells` | `5` | Spells a pet may know (0鈥?6); `0` disables learning. |
+| | `maxSpells` | `5` | Spells a pet may know (0–16); `0` disables learning. |
 | | `cooldown` | `36000` | Cooldown after one lesson, in ticks (default 30 minutes). |
-| | `ritualTicks` | `100` | Ritual length in ticks (20鈥?00). |
+| | `ritualTicks` | `100` | Ritual length in ticks (20–400). |
 | | `requireOwner` | `true` | Only the owner's thrown scroll counts. |
 | | `spellCooldownMultiplier` | `2.0` | Multiplier applied to a learned spell's default cooldown. |
 | | `cooldownMin` | `60` | Lower clamp for learned spell cooldowns (ticks). |
@@ -494,27 +583,29 @@ It is a plain Forge `ModConfigSpec`, so in-game config editors such as **Configu
 | | `manaCostMultiplier` | `1.0` | Multiplier for pet mana costs. |
 | | `manaCostPercent` | `100` | Percentage of the mana cost a pet pays (100 = full, 50 = half, 0 = free); multiplied with `manaCostMultiplier`. |
 | | `castPriorityOverrides` | `[]` | Per entity type cast priority, e.g. `["minecraft:wolf=2", "minecraft:cat:3"]`; unlisted types use `castPriority`. |
+| | `spellSelection` | `smart` | How a pet picks a learned spell: `smart` weighs the distance and the target (melee spells up close, projectiles at range, ground spells skipped against airborne targets); `priority` always takes the first ready spell in learned order. |
+| `bosses` | `resetOnEscape` | `true` | A boss tagged with `presentation.bossTags` heals to full and drops its phase lock once no player has been near it for `escapeGrace` ticks. |
+| | `escapeRadius` | `32` | How close a player must be to count as "still fighting" (8–128 blocks). |
+| | `escapeGrace` | `600` | How long the boss waits without players before resetting (600 = 30 seconds). |
+| | `allowWeatherChange` | `false` | Whether an `onPhase` show may change the weather and the time of day. Off by default so data packs cannot disturb builds and lighting. |
 | `filters` | `entityBlacklist` | empty | Entity ids that never cast. |
 | | `dimensionBlacklist` | empty | Dimensions where casting is disabled. |
 | `protection` | `protectedTags` | empty | Mobs with these tags cannot be renamed with a name tag. |
 | | `allowOpsRename` | `true` | Ops (permission 2) bypass the name lock. |
 | | `channelImmuneTags` | `["spellmob_boss"]` | Mobs with these tags never lose a channel to damage. |
 | `presentation` | `enabled` | `true` | Draw casting circles at all. |
-| | `points` | `24` | Dots per normal circle, `0` = no circle; range 0鈥?28, values below 6 are barely visible. |
-| | `bossPoints` | `32` | Dots per boss circle, `0` = no boss circle; range 0鈥?28. |
-| | `ringScale` | `1.0` | Radius multiplier, range 0.25鈥?.0. |
-| | `distance` | `24` | Particle view distance (4鈥?4). |
+| | `points` | `24` | Dots per normal circle, `0` = no circle; range 0–128, values below 6 are barely visible. |
+| | `bossPoints` | `32` | Dots per boss circle, `0` = no boss circle; range 0–128. |
+| | `ringScale` | `1.0` | Radius multiplier, range 0.25–4.0. |
+| | `distance` | `24` | Particle view distance (4–64). |
 | | `interruptFeedback` | `true` | Smoke + fizzle sound when a cast is interrupted. |
 | | `bossTags` | `["spellmob_boss"]` | Casters with these tags use the boss effects: a larger outer ground ring plus pulse rings. |
 | | `bossExtras` | `true` | Adds the periodic pulse rings to boss effects. |
 | | `bossBar` | `false` | Show a vanilla boss bar for casters; independent from `enabled`, so you can keep the bar and drop the particles. |
 | | `bossBarColor` | `white` | Bar colour: `pink` / `blue` / `red` / `green` / `yellow` / `purple` / `white`. |
-| | `bossBarRange` | `48` | Players within this distance see the bar (8鈥?28). |
+| | `bossBarRange` | `48` | Players within this distance see the bar (8–128). |
 | | `bossBarTags` | `["spellmob_boss"]` | Mobs with these tags get a bar; empty means every mob with rules. |
 | | `bossBarCastName` | `true` | Append "casting <spell>" to the bar name while the mob casts; turn it off to keep the plain name. |
-| `bosses` | `resetOnEscape` | `true` | A boss tagged with `presentation.bossTags` heals to full and drops its phase lock once no player has been near it for `escapeGrace` ticks. |
-| | `escapeRadius` | `32` | How close a player must be to count as "still fighting" (8–128 blocks). |
-| | `escapeGrace` | `600` | How long the boss waits without players before resetting (600 = 30 seconds). |
 | `species` | `extraRules` | empty | Whole-species rules, one JSON object per line. Same schema as a data pack file, minus `variants`. |
 
 When both a data pack and `[species] extraRules` define the same entity, **the data pack wins** and the config entry is ignored (a log line records it).
@@ -527,7 +618,7 @@ With `presentation.bossBar = true`, casters carrying one of `bossBarTags` (defau
 - Only players within `bossBarRange` blocks (spectators excluded) receive it; the recipient list follows players in and out of range.
 - Independent from `presentation.enabled`: set `enabled` to `false` and `bossBar` to `true` to keep only the bar.
 - The bar is removed when the mob dies or its chunk unloads, and config edits apply immediately.
-- Data packs can override it per individual: put `"bossBar": true` or `"bossBar": false` in the root of a `spell_casters` file or inside a variant. That beats `bossBarTags` and `presentation.bossBar`; leave it out to follow the config. Two mobs of the same type can therefore show and hide the bar respectively (the bundled `zombie.json` demonstrates exactly that).
+- Data packs can override it per individual: put `"bossBar": true` or `"bossBar": false` in the root of a `spell_casters` file or inside a variant. That beats `bossBarTags` and `presentation.bossBar`; leave it out to follow the config. Two mobs of the same type can therefore show and hide the bar respectively (give two mobs of the same type opposite values to see the difference).
 
 ## Boss reset
 
@@ -542,10 +633,10 @@ A boss tagged with `presentation.bossTags` returns to its pre-fight state once n
 
 This is the "second encounter" mechanic: after a boss defeats a player, the next time they meet the boss learns one of the spells that player used last time, always at that spell's maximum level.
 
-- Gate: `adaptive.enabled` must be on and the boss must carry the scoreboard tag named by `adaptive.adaptiveTag` (default `spellmob_adaptive`). `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` turns a mob into a learner; writing `"adaptive": true` inside a variant does the same from the data pack.
+- Gate: `adaptive.enabled` must be on and the boss must carry the scoreboard tag named by `adaptive.adaptiveTag` (default `spellmob_adaptive`). `/tag @e[type=minecraft:zombie,limit=1] add spellmob_adaptive` turns a mob into a learner.
 - Recording: a fight starts when either side hits the other; every spell the player casts during it is remembered, up to `rememberedSpells` per player.
 - Learning: if the player dies to the boss (or within 48 blocks of it) the fight counts as a loss; on the next fight the boss randomly learns one remembered spell that it does not know yet and that is not in `spellBlacklist`.
-- Limits: at most `maxLearnedSpells` per boss (default 1, `0` disables learning); learned spells use `learnedCooldown` and `learnedPriority` and take part in the same priority ordering as the data pack spells (a data pack spell wins a tie), and always cast at `getMaxLevel()`. `learnedCooldown = -1` follows the spell's own default cooldown, `>= 0` pins a fixed tick value; either way `balance.cooldownMultiplier` still applies.
+- Limits: at most `maxLearnedSpells` per boss (default 1, `0` disables learning); learned spells use `learnedCooldown` and `learnedPriority` like any other goal and always cast at `getMaxLevel()`. `learnedCooldown = -1` follows the spell's own default cooldown, `>= 0` pins a fixed tick value; either way `balance.cooldownMultiplier` still applies.
 - The default blacklist is `irons_spellbooks:teleport`, `blood_step` and `evasion`, so bosses do not pick up escape tools.
 - State is stored in the mob's NBT (`adaptive` sub-tag) and survives death, dimension changes and `/reload`; goals are rebuilt from the caster state on every sync.
 
@@ -557,8 +648,9 @@ A tamed mob can be taught a spell scroll: drop the scroll at its feet, a school 
 - Trigger: the nearest eligible pet within 2.5 blocks of the landed scroll starts the ritual. Blacklisted spells still draw a black circle and show a message, but the scroll stays on the ground.
 - Cooldown and limit: each completed lesson starts `scrollLearning.cooldown` (30 minutes by default); a pet knows at most `maxSpells` spells (`0` disables learning). Operators can clear the cooldown immediately with `/spellmob resetcooldown <targets>`.
 - Levels: the scroll's level is the learned level; re-teaching the same spell only upgrades it when the new scroll is higher level, and that upgrade adds a rising spiral of particles to the circle (plain lessons do not).
-- Casting: learned spells use the pet numbers 鈥?`pets.castPriority` (default 4, overridable per entity type via `pets.castPriorityOverrides`), `pets.castRange` (default 16) 鈥?and a cooldown of `clamp(spell cooldown 脳 spellCooldownMultiplier, cooldownMin, cooldownMax)` (2脳 by default, 60鈥?00 ticks), still scaled by `balance.cooldownMultiplier`.
-- Mana: with `pets.shareOwnerMana` (default on) a pet spends its owner's mana: base cost 脳 `pets.manaCostMultiplier` 脳 `pets.manaCostPercent` / 100; no check and no cost while the owner is offline.
+- Casting: learned spells use the pet numbers — `pets.castPriority` (default 4, overridable per entity type via `pets.castPriorityOverrides`), `pets.castRange` (default 16) — and a cooldown of `clamp(spell cooldown × spellCooldownMultiplier, cooldownMin, cooldownMax)` (2× by default, 60–600 ticks), still scaled by `balance.cooldownMultiplier`.
+- Mana: with `pets.shareOwnerMana` (default on) a pet spends its owner's mana: base cost × `pets.manaCostMultiplier` × `pets.manaCostPercent` / 100; no check and no cost while the owner is offline.
+- Selection: `pets.spellSelection` defaults to `smart`, which lets a pet choose per cast: melee style spells (fang, bite, claw…) when the target is within 4 blocks, projectiles otherwise, and no ground spell (stomp, fissure, earthquake…) against an airborne target. `priority` keeps the old behaviour of always taking the first ready spell in learned order.
 - Notes: sitting pets can still learn scrolls but do not cast while sitting; disabling `scrollLearning.enabled` turns every toss into an ordinary dropped item.
 - Learned state lives in the mob's NBT (`adaptive.learned`) and the mob gets the `spellmob_caster` tag, so it keeps ticking cooldowns and casting even when its species has no data pack rules.
 
@@ -579,7 +671,7 @@ Permission level 2 required.
 
 - **Server-side only.** Clients do not need the mod; the circles are ordinary particles the server sends.
 - **Data pack paths mirror entity ids.** A file under `data/mypack/` can never affect `minecraft:zombie`.
-- **Unknown JSON keys are ignored.** Typos in field names fail silently 鈥?`validate` and `info` are the way to catch them.
+- **Unknown JSON keys are ignored.** Typos in field names fail silently — `validate` and `info` are the way to catch them.
 - **Editor completion.** `docs/spell_casters.schema.json` is a standard JSON Schema; bind it to `spell_casters/*.json` in VS Code or IntelliJ to get completion and typo detection.
 - **ISS versions.** Built against the 3.4.0.9 API and verified against 3.16.3; the jar declares `[1.20.1-3.4.0.9,)`.
 
@@ -590,6 +682,6 @@ The repository ships ready-to-use packs under `examples/`:
 | Folder | Contents |
 |---|---|
 | `examples/classic/` | The original five examples: zombies A/B, skeleton, wolf, villager, husk. |
-| `examples/bosses/` | Six name + tag gated bosses (void eye, dune priest, 鈥?. |
+| `examples/bosses/` | Six name + tag gated bosses (void eye, dune priest, …). |
 | `examples/channel_test/` | Pillager and vindicator that channel every CONTINUOUS spell. |
-| `examples/full-reference.json` | Field reference 鈥?every key in one file. |
+| `examples/full-reference.json` | Field reference — every key in one file. |

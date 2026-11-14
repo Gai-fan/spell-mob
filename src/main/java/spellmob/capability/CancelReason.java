@@ -19,6 +19,9 @@ public enum CancelReason {
     /** The casting goal was removed, for example by a data pack reload or a name change. */
     GOAL_STOPPED("goal stopped", false),
 
+    /** A boss phase started and the show takes over, no interrupt feedback. */
+    PHASE_CHANGE("phase change", false),
+
     /** The target died, moved out of range or left the line of sight. */
     TARGET_LOST("target lost", true),
 

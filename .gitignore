@@ -119,9 +119,7 @@ run/
 
 # Datagen output
 run-data/
-# Local build infrastructure (NeoForge mirror) and dev runs
-.mirror/
-gradle/mirror.init.gradle
-tools/maven_mirror.py
+
+# Local dev run directory
 run-1.20.1/
-run-data/
+

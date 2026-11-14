@@ -1,4 +1,4 @@
-# SpellMob 教程（对应 2.1.0jar）
+# SpellMob 教程（对应 2.1.0）
 
 ## 一、简介与运行环境
 
@@ -39,7 +39,7 @@ my_spellmob_pack/
 
 放进存档的 `datapacks/` 并确认启用，然后 `/reload`。日志出现 `[SpellMob] Loaded 1 spell caster definition(s)` 表示加载成功，`/datapack list` 可确认状态。
 
-多个数据包含同一路径时，优先级高的覆盖低的；jar 内置示例同样可被数据包覆盖。
+多个数据包含同一路径时，优先级高的覆盖低的。
 
 最小示例：带 `spellmob_demo` 标签的僵尸放火球，其他僵尸不受影响。
 
@@ -84,6 +84,7 @@ my_spellmob_pack/
 | `variants` | 按名称、标签、生命比例或驯服状态匹配个体 |
 | `dropRules` | 追加掉落 |
 | `bossBar` | 为这个物种强制开/关 Boss 血条（布尔值，可被变体覆盖） |
+| `disableAttackGoals` | 为 true 时移除原版近战/远程攻击 Goal，默认 false；可被变体覆盖 |
 
 至少要包含其中一个字段，全部不存在时文件被忽略。以 `_` 开头的键可以当注释。
 
@@ -337,6 +338,7 @@ my_spellmob_pack/
 | `bossBar` | 跟随配置 | `true`/`false` 单独开关这只生物的血条 |
 | `learner` | `false` | 允许学卷轴法术，等价于打 `scrollLearning.learnerTag` 标签 |
 | `adaptive` | `false` | 允许学习打败过的玩家的法术，等价于打 `adaptive.adaptiveTag` 标签 |
+| `disableAttackGoals` | 跟随根层 | `true` 移除原版近战/远程攻击 Goal，`false` 恢复；不写跟随根层 |
 
 `override: true` 又不写任何法术 = 这个个体什么都不放（可用于“沉默”）。
 
@@ -362,7 +364,7 @@ my_spellmob_pack/
   "goals": [ { "spell": "irons_spellbooks:fang_strike", "cooldown": 80 } ] }
 ```
 
-只有已驯服的生物能学卷轴；jar 内置的 `wolf.json`（`Bryan`）就是例子。
+只有已驯服的生物能学卷轴；`examples/classic` 里的 `wolf.json`（`Bryan`）就是例子。
 
 ## 十、掉落规则
 
@@ -409,6 +411,31 @@ my_spellmob_pack/
 
 `bossBarCastName = true` 时，吟唱期间血条名字后面会显示“正在施放 xxx”。
 
+### 阶段演出（onPhase）
+
+变体里写 `onPhase`，生物第一次进入该变体时播一次演出：标题、音效、屏幕震动、地面冲击波、击退、定身无敌、召唤增援、血条换色改名。
+
+最小写法：
+
+```json
+"onPhase": {
+  "title": "%s 进入了第二阶段",
+  "shake": { "duration": 15, "radius": 16.0 },
+  "burst": { "radius": 6.0, "color": "auto" },
+  "knockback": 5.0,
+  "invulnerableTicks": 40,
+  "summon": { "entity": "minecraft:iron_golem", "count": 2, "radius": 3.0 },
+  "bossBarColor": "red",
+  "bossBarName": "%s · 第二阶段",
+  "phaseTicks": 40
+}
+```
+
+- 演出期间生物停止移动、取消在途施法、不能被伤害，结束后恢复 AI 并重建技能表。
+- `weather` 与 `time` 字段要生效，必须在配置里打开 `bosses.allowWeatherChange`（默认关闭）。
+- `replay` 默认 `false`：每只生物只播一次，重载也不重播；写 `true` 则每次进入都播。
+- 只写 `onPhase` 不写 `goals` 也合法，生物保留原来的技能表。
+
 ### 会学习的 Boss（adaptive）
 
 Boss 记住与它交战玩家施放的法术；玩家败给它之后，下次交手时随机学一个，永远以该法术最高等级释放。
@@ -443,6 +470,7 @@ Boss 记住与它交战玩家施放的法术；玩家败给它之后，下次交
 宠物施法参数在 `[pets]`：
 
 - `castPriority`（默认 4）/ `castRange`（默认 16）：宠物法术的 Goal 优先级与距离；`castPriorityOverrides` 可按生物类型单独设，如 `minecraft:wolf=2`；
+- `spellSelection`（默认 `smart`）：每次起手前按目标挑法术——贴身优先近身法术、远处优先投射物、目标在空中时跳过地面法术；改成 `priority` 则按学会顺序取第一个可用的；
 - `shareOwnerMana`（默认 true）：宠物施法扣主人的法力；`manaCostPercent`（默认 100）与 `manaCostMultiplier`（默认 1.0）控制消耗；
 - 学来法术的冷却 = `clamp(法术自带冷却秒数 × spellCooldownMultiplier(2.0), cooldownMin(60), cooldownMax(600))`；
 - `defendOwner`（默认 true）：主人被攻击时宠物反击；`aggressive`（默认 false）：宠物主动索敌；

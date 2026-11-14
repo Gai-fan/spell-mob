@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.BossEvent;
 import net.minecraft.world.entity.Mob;
+import org.jetbrains.annotations.Nullable;
 import spellmob.capability.SpellCaster;
 import spellmob.capability.SpellCasterCapability;
 import spellmob.config.SpellMobConfig;
@@ -35,9 +36,34 @@ public final class CasterBossBar {
     private int variantIndex = -1;
     private BossEvent.BossBarColor colour;
     private String nameText = "";
+    /** Colour forced by the running phase show, {@code null} to follow the config. */
+    private BossEvent.BossBarColor phaseColour;
+    /** Name forced by the running phase show, {@code null} to use the mob name. */
+    private String phaseName;
 
     public CasterBossBar(Mob mob) {
         this.mob = mob;
+    }
+
+    /**
+     * Overrides the colour and name while a boss phase show is running.
+     *
+     * @param phaseColour the colour to force, {@code null} keeps the configured one
+     * @param phaseName   the name to force, {@code null} keeps the mob name
+     */
+    public void setPhaseAppearance(@Nullable BossEvent.BossBarColor phaseColour, @Nullable String phaseName) {
+        this.phaseColour = phaseColour;
+        this.phaseName = phaseName == null || phaseName.isBlank() ? null : phaseName;
+    }
+
+    /** Drops the phase overrides, for example when a boss is reset after the fight. */
+    public void clearPhaseAppearance() {
+        this.phaseColour = null;
+        this.phaseName = null;
+    }
+
+    private BossEvent.BossBarColor effectiveColour() {
+        return this.phaseColour != null ? this.phaseColour : SpellMobConfig.bossBarColor();
     }
 
     /** Refreshes the bar, or hides it when the mob no longer qualifies. */
@@ -49,17 +75,18 @@ public final class CasterBossBar {
         }
         if (bar == null) {
             Component created = displayName();
-            ServerBossEvent event = new ServerBossEvent(created, SpellMobConfig.bossBarColor(),
+            BossEvent.BossBarColor initial = effectiveColour();
+            ServerBossEvent event = new ServerBossEvent(created, initial,
                     BossEvent.BossBarOverlay.PROGRESS);
             event.setProgress(progress());
             bar = event;
-            colour = SpellMobConfig.bossBarColor();
+            colour = initial;
             nameText = created.getString();
             refreshPlayers(level);
         }
         ticks++;
         if (ticks % UPDATE_INTERVAL == 0) {
-            BossEvent.BossBarColor configured = SpellMobConfig.bossBarColor();
+            BossEvent.BossBarColor configured = effectiveColour();
             if (configured != colour) {
                 colour = configured;
                 bar.setColor(configured);
@@ -109,6 +136,9 @@ public final class CasterBossBar {
      * busy. The suffix can be switched off with {@code presentation.bossBarCastName}.
      */
     private Component displayName() {
+        if (this.phaseName != null) {
+            return Component.literal(this.phaseName.replace("%s", mob.getDisplayName().getString()));
+        }
         Component base = mob.getDisplayName();
         if (!SpellMobConfig.bossBarCastName()) {
             return base;

@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
+import spellmob.util.JsonHelper;
 import spellmob.util.Logs;
 
 /**
@@ -56,14 +57,19 @@ public record SpellCasterData(List<SpellCastDefinition> goals, @Nullable SpellCa
     }
 
     /**
-     * Parses one {@code spell_casters} file.
+     * Parses one cast block: a data pack file root, a variant, or a configured rule.
      *
      * <p>Individual entries that fail to parse are dropped with a warning so that one typo does not
-     * invalidate the whole file.</p>
+     * invalidate the whole block.</p>
      *
-     * @param json  the file contents
-     * @param where file path, used for log messages
-     * @return the parsed data, or {@code null} when the file does not look like a SpellMob
+     * <p>This method does <em>not</em> validate keys: the same block shape is embedded in containers
+     * that carry extra keys ({@code variants}, {@code dropRules} at the root, {@code select},
+     * {@code sticky} inside a variant), so the caller owns the allowlist. Warning here would report
+     * every container key as unknown.</p>
+     *
+     * @param json  the block contents
+     * @param where path of the block, used for log messages
+     * @return the parsed data, or {@code null} when the block does not look like a SpellMob
      * definition at all (other mods use the same folder name for their own formats)
      */
     public static @Nullable SpellCasterData parse(JsonObject json, String where) {

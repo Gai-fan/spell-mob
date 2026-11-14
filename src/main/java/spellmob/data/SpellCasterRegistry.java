@@ -49,7 +49,7 @@ public final class SpellCasterRegistry {
     public static void replaceConfig(Map<ResourceLocation, SpellCasterData> parsed) {
         Map<ResourceLocation, SpellCasterRules> wrapped = new LinkedHashMap<>();
         parsed.forEach((id, data) ->
-                wrapped.put(id, new SpellCasterRules(data, List.of(), List.of(), null,
+                wrapped.put(id, new SpellCasterRules(data, List.of(), List.of(), null, false,
                         SpellCasterRules.SOURCE_CONFIG)));
         byConfig = Map.copyOf(wrapped);
         logShadowed();

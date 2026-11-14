@@ -5,39 +5,66 @@
   "description": "Schema of data/<namespace>/spell_casters/<entity>.json. Unknown keys are allowed so a newer version of the mod can still load an older schema, but the editor will flag the ones defined here.",
   "type": "object",
   "properties": {
-    "$schema": { "type": "string" },
-    "_comment": { "type": "string" },
+    "$schema": {
+      "type": "string"
+    },
+    "_comment": {
+      "type": "string"
+    },
     "variants": {
       "type": "array",
       "description": "Per-individual rules. The first variant whose select matches wins.",
-      "items": { "$ref": "#/definitions/variant" }
+      "items": {
+        "$ref": "#/definitions/variant"
+      }
     },
     "dropRules": {
       "type": "array",
       "description": "Drops of this caster. Every matching rule rolls independently.",
-      "items": { "$ref": "#/definitions/dropRule" }
+      "items": {
+        "$ref": "#/definitions/dropRule"
+      }
     },
     "bossBar": {
       "type": "boolean",
       "description": "Force the boss bar on (true) or off (false) for this entity, overriding the tag based config switch."
     },
-    "goals": { "$ref": "#/definitions/goals" },
-    "onHurt": { "$ref": "#/definitions/cast" },
-    "onTarget": { "$ref": "#/definitions/cast" },
-    "onDeath": { "$ref": "#/definitions/cast" },
-    "onKill": { "$ref": "#/definitions/cast" }
+    "disableAttackGoals": {
+      "type": "boolean",
+      "default": false,
+      "description": "Remove the vanilla melee/ranged attack goals of this species. Target goals stay, so the mob can still acquire targets and cast."
+    },
+    "goals": {
+      "$ref": "#/definitions/goals"
+    },
+    "onHurt": {
+      "$ref": "#/definitions/cast"
+    },
+    "onTarget": {
+      "$ref": "#/definitions/cast"
+    },
+    "onDeath": {
+      "$ref": "#/definitions/cast"
+    },
+    "onKill": {
+      "$ref": "#/definitions/cast"
+    }
   },
   "definitions": {
     "goals": {
       "type": "array",
       "description": "Spells the caster may cast on its own, tried in priority order.",
-      "items": { "$ref": "#/definitions/cast" }
+      "items": {
+        "$ref": "#/definitions/cast"
+      }
     },
     "variant": {
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "select": { "$ref": "#/definitions/selector" },
+        "select": {
+          "$ref": "#/definitions/selector"
+        },
         "override": {
           "type": "boolean",
           "default": true,
@@ -48,7 +75,9 @@
           "default": false,
           "description": "Once this variant matches it stays active until the mob dies, even if health climbs back."
         },
-        "bossBar": { "type": "boolean" },
+        "bossBar": {
+          "type": "boolean"
+        },
         "learner": {
           "type": "boolean",
           "default": false,
@@ -59,15 +88,34 @@
           "default": false,
           "description": "Lets a boss learn the spells of players that lose to it without giving it the adaptive tag."
         },
+        "disableAttackGoals": {
+          "type": "boolean",
+          "description": "true removes the vanilla melee/ranged attack goals, false restores them, omitted follows the root value."
+        },
         "dropRules": {
           "type": "array",
-          "items": { "$ref": "#/definitions/dropRule" }
+          "items": {
+            "$ref": "#/definitions/dropRule"
+          }
         },
-        "goals": { "$ref": "#/definitions/goals" },
-        "onHurt": { "$ref": "#/definitions/cast" },
-        "onTarget": { "$ref": "#/definitions/cast" },
-        "onDeath": { "$ref": "#/definitions/cast" },
-        "onKill": { "$ref": "#/definitions/cast" }
+        "goals": {
+          "$ref": "#/definitions/goals"
+        },
+        "onHurt": {
+          "$ref": "#/definitions/cast"
+        },
+        "onTarget": {
+          "$ref": "#/definitions/cast"
+        },
+        "onDeath": {
+          "$ref": "#/definitions/cast"
+        },
+        "onKill": {
+          "$ref": "#/definitions/cast"
+        },
+        "onPhase": {
+          "$ref": "#/definitions/phaseEffect"
+        }
       }
     },
     "selector": {
@@ -85,8 +133,15 @@
         },
         "tags": {
           "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           ],
           "description": "Scoreboard tags. A single string or an array, all of them must be present."
         },
@@ -109,20 +164,30 @@
         "sticky": {
           "type": "boolean",
           "description": "Alias of the variant level sticky flag."
+        },
+        "disableAttackGoals": {
+          "type": "boolean",
+          "description": "Alias of the variant level disableAttackGoals flag; select still needs at least one real condition."
         }
       }
     },
     "cast": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["spell"],
+      "required": [
+        "spell"
+      ],
       "properties": {
         "spell": {
           "type": "string",
           "pattern": "^[a-z0-9_.-]+:[a-z0-9_./-]+$",
           "description": "Spell id, e.g. irons_spellbooks:fireball. Use /spellmob dump spells to list the loaded ids."
         },
-        "level": { "type": "integer", "minimum": 1, "default": 1 },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
         "cooldown": {
           "type": "integer",
           "minimum": 0,
@@ -137,14 +202,25 @@
           "default": 1,
           "description": "Goal priority. Melee mobs must stay at 1, otherwise the vanilla attack goal always wins."
         },
-        "range": { "type": "number", "default": 16, "description": "Maximum distance to the target, in blocks." },
+        "range": {
+          "type": "number",
+          "default": 16,
+          "description": "Maximum distance to the target, in blocks."
+        },
         "castTime": {
           "type": "integer",
           "minimum": 0,
           "description": "Cast time in ticks. Omit to use the spell's own cast time."
         },
-        "checkInterval": { "type": "integer", "minimum": 1, "default": 10 },
-        "interruptOnDamage": { "type": "boolean", "default": false },
+        "checkInterval": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 10
+        },
+        "interruptOnDamage": {
+          "type": "boolean",
+          "default": false
+        },
         "chance": {
           "type": "number",
           "minimum": 0,
@@ -157,54 +233,173 @@
           "default": true,
           "description": "For channeled spells: replay onCast every 10 ticks."
         },
-        "target": { "$ref": "#/definitions/target" },
-        "conditions": { "$ref": "#/definitions/conditions" }
+        "target": {
+          "$ref": "#/definitions/target"
+        },
+        "conditions": {
+          "$ref": "#/definitions/conditions"
+        }
       }
     },
     "target": {
       "oneOf": [
-        { "type": "string", "enum": ["ATTACK_TARGET", "HOSTILE_TARGET", "LAST_DAMAGE_SOURCE", "THREATENING_ENTITY", "NEAREST_HOSTILE", "NEAREST_UNDEAD", "NEAREST_ARTHROPOD", "NEAREST_ANIMAL", "NEAREST_MONSTER", "NEAREST_PLAYER", "OWNER", "NEAREST_ALLY", "SELF", "RANDOM_HOSTILE", "POSITION"] },
-        { "$ref": "#/definitions/targetObject" }
+        {
+          "type": "string",
+          "enum": [
+            "ATTACK_TARGET",
+            "HOSTILE_TARGET",
+            "LAST_DAMAGE_SOURCE",
+            "THREATENING_ENTITY",
+            "NEAREST_HOSTILE",
+            "NEAREST_UNDEAD",
+            "NEAREST_ARTHROPOD",
+            "NEAREST_ANIMAL",
+            "NEAREST_MONSTER",
+            "NEAREST_PLAYER",
+            "OWNER",
+            "NEAREST_ALLY",
+            "SELF",
+            "RANDOM_HOSTILE",
+            "POSITION"
+          ]
+        },
+        {
+          "$ref": "#/definitions/targetObject"
+        }
       ]
     },
     "targetObject": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "type": { "type": "string", "enum": ["ATTACK_TARGET", "HOSTILE_TARGET", "LAST_DAMAGE_SOURCE", "THREATENING_ENTITY", "NEAREST_HOSTILE", "NEAREST_UNDEAD", "NEAREST_ARTHROPOD", "NEAREST_ANIMAL", "NEAREST_MONSTER", "NEAREST_PLAYER", "OWNER", "NEAREST_ALLY", "SELF", "RANDOM_HOSTILE", "POSITION"] },
-        "sort": { "type": "string", "enum": ["NEAREST", "FARTHEST", "LOWEST_HEALTH", "HIGHEST_HEALTH", "RANDOM"] },
-        "lineOfSight": { "type": "boolean", "default": true },
+        "type": {
+          "type": "string",
+          "enum": [
+            "ATTACK_TARGET",
+            "HOSTILE_TARGET",
+            "LAST_DAMAGE_SOURCE",
+            "THREATENING_ENTITY",
+            "NEAREST_HOSTILE",
+            "NEAREST_UNDEAD",
+            "NEAREST_ARTHROPOD",
+            "NEAREST_ANIMAL",
+            "NEAREST_MONSTER",
+            "NEAREST_PLAYER",
+            "OWNER",
+            "NEAREST_ALLY",
+            "SELF",
+            "RANDOM_HOSTILE",
+            "POSITION"
+          ]
+        },
+        "sort": {
+          "type": "string",
+          "enum": [
+            "NEAREST",
+            "FARTHEST",
+            "LOWEST_HEALTH",
+            "HIGHEST_HEALTH",
+            "RANDOM"
+          ]
+        },
+        "lineOfSight": {
+          "type": "boolean",
+          "default": true
+        },
         "relativeOffset": {
           "type": "array",
-          "items": { "type": "number" },
+          "items": {
+            "type": "number"
+          },
           "minItems": 3,
           "maxItems": 3,
           "description": "Offset used by RELATIVE and BEHIND_TARGET."
         },
-        "positionMode": { "type": "string", "enum": ["RELATIVE", "EYES_LOOK", "FEET_LOOK", "TARGET_ENTITY", "BEHIND_TARGET", "RANDOM_IN_RANGE"] },
-        "placement": { "$ref": "#/definitions/placement" },
-        "filters": { "$ref": "#/definitions/filters" },
-        "entityTypes": { "$ref": "#/definitions/idList" },
-        "entityTags": { "$ref": "#/definitions/idList" },
-        "excludeTags": { "$ref": "#/definitions/idList" },
-        "excludeCasterTeam": { "type": "boolean", "default": false },
-        "ignoreCreative": { "type": "boolean", "default": true },
-        "minHealthPercent": { "type": "number", "minimum": 0, "maximum": 1, "default": 0 },
-        "maxHealthPercent": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
-        "requireNoShield": { "type": "boolean", "default": false }
+        "positionMode": {
+          "type": "string",
+          "enum": [
+            "RELATIVE",
+            "EYES_LOOK",
+            "FEET_LOOK",
+            "TARGET_ENTITY",
+            "BEHIND_TARGET",
+            "RANDOM_IN_RANGE"
+          ]
+        },
+        "placement": {
+          "$ref": "#/definitions/placement"
+        },
+        "filters": {
+          "$ref": "#/definitions/filters"
+        },
+        "entityTypes": {
+          "$ref": "#/definitions/idList"
+        },
+        "entityTags": {
+          "$ref": "#/definitions/idList"
+        },
+        "excludeTags": {
+          "$ref": "#/definitions/idList"
+        },
+        "excludeCasterTeam": {
+          "type": "boolean",
+          "default": false
+        },
+        "ignoreCreative": {
+          "type": "boolean",
+          "default": true
+        },
+        "minHealthPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "maxHealthPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "requireNoShield": {
+          "type": "boolean",
+          "default": false
+        }
       }
     },
     "filters": {
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "entityTypes": { "$ref": "#/definitions/idList" },
-        "entityTags": { "$ref": "#/definitions/idList" },
-        "excludeTags": { "$ref": "#/definitions/idList" },
-        "excludeCasterTeam": { "type": "boolean", "default": false },
-        "ignoreCreative": { "type": "boolean", "default": true },
-        "minHealthPercent": { "type": "number", "minimum": 0, "maximum": 1, "default": 0 },
-        "maxHealthPercent": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
+        "entityTypes": {
+          "$ref": "#/definitions/idList"
+        },
+        "entityTags": {
+          "$ref": "#/definitions/idList"
+        },
+        "excludeTags": {
+          "$ref": "#/definitions/idList"
+        },
+        "excludeCasterTeam": {
+          "type": "boolean",
+          "default": false
+        },
+        "ignoreCreative": {
+          "type": "boolean",
+          "default": true
+        },
+        "minHealthPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "maxHealthPercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
         "requireNoShield": {
           "type": "boolean",
           "default": false,
@@ -216,70 +411,161 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "avoidFluid": { "type": "boolean", "default": false, "description": "Reject points inside any fluid." },
-        "avoidLava": { "type": "boolean", "default": false, "description": "Reject points inside lava." }
+        "avoidFluid": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reject points inside any fluid."
+        },
+        "avoidLava": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reject points inside lava."
+        }
       }
     },
     "conditions": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "healthBelow": { "type": "number", "minimum": 0, "maximum": 1 },
-        "healthAbove": { "type": "number", "minimum": 0, "maximum": 1 },
-        "minTargetDistance": { "type": "number", "minimum": 0 },
-        "maxTargetDistance": { "type": "number", "minimum": 0 },
-        "self": { "$ref": "#/definitions/selfConditions" },
-        "target": { "$ref": "#/definitions/targetConditions" },
-        "world": { "$ref": "#/definitions/worldConditions" }
+        "healthBelow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "healthAbove": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "minTargetDistance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxTargetDistance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "self": {
+          "$ref": "#/definitions/selfConditions"
+        },
+        "target": {
+          "$ref": "#/definitions/targetConditions"
+        },
+        "world": {
+          "$ref": "#/definitions/worldConditions"
+        }
       }
     },
     "selfConditions": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "healthBelow": { "type": "number", "minimum": 0, "maximum": 1 },
-        "healthAbove": { "type": "number", "minimum": 0, "maximum": 1 },
-        "onFire": { "type": "boolean" },
-        "inWater": { "type": "boolean" },
-        "inLava": { "type": "boolean" },
-        "frozen": { "type": "boolean" },
-        "minTargetDistance": { "type": "number", "minimum": 0 },
-        "maxTargetDistance": { "type": "number", "minimum": 0 }
+        "healthBelow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "healthAbove": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "onFire": {
+          "type": "boolean"
+        },
+        "inWater": {
+          "type": "boolean"
+        },
+        "inLava": {
+          "type": "boolean"
+        },
+        "frozen": {
+          "type": "boolean"
+        },
+        "minTargetDistance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxTargetDistance": {
+          "type": "number",
+          "minimum": 0
+        }
       }
     },
     "targetConditions": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "minTargetDistance": { "type": "number", "minimum": 0 },
-        "maxTargetDistance": { "type": "number", "minimum": 0 },
-        "healthBelow": { "type": "number", "minimum": 0, "maximum": 1 },
-        "healthAbove": { "type": "number", "minimum": 0, "maximum": 1 }
+        "minTargetDistance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxTargetDistance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "healthBelow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "healthAbove": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
       }
     },
     "worldConditions": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "time": { "$ref": "#/definitions/stringList" },
-        "timeOfDay": { "$ref": "#/definitions/stringList" },
-        "weather": { "$ref": "#/definitions/stringList" },
-        "moonPhase": { "$ref": "#/definitions/intList" },
-        "dimension": { "$ref": "#/definitions/idList" },
-        "difficulty": { "$ref": "#/definitions/stringList" },
-        "minDay": { "type": "integer", "minimum": 0, "default": 0 }
+        "time": {
+          "$ref": "#/definitions/stringList"
+        },
+        "timeOfDay": {
+          "$ref": "#/definitions/stringList"
+        },
+        "weather": {
+          "$ref": "#/definitions/stringList"
+        },
+        "moonPhase": {
+          "$ref": "#/definitions/intList"
+        },
+        "dimension": {
+          "$ref": "#/definitions/idList"
+        },
+        "difficulty": {
+          "$ref": "#/definitions/stringList"
+        },
+        "minDay": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
       }
     },
     "dropRule": {
       "type": "object",
       "additionalProperties": true,
-      "required": ["drops"],
+      "required": [
+        "drops"
+      ],
       "properties": {
-        "select": { "$ref": "#/definitions/selector" },
-        "chance": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
+        "select": {
+          "$ref": "#/definitions/selector"
+        },
+        "chance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
         "drops": {
           "type": "array",
-          "items": { "$ref": "#/definitions/dropEntry" }
+          "items": {
+            "$ref": "#/definitions/dropEntry"
+          }
         }
       }
     },
@@ -287,33 +573,210 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "item": { "type": "string", "description": "Item id, e.g. minecraft:gold_block." },
-        "lootTable": { "type": "string", "description": "Loot table id, e.g. minecraft:chests/desert_pyramid." },
-        "count": { "type": "integer", "minimum": 1, "default": 1 },
-        "min": { "type": "integer", "minimum": 1 },
-        "max": { "type": "integer", "minimum": 1 },
-        "chance": { "type": "number", "minimum": 0, "maximum": 1, "default": 1 },
-        "looting": { "type": "boolean", "default": false, "description": "Add the killer's looting level to the count." },
-        "requirePlayerKill": { "type": "boolean", "default": true }
+        "item": {
+          "type": "string",
+          "description": "Item id, e.g. minecraft:gold_block."
+        },
+        "lootTable": {
+          "type": "string",
+          "description": "Loot table id, e.g. minecraft:chests/desert_pyramid."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "looting": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add the killer's looting level to the count."
+        },
+        "requirePlayerKill": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "stringList": {
       "oneOf": [
-        { "type": "string" },
-        { "type": "array", "items": { "type": "string" } }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       ]
     },
     "intList": {
       "oneOf": [
-        { "type": "integer" },
-        { "type": "array", "items": { "type": "integer" } }
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
       ]
     },
     "idList": {
       "oneOf": [
-        { "type": "string" },
-        { "type": "array", "items": { "type": "string" } }
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       ]
+    },
+    "phaseEffect": {
+      "type": "object",
+      "description": "Presentation played the first time a mob enters this variant.",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "sound": {
+          "type": "string",
+          "description": "Sound event id."
+        },
+        "shake": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "duration": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 200
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 64
+            }
+          }
+        },
+        "burst": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "radius": {
+              "type": "number",
+              "minimum": 0.5,
+              "maximum": 32
+            },
+            "color": {
+              "type": "string",
+              "description": "\"auto\" or #RRGGBB."
+            }
+          }
+        },
+        "knockback": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "invulnerableTicks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1200
+        },
+        "freezeTicks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1200
+        },
+        "summon": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "entity": {
+              "type": "string"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 16
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 16
+            },
+            "tags": {
+              "$ref": "#/definitions/stringList"
+            }
+          },
+          "required": [
+            "entity"
+          ]
+        },
+        "bossBarColor": {
+          "type": "string",
+          "enum": [
+            "pink",
+            "blue",
+            "red",
+            "green",
+            "yellow",
+            "purple",
+            "white"
+          ]
+        },
+        "bossBarName": {
+          "type": "string"
+        },
+        "weather": {
+          "type": "string",
+          "enum": [
+            "clear",
+            "rain",
+            "thunder"
+          ]
+        },
+        "time": {
+          "type": "string",
+          "enum": [
+            "day",
+            "noon",
+            "night",
+            "midnight"
+          ]
+        },
+        "phaseTicks": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 1200
+        },
+        "replay": {
+          "type": "boolean"
+        }
+      }
     }
   }
 }

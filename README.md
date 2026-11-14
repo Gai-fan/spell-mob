@@ -30,7 +30,7 @@ SpellMob 是 [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/
 - [目标与条件](#目标与条件)
 - [变体与阶段](#变体与阶段)
 - [掉落规则](#掉落规则)
-- [内置内容](#内置内容)
+- [示例包](#示例包)
 - [配置](#配置)
 - [命令](#命令)
 - [施法表现](#施法表现)
@@ -70,7 +70,7 @@ SpellMob 同时维护 Forge 1.20.1 与 NeoForge 1.21.1 两个发行版，数据�
 1. 安装对应版本的 Minecraft、Forge/NeoForge 与 Iron's Spells 'n Spellbooks。
 2. 把 SpellMob 的 jar 放进 `mods/` 目录。
 3. 启动一次游戏或服务器，生成 `config/spellmob-common.toml`。
-4. 准备数据包（见下一节），或直接使用 jar 内置的召唤 Boss。
+4. 准备数据包（见下一节），或从仓库 `examples/` 安装一个现成的 Boss 示例包。
 5. 进入世界执行 `/reload`，让数据包生效。
 
 > 单人游戏需要把 SpellMob 放进客户端 `mods/`（它运行在内置服务器上）。多人服务器只需要服务端安装 SpellMob，客户端不需要；但客户端仍然需要 ISS。
@@ -168,8 +168,10 @@ my_spellmob_pack/
 | `onKill` | object | 击杀生物后触发，走正常就绪检查 |
 | `variants` | array | 个体/阶段规则，按顺序匹配，第一个命中的生效 |
 | `dropRules` | array | 掉落规则；写在根节点对整族生效，写进 variant 只在该变体命中时生效 |
+| `bossBar` | bool | 为这个物种强制开/关 Boss 血条；不写跟随配置，变体可覆盖 |
+| `disableAttackGoals` | bool | `true` 时移除原版的近战/远程攻击 Goal（默认 `false`，即保留原版攻击）；变体可逐个体覆盖 |
 
-以 `_` 开头的键可以当注释使用；未知键会被忽略。
+以 `_` 开头的键可以当注释使用；未知键会被忽略。只写 `disableAttackGoals` 也算有效文件。
 
 ### 施法对象字段
 
@@ -203,7 +205,26 @@ my_spellmob_pack/
 - `2` 及以上会与僵尸近战同档；近战 Goal 是生物自己先注册的，同档先注册者胜，**结果就是只追人、永远不放法术**。
 - `0` 一般不需要，只有当生物自带优先级 0–1 的移动 Goal（如 `PanicGoal`）时才有区别。
 - 目标超出 `range` 同样会让位给近战；想远程开打就把 `range` 调大（上限 `balance.maxRange`，默认 32）。
-- 近战 Goal 属于原版生物，本模组只能抢占、不能删除；目前没有“禁用近战”的开关。
+- 近战/远程 Goal 属于原版生物，默认只能抢占；需要彻底关闭时，在根层或变体写 `"disableAttackGoals": true`。
+
+#### 关闭原版攻击 `disableAttackGoals`
+
+`disableAttackGoals` 让这只生物不再使用原版的近战/远程攻击 Goal。默认 `false`，即保持原版行为；写在根层对这个物种的所有生物生效，写在变体里只对命中的个体生效（三态：`true` 移除、`false` 恢复、不写跟随根层）。
+
+```json
+{
+  "disableAttackGoals": true,
+  "goals": [
+    { "spell": "irons_spellbooks:magic_missile", "cooldown": 60, "range": 24 }
+  ]
+}
+```
+
+- 会移除 `MeleeAttackGoal`、`RangedAttackGoal`、`RangedBowAttackGoal`、`RangedCrossbowAttackGoal` 这一家族，包括继承它们的 `ZombieAttackGoal` / `DrownedAttackGoal` 等；模组自定义的 Goal 不会被动。
+- **目标选择 Goal 保留**：生物仍然能锁定玩家并施法，只是不会自己挥拳、射箭，也不会再靠原版攻击 Goal 追击。想让它保持距离，仍需 `range`、传送法术或别的移动 Goal。
+- 变体可以把它关回去：根层写 `true`，某个变体写 `false`（或不写而跟随根层）；阶段切换时 `CastGoalSync` 会按当前变体重新移除或恢复。
+- 必须写进变体对象或根层；写在 `select` 里也认，但 `select` 本身仍要求至少一个真实条件（`tags` / `name` / 血量等），只写这个 flag 会被丢弃。
+- 改完数据包记得 `/reload` 后再 `/spellmob resync`，已经加载的生物才会应用新配置。
 
 > `level` 会在解析时按 ISS 给出的法术上限进行夹取；`range` 会被全局 `maxRange` 限制；`cooldown` 的最小有效值是 1 tick。
 
@@ -435,6 +456,7 @@ my_spellmob_pack/
 | `bossBar` | 无 | `true`/`false` 强制这个变体显示或不显示 Boss 血条，优先于 `presentation.bossBar` 与 `bossBarTags`；不写则沿用配置。根节点也可写，作用于整族 |
 | `learner` | `false` | `true` 时该生物可以学卷轴上的法术，等同于给它打 `scrollLearning.learnerTag` 标签；通常与 `select.tamed` 一起用（只有已驯服的生物能学）；写在 `select` 里也认 |
 | `adaptive` | `false` | `true` 时该生物会学习打败过的玩家的法术，等同于给它打 `adaptive.adaptiveTag` 标签；写在 `select` 里也认 |
+| `disableAttackGoals` | 跟随根层 | `true` 移除原版的近战/远程攻击 Goal，`false` 恢复；不写跟随根层。写在 `select` 里也认，但 `select` 仍需真实条件 |
 | `goals` / `onHurt` / `onTarget` / `onDeath` / `onKill` | 无 | 与顶层同名字段一致；全都不写表示“这个变体什么都不放” |
 
 `select` 支持以下条件，同时存在时要求全部满足：
@@ -450,9 +472,9 @@ my_spellmob_pack/
 
 - 没有被任何变体命中的生物使用顶层默认配置；顶层也没有配置时，这只生物不施法。
 - 改名、血量变化和驯服状态变化会自动重建 Goal；直接改 tag 或改数据包后，执行 `/spellmob resync` 立即生效。
-- 用血量做阶段时，建议把“低血量阶段”放在前面，顶层默认配置自然成为最后一个阶段。
+- 用血量做阶段时，**阈值更低的阶段必须写在前面**（变体从上往下匹配，第一条命中就生效），顶层默认配置自然成为最后一个阶段。
 - 阶段切换时可以配合 `cooldownGroup` 让新旧阶段的法术共享冷却，避免“半血瞬间无缝换招”。
-- 血量阶段默认双向（被治疗就退回上一阶段）。希望“进二阶段就回不去”时给变体加 `"sticky": true`；锁定状态写进存档，改名会重置。
+- 血量阶段默认双向（被治疗就退回上一阶段）。希望“进二阶段就回不去”时给变体加 `"sticky": true`；锁记录已到达过的最深阶段，锁定状态写进存档，改名会重置。锁定后 `onHurt`/`onDeath`/`onKill` 等触发器、掉落规则与 `/spellmob info` 同样按锁定阶段结算。
 
 ## 掉落规则
 
@@ -500,39 +522,19 @@ my_spellmob_pack/
 
 - 多条规则可以共用同一个 `select`：它们会各自掷骰、掉落叠加，不再互相覆盖。
 - 只解析出**空施法配置**也可以掉落：文件里只写 `dropRules`、不写 `goals` 是合法的，只是这只怪不施法。
-- 掉落规则在生物死亡时匹配。此时生命比例为 0，因此**不建议在 `dropRules.select` 里使用 `healthBelow`/`healthAbove`**；掉落筛选请优先使用 `name`、`nameRegex`、`tags` 或 `tamed`。
+- 掉落只在生物死亡时结算一次，所以写在 variant 里的规则**不需要 `select`**（变体命中就代表该结算；再写一遍条件反而可能永远对不上）。
+- 根节点规则的 `select` 在死亡时匹配，此时生命比例为 0，因此**不建议使用 `healthBelow`/`healthAbove`**；掉落筛选请优先使用 `name`、`nameRegex`、`tags` 或 `tamed`。
 - 数量字段是 `count` 或 `min` / `max`（**不是 `minCount`/`maxCount`**）。
 - `lootTable` 条目使用 `LootContextParamSets.ENTITY`，会带上击杀者和抢夺上下文。
 - 数量超过单组上限时会自动拆成多组。
 
-## 内置内容
+## 示例包
 
-jar 内置了 11 份示例文件（共 15 套配置）：大部分用“标签限定”，只有带对应标签的生物才会施法；`wolf.json` 与 `iron_golem.json` 用“改名限定”（分别对应 `Bryan` 与 `king`），野生同类完全不受影响。
+jar **不再内置任何 `spell_casters` 规则**：只装模组不会改变任何生物的行为，所有规则都由数据包提供。
 
-| 实体 | 触发方式 | 说明 |
-|---|---|---|
-| `minecraft:husk` | 标签 `husk_boss` + `spellmob_boss` | 沙海 Boss（12 种法术，Boss 表现，引导免打断） |
-| `minecraft:husk` | 标签 `husk_elite` | 沙海精英（另一套 12 种法术） |
-| `minecraft:drowned` | 标签 `spellmob_boss` + `spellmob_jack` | 雷系溺尸 Boss |
-| `minecraft:phantom` | 标签 `spellmob_boss` + `spellmob_phantom` | 雷系幻翼 Boss |
-| `minecraft:iron_golem` | 命名牌改成 `king` | 音爆 + 火焰吐息，红色 Boss 血条，会学习打败过的玩家的法术 |
-| `minecraft:wolf` | 命名牌改成 `Bryan` | 4 秒一次的唤魔尖牙；驯服后可喂卷轴学新法术 |
-| `minecraft:zombie` | 标签 `spellmob_test_state` / `spellmob_test_state_nobar` / `spellmob_test_world` | 施法者状态、无血条对比、世界状态三套测试规则 |
-| `minecraft:blaze` | 标签 `spellmob_test_lava` | 着火 / 泡岩浆时的法术切换 |
-| `minecraft:stray` | 标签 `spellmob_test_frozen` | 冻结（细雪）状态的法术切换 |
-| `twilightforest:naga` | 标签 `spellmob_boss` + `spellmob_naga` | 自然系娜迦（需要 Twilight Forest） |
-| `twilightforest:lich` | 标签 `spellmob_boss` + `spellmob_lich` | 巫妖（需要 Twilight Forest） |
-| `twilightforest:alpha_yeti` | 标签 `spellmob_boss` + `spellmob_yeti` | 冰系雪怪首领（需要 Twilight Forest） |
+仓库的 `examples/` 里有可直接安装的示例包：经典生物、Boss、引导法术测试、`kitchen_sink`、过滤器演示、驯服狼，以及 1.20.1/1.21.1 各自的双尸壳示例。把包含 `pack.mcmeta` 的整个目录放进存档的 `datapacks/` 即可；`examples/full-reference.json` 是字段最全的参考文件，不是数据包。
 
-召唤示例：
-
-```mcfunction
-/summon minecraft:husk ~ ~ ~5 {CustomName:'"沙海祭司"',CustomNameVisible:1b,PersistenceRequired:1b,Tags:["husk_boss","spellmob_boss"]}
-```
-
-内置定义会随模组 jar 加载；如果数据包里存在同一路径的文件，以数据包为准（数据包优先级更高）。Twilight Forest 的数据在未安装该模组时不会引用到任何实体，保持惰性。
-
-仓库的 `examples/` 还包含更多可直接安装的示例包：经典生物、Boss、引导法术测试、`kitchen_sink`、过滤器演示、驯服狼，以及 1.20.1/1.21.1 各自的双尸壳示例。`examples/full-reference.json` 是字段最全的参考文件，不是数据包。安装示例包时，把包含 `pack.mcmeta` 的整个目录放进 `datapacks/` 即可。
+数据包之间同路径文件按优先级覆盖；Twilight Forest 的示例在未安装该模组时不会引用到任何实体。
 
 ## 配置
 
@@ -571,6 +573,7 @@ jar 内置了 11 份示例文件（共 15 套配置）：大部分用“标签�
 | `pets.manaCostMultiplier` | `1.0` | 宠物法力消耗倍率 |
 | `pets.manaCostPercent` | `100` | 宠物法力消耗百分比（100 = 全额，与 `manaCostMultiplier` 相乘） |
 | `pets.castPriorityOverrides` | `[]` | 按生物类型单独设优先级，如 `["minecraft:wolf=2"]`；未列出的用 `castPriority` |
+| `pets.spellSelection` | `smart` | 宠物挑法术的方式：`smart` 按距离/目标选，`priority` 按学会顺序取第一个可用的 |
 | `filters.entityBlacklist` | `[]` | 永不施法的实体 id |
 | `filters.dimensionBlacklist` | `[]` | 禁用施法的维度 id |
 | `protection.protectedTags` | `[]` | 名字受保护的计分板标签；普通玩家不能用命名牌覆盖已有名字 |
@@ -592,6 +595,7 @@ jar 内置了 11 份示例文件（共 15 套配置）：大部分用“标签�
 | `bosses.resetOnEscape` | `true` | 带 `presentation.bossTags` 标签的 Boss 在没人交战后回满血、清掉阶段锁（回到第一阶段）；不清除已学会的法术 |
 | `bosses.escapeRadius` | `32` | 玩家离 Boss 多近才算还在交战（8–128 格） |
 | `bosses.escapeGrace` | `600` | 连续多少 tick 没有玩家在 `escapeRadius` 内就重置（600 = 30 秒） |
+| `bosses.allowWeatherChange` | `false` | 是否允许 `onPhase` 演出修改天气与时间 |
 | `species.extraRules` | `[]` | 直接写在配置里的物种级规则，一行一条 JSON |
 
 > 修改配置后重启游戏/服务器（或使用会触发 Forge 配置重载的工具）。数据包修改后执行 `/reload`。
@@ -662,14 +666,14 @@ extraRules = [
 
 已驯服的生物可以学法术：把法术卷轴丢到它脚边（要求它带 `scrollLearning.learnerTag` 标签，默认 `spellmob_learner`），地上会亮起该学派的法阵，`ritualTicks` 后卷轴被消耗、它学会卷轴上的法术。黑名单法术会画黑法阵并提示，卷轴留在地上；学完一本进入 `cooldown`（默认 30 分钟），一只宠物最多 `maxSpells` 个（默认 5）。再学同名法术只有更高等级的卷轴才会覆盖。
 
-学会的法术按宠物参数施法：`pets.castPriority`（默认 4，先近战再放法术；可用 `pets.castPriorityOverrides` 按生物类型单独覆盖，例如 `["minecraft:wolf=2"]`）、`pets.castRange`（默认 16 格），冷却为 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)`（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放；`pets.shareOwnerMana` 打开时扣主人的法力，消耗 = 基础 × `manaCostMultiplier` × `manaCostPercent` / 100。宠物坐下时能学但不能施法。同名法术被更高等级的卷轴覆盖时，法阵上会多出一圈螺旋上升的粒子。
+学会的法术按宠物参数施法：`pets.castPriority`（默认 4，先近战再放法术；可用 `pets.castPriorityOverrides` 按生物类型单独覆盖，例如 `["minecraft:wolf=2"]`）、`pets.castRange`（默认 16 格），冷却为 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)`（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放；`pets.shareOwnerMana` 打开时扣主人的法力，消耗 = 基础 × `manaCostMultiplier` × `manaCostPercent` / 100。`pets.spellSelection` 默认 `smart`：按目标距离挑法术，贴身优先近身法术、远处优先投射物、目标在空中时跳过地面法术；改为 `priority` 则按学会顺序取第一个可用的。宠物坐下时能学但不能施法。同名法术被更高等级的卷轴覆盖时，法阵上会多出一圈螺旋上升的粒子。
 
 学到的法术存在生物 NBT 里，并给它加 `spellmob_caster` 标签，因此即使这个物种没有数据包规则，它也会继续 tick 冷却、继续施法。
 
 ## 常见问题
 
 **为什么野生生物不施法？**
-内置示例全部使用标签限定（例如 `spellmob_boss`）。给生物打上对应标签，或使用 `variants.select` 按名字/tag 匹配，才会命中配置。也可以用 `/spellmob info` 查看它命中了哪个变体。
+仓库 `examples/` 里的示例大多使用标签限定（例如 `spellmob_boss`）。给生物打上对应标签，或使用 `variants.select` 按名字/tag 匹配，才会命中配置。也可以用 `/spellmob info` 查看它命中了哪个变体。
 
 **改了数据包但没生效？**
 确认路径是 `data/<namespace>/spell_casters/<entity_id>.json`、`pack.mcmeta` 的 `pack_format` 与游戏版本匹配，然后执行 `/reload`，**再 `/spellmob resync`**（只 `/reload` 不会替换已加载生物的 goal）。用 `/spellmob list` 确认定义已加载；加载失败的具体原因看日志里的 `[SpellMob]` 行。
@@ -726,7 +730,7 @@ JAVA_HOME=/path/to/jdk-21 ./gradlew build
   - `src/main/java/spellmob/events`：Forge/NeoForge 事件与命令；
   - `src/main/java/spellmob/goal`：周期施法 Goal 与 Goal 同步；
   - `src/main/java/spellmob/presentation`：服务端粒子表现；
-  - `src/main/resources/data/...`：内置示例定义；
+  - `src/main/resources/data/...`：数据包资源目录（当前为空，规则由外部数据包提供）；
   - `examples/`：可直接安装的数据包示例；
   - `docs/`：中英文详细指南；`docs/tutorial.zh.md` 是面向数据包作者的完整教程。
 
@@ -736,6 +740,6 @@ JAVA_HOME=/path/to/jdk-21 ./gradlew build
 - **Pull Request**：保持数据驱动和纯服务端设计；新增字段请同步更新 README、`docs/` 与示例，并尽量补充解析器测试。
 - **许可**：MIT，详见 [LICENSE](LICENSE)。
 - **作者**：GAIFAN404。
-- **致谢**：Iron's Spellbooks（Redspace）提供法术与施法管线；Minecraft Forge / NeoForge 提供加载器；Twilight Forest 提供内置示例的实体兼容目标。
+- **致谢**：Iron's Spellbooks（Redspace）提供法术与施法管线；Minecraft Forge / NeoForge 提供加载器；Twilight Forest 提供示例的实体兼容目标。
 
 > SpellMob 不是 Iron's Spellbooks 的官方附属模组。遇到法术本身的问题，请先确认在 ISS 正常使用时也存在，再反馈到对应项目。

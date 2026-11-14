@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -245,7 +246,8 @@ public final class CasterEvents {
         if (rules == null) {
             return null;
         }
-        if (!mob.getTags().contains(SpellMobConfig.adaptiveTag()) && !rules.adaptive(mob)) {
+        if (!mob.getTags().contains(SpellMobConfig.adaptiveTag())
+                && !rules.adaptive(effectiveIndex(mob, rules))) {
             return null;
         }
         ISpellCaster caster = mob.getCapability(SpellCasterCapability.capability()).resolve().orElse(null);
@@ -336,7 +338,7 @@ public final class CasterEvents {
         for (Mob mob : nearby) {
             if (!mob.getTags().contains(tag)) {
                 SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
-                if (rules == null || !rules.adaptive(mob)) {
+                if (rules == null || !rules.adaptive(effectiveIndex(mob, rules))) {
                     continue;
                 }
             }
@@ -356,6 +358,9 @@ public final class CasterEvents {
      */
     @SubscribeEvent
     public static void onLivingDrops(LivingDropsEvent event) {
+        if (event.isCanceled()) {
+            return;
+        }
         LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide() || !(entity instanceof Mob mob)) {
             return;
@@ -364,11 +369,11 @@ public final class CasterEvents {
         if (rules == null) {
             return;
         }
-        List<DropRule> dropRules = rules.dropRulesFor(mob);
+        List<DropRule> dropRules = rules.dropRulesFor(mob, effectiveIndex(mob, rules));
         if (dropRules.isEmpty()) {
             return;
         }
-        Player killer = event.getSource().getEntity() instanceof Player player ? player : null;
+        Player killer = killerOf(event);
         for (DropRule rule : dropRules) {
             if (mob.getRandom().nextDouble() >= rule.chance()) {
                 continue;
@@ -384,11 +389,31 @@ public final class CasterEvents {
                     if (stack.isEmpty()) {
                         continue;
                     }
-                    event.getDrops().add(new ItemEntity(mob.level(), mob.getX(), mob.getY() + 0.5D,
-                            mob.getZ(), stack));
+                    event.getDrops().add(scatteredDrop(mob, stack));
                 }
             }
         }
+    }
+
+    /**
+     * Resolves the player responsible for a kill.
+     *
+     * <p>A tamed pet is an extension of its owner: without this, every drop entry that defaults to
+     * {@code requirePlayerKill} silently skips when a wolf lands the last hit, which is exactly the
+     * play style the pet support is meant to reward.</p>
+     *
+     * @param event the drops event
+     * @return the player, or {@code null} when the kill was not player driven
+     */
+    private static @Nullable Player killerOf(LivingDropsEvent event) {
+        if (event.getSource().getEntity() instanceof Player player) {
+            return player;
+        }
+        if (event.getSource().getEntity() instanceof TamableAnimal pet
+                && pet.getOwner() instanceof Player owner) {
+            return owner;
+        }
+        return null;
     }
 
     private static void trigger(LivingEntity entity, Function<SpellCasterData, @Nullable SpellCastDefinition> selector,
@@ -398,10 +423,41 @@ public final class CasterEvents {
         }
     }
 
+    /**
+     * Creates a drop entity with the same slight scatter vanilla loot uses.
+     *
+     * <p>Every entry used to spawn at the exact same point, so a boss dropping four stacks produced
+     * one visually merged pile that could shove itself apart on the next tick.</p>
+     */
+    private static ItemEntity scatteredDrop(Mob mob, ItemStack stack) {
+        double spread = 0.6D;
+        double x = mob.getX() + (mob.getRandom().nextDouble() - 0.5D) * spread;
+        double y = mob.getY() + 0.4D + mob.getRandom().nextDouble() * 0.4D;
+        double z = mob.getZ() + (mob.getRandom().nextDouble() - 0.5D) * spread;
+        ItemEntity drop = new ItemEntity(mob.level(), x, y, z, stack);
+        drop.setDefaultPickUpDelay();
+        return drop;
+    }
+
+    /**
+     * Resolves the variant index an event trigger should read.
+     *
+     * <p>Triggers used to read the raw selector match, so a sticky boss that healed above its phase
+     * threshold fired the first phase's spells even though its goals were still locked into the
+     * second phase. Reading the lock first keeps every path on the same variant.</p>
+     */
+    private static int effectiveIndex(Mob mob, SpellCasterRules rules) {
+        ISpellCaster caster = mob.getCapability(SpellCasterCapability.capability()).resolve().orElse(null);
+        if (caster instanceof SpellCaster spellCaster) {
+            return spellCaster.effectiveVariantIndex();
+        }
+        return rules.effectiveIndex(mob, -1);
+    }
+
     private static @Nullable SpellCastDefinition definition(
             Mob mob, Function<SpellCasterData, @Nullable SpellCastDefinition> selector) {
         SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
-        SpellCasterData data = rules == null ? null : rules.resolve(mob);
+        SpellCasterData data = rules == null ? null : rules.resolve(effectiveIndex(mob, rules));
         return data == null ? null : selector.apply(data);
     }
 
