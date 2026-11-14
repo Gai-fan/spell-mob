@@ -67,6 +67,7 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.BooleanValue PETS_AGGRESSIVE;
     private static final ModConfigSpec.DoubleValue PETS_ENGAGE_RANGE;
     private static final ModConfigSpec.IntValue PETS_CAST_PRIORITY;
+    private static final ModConfigSpec.ConfigValue<String> PETS_SPELL_SELECTION;
     private static final ModConfigSpec.DoubleValue PETS_CAST_RANGE;
     private static final ModConfigSpec.BooleanValue PETS_SHARE_OWNER_MANA;
     private static final ModConfigSpec.DoubleValue PETS_MANA_MULTIPLIER;
@@ -75,6 +76,7 @@ public final class SpellMobConfig {
     private static final ModConfigSpec.BooleanValue BOSS_RESET_ON_ESCAPE;
     private static final ModConfigSpec.DoubleValue BOSS_ESCAPE_RADIUS;
     private static final ModConfigSpec.IntValue BOSS_ESCAPE_GRACE;
+    private static final ModConfigSpec.BooleanValue BOSS_ALLOW_WEATHER;
 
     public static final ModConfigSpec SPEC;
 
@@ -198,6 +200,11 @@ public final class SpellMobConfig {
         PETS_CAST_PRIORITY = builder.comment("Goal priority of a learned spell on a pet (lower runs first).",
                         "（宠物施法的 Goal 优先级，越小越先执行；默认 4 让它先近战再放法术）")
                 .defineInRange("castPriority", 4, 0, 9);
+        PETS_SPELL_SELECTION = builder.comment(
+                        "How a pet picks which learned spell to cast: \"smart\" considers distance and the target,",
+                        "\"priority\" always uses the first ready spell in learnedPriority order.",
+                        "（宠物如何挑选要放的法术：smart 会看距离和目标，priority 则按 learnedPriority 顺序取第一个可用的）")
+                .defineInList("spellSelection", "smart", List.of("smart", "priority"));
         PETS_CAST_RANGE = builder.comment("How far a pet may cast, in blocks.",
                         "（宠物施法距离，单位方块）")
                 .defineInRange("castRange", 16.0D, 4.0D, 48.0D);
@@ -227,6 +234,10 @@ public final class SpellMobConfig {
         BOSS_ESCAPE_GRACE = builder.comment("How long the boss waits without players before it resets, in ticks.",
                         "（Boss 无人交战多久后重置，单位 tick；600 = 30 秒）")
                 .defineInRange("escapeGrace", 600, 20, 7200);
+        BOSS_ALLOW_WEATHER = builder.comment(
+                        "Allow a phase show to change the weather and the time of day. Off by default: a data pack can then never disturb other players' builds.",
+                        "（是否允许阶段演出修改天气与时间。默认关闭，避免数据包意外打扰别人的建筑与照明）")
+                .define("allowWeatherChange", false);
         builder.pop();
 
         builder.comment("Filter out entities or dimensions.",
@@ -506,6 +517,16 @@ public final class SpellMobConfig {
         return ready() ? PETS_CAST_RANGE.get() : 16.0D;
     }
 
+    /**
+     * Whether pets pick their next learned spell by looking at the situation instead of always
+     * taking the first ready spell in priority order.
+     *
+     * @return true when {@code pets.spellSelection} is {@code smart}
+     */
+    public static boolean petSmartSelection() {
+        return !ready() || "smart".equalsIgnoreCase(PETS_SPELL_SELECTION.get());
+    }
+
     public static boolean bossResetOnEscape() {
         return !ready() || BOSS_RESET_ON_ESCAPE.get();
     }
@@ -516,6 +537,10 @@ public final class SpellMobConfig {
 
     public static int bossEscapeGrace() {
         return ready() ? BOSS_ESCAPE_GRACE.get() : 600;
+    }
+
+    public static boolean allowPhaseWeather() {
+        return ready() && BOSS_ALLOW_WEATHER.get();
     }
 
     public static boolean shareOwnerMana() {

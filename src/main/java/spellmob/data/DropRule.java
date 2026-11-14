@@ -14,7 +14,7 @@ import spellmob.util.Logs;
  *
  * <p>Every rule whose selector matches the dying mob is rolled, so two rules may share a selector
  * (for example "always drop gold" and "20% chance of a loot table"). Rules are resolved through
- * {@link SpellCasterRules#dropRulesFor(net.minecraft.world.entity.Mob)}, which puts the matched
+ * {@link SpellCasterRules#dropRulesFor(net.minecraft.world.entity.Mob, int)}, which puts the matched
  * variant's own rules before the species wide ones.</p>
  *
  * @param selector decides which mobs the rule applies to
@@ -40,11 +40,13 @@ public record DropRule(VariantSelector selector, double chance, List<DropEntry> 
      * @throws IllegalArgumentException when the rule is malformed or has no usable drops
      */
     public static DropRule parse(JsonObject json, String where) {
+        JsonHelper.warnUnknown(json, where, "select", "chance", "drops");
         JsonElement selectElement = json.get("select");
-        if (selectElement == null || !selectElement.isJsonObject()) {
-            throw new IllegalArgumentException(where + ": missing 'select' object");
-        }
-        VariantSelector selector = VariantSelector.parse(selectElement.getAsJsonObject(), where + "/select");
+        // 'select' is optional: a rule inside a variant already belongs to that variant, and a
+        // species wide rule without it simply applies to every mob of the type.
+        VariantSelector selector = selectElement != null && selectElement.isJsonObject()
+                ? VariantSelector.parse(selectElement.getAsJsonObject(), where + "/select")
+                : VariantSelector.ANY;
         double chance = JsonHelper.optDouble(json, "chance", 1.0D);
 
         JsonElement dropsElement = json.get("drops");

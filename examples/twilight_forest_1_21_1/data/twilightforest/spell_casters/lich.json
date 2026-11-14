@@ -104,16 +104,16 @@
       "drops": [
         {
           "item": "minecraft:ender_pearl",
-          "minCount": 2,
-          "maxCount": 5,
           "chance": 1.0,
-          "looting": true
+          "looting": true,
+          "min": 2,
+          "max": 5
         },
         {
           "item": "minecraft:amethyst_shard",
-          "minCount": 4,
-          "maxCount": 8,
-          "chance": 0.3
+          "chance": 0.3,
+          "min": 4,
+          "max": 8
         }
       ]
     }

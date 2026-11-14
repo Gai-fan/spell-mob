@@ -60,7 +60,7 @@
         "level": 2,
         "cooldown": 0,
         "priority": 0,
-        "range": 0,
+        "range": 16,
         "target": "ATTACK_TARGET"
       },
       "onKill": {
@@ -68,7 +68,7 @@
         "level": 1,
         "cooldown": 240,
         "priority": 0,
-        "range": 0,
+        "range": 16,
         "target": "SELF"
       }
     },
@@ -136,11 +136,10 @@
         "level": 1,
         "cooldown": 220,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
           "positionMode": "RELATIVE",
-          "range": 8.0,
           "relativeOffset": [
             0,
             0,
@@ -169,13 +168,13 @@
       "drops": [
         {
           "item": "minecraft:spider_eye",
-          "minCount": 4,
-          "maxCount": 8
+          "min": 4,
+          "max": 8
         },
         {
           "item": "minecraft:string",
-          "minCount": 8,
-          "maxCount": 16
+          "min": 8,
+          "max": 16
         },
         {
           "item": "minecraft:golden_apple",

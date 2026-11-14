@@ -60,7 +60,7 @@
         "level": 2,
         "cooldown": 260,
         "priority": 0,
-        "range": 0,
+        "range": 16,
         "target": "SELF"
       },
       "onDeath": {
@@ -68,7 +68,7 @@
         "level": 2,
         "cooldown": 0,
         "priority": 0,
-        "range": 0,
+        "range": 16,
         "target": "ATTACK_TARGET"
       }
     },
@@ -128,11 +128,10 @@
         "level": 1,
         "cooldown": 200,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
           "positionMode": "RELATIVE",
-          "range": 8.0,
           "relativeOffset": [
             0,
             0,
@@ -161,13 +160,13 @@
       "drops": [
         {
           "item": "minecraft:redstone",
-          "minCount": 4,
-          "maxCount": 9
+          "min": 4,
+          "max": 9
         },
         {
           "item": "minecraft:ghast_tear",
-          "minCount": 1,
-          "maxCount": 2
+          "min": 1,
+          "max": 2
         },
         {
           "item": "minecraft:netherite_scrap",

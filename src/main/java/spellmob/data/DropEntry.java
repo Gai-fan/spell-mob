@@ -71,6 +71,8 @@ public record DropEntry(@Nullable ResourceLocation item, @Nullable ResourceLocat
      * @throws IllegalArgumentException when required fields are missing or malformed
      */
     public static DropEntry parse(JsonObject json, String where) {
+        JsonHelper.warnUnknown(json, where, "item", "lootTable", "min", "max", "count", "chance",
+                "looting", "requirePlayerKill");
         ResourceLocation item = null;
         String itemId = JsonHelper.optString(json, "item", null);
         if (itemId != null) {

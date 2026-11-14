@@ -25,10 +25,14 @@ import spellmob.util.Logs;
  *                  other, so two rules can share a selector)
  * @param bossBar   species wide boss bar override; {@code null} means "follow the presentation
  *                  config", {@code true}/{@code false} force the bar on or off for these mobs
+ * @param disableAttackGoals {@code true} removes the vanilla melee and ranged attack goals from
+ *                  these mobs, so only their spells deal damage; the removed goals are put back
+ *                  when a later variant or a data pack reload turns the flag off
  * @param source    where the rules come from, shown by {@code /spellmob info}
  */
 public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant> variants,
-                               List<DropRule> dropRules, @Nullable Boolean bossBar, String source) {
+                               List<DropRule> dropRules, @Nullable Boolean bossBar,
+                               boolean disableAttackGoals, String source) {
 
     /** Source label used for rules read from {@code data/.../spell_casters}. */
     public static final String SOURCE_DATA_PACK = "data pack";
@@ -54,10 +58,13 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     public static @Nullable SpellCasterRules parse(JsonObject json, String where) {
         JsonElement variantsElement = json.get("variants");
         boolean hasDefault = json.has("goals") || json.has("onHurt") || json.has("onTarget")
-                || json.has("onDeath") || json.has("onKill") || json.has("dropRules");
+                || json.has("onDeath") || json.has("onKill") || json.has("dropRules")
+                || json.has("disableAttackGoals");
         if (!hasDefault && variantsElement == null) {
             return null;
         }
+        JsonHelper.warnUnknown(json, where, "variants", "goals", "onHurt", "onTarget",
+                "onDeath", "onKill", "dropRules", "bossBar", "disableAttackGoals", "$schema");
 
         SpellCasterData fallback = SpellCasterData.parse(json, where);
         if (fallback == null) {
@@ -86,7 +93,9 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         }
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
         Boolean bossBar = JsonHelper.optBooleanOrNull(json, "bossBar");
-        return new SpellCasterRules(fallback, variants, dropRules, bossBar, SOURCE_DATA_PACK);
+        boolean disableAttackGoals = JsonHelper.optBoolean(json, "disableAttackGoals", false);
+        return new SpellCasterRules(fallback, variants, dropRules, bossBar, disableAttackGoals,
+                SOURCE_DATA_PACK);
     }
 
     /**
@@ -112,13 +121,38 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
                 Logs.warn("{}: entry is not an object, skipping", entryWhere);
                 continue;
             }
+            JsonObject ruleJson = entry.getAsJsonObject();
             try {
-                dropRules.add(DropRule.parse(entry.getAsJsonObject(), entryWhere));
+                dropRules.add(DropRule.parse(ruleJson, entryWhere));
+                warnHealthSelector(ruleJson, entryWhere);
             } catch (RuntimeException exception) {
                 Logs.warn("{}: {}", entryWhere, exception.getMessage());
             }
         }
         return dropRules;
+    }
+
+    /**
+     * Warns about health conditions inside a drop rule's {@code select}.
+     *
+     * <p>Drops are rolled from {@code LivingDropsEvent}, that is once the mob is already dead and its
+     * health fraction is 0. A {@code healthBelow} threshold therefore always matches and a
+     * {@code healthAbove} threshold never does; phase specific loot belongs in
+     * {@code variants[i].dropRules}, which the death event already resolves.
+     *
+     * @param json  the drop rule object
+     * @param where path prefix for log messages
+     */
+    private static void warnHealthSelector(JsonObject json, String where) {
+        JsonElement select = json.get("select");
+        if (select == null || !select.isJsonObject()) {
+            return;
+        }
+        JsonObject selector = select.getAsJsonObject();
+        if (selector.has("healthBelow") || selector.has("healthAbove")) {
+            Logs.warn("{}: health conditions in 'select' decide nothing - drops are rolled on death, "
+                    + "where the health fraction is 0 (use variants[i].dropRules for phase loot)", where);
+        }
     }
 
     private static SpellCasterVariant parseVariant(JsonObject json, String where) {
@@ -127,6 +161,9 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
             throw new IllegalArgumentException(where + ": missing 'select' object");
         }
         JsonObject select = selectElement.getAsJsonObject();
+        JsonHelper.warnUnknown(json, where, "select", "override", "sticky", "bossBar", "learner",
+                "adaptive", "disableAttackGoals", "onPhase", "goals", "onHurt", "onTarget",
+                "onDeath", "onKill", "dropRules");
         VariantSelector selector = VariantSelector.parse(select, where + "/select");
         boolean override = JsonHelper.optBoolean(json, "override", true);
         // 'sticky' belongs to the variant, but accepting it inside 'select' too costs nothing and
@@ -144,10 +181,50 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
         // 'adaptive' mirrors 'learner': either level works, and it saves boss authors from having to
         // tag every summon or spawn egg by hand.
         boolean adaptive = JsonHelper.optBoolean(json, "adaptive", JsonHelper.optBoolean(select, "adaptive", false));
+        // Three states again: absent follows the species default, true removes the vanilla attack
+        // goals, false puts back the ones this caster removed earlier.
+        Boolean disableAttackGoals = JsonHelper.optBooleanOrNull(json, "disableAttackGoals");
+        if (disableAttackGoals == null) {
+            disableAttackGoals = JsonHelper.optBooleanOrNull(select, "disableAttackGoals");
+        }
+        PhaseEffect phase = parsePhase(json.get("onPhase"), where + "/onPhase");
         SpellCasterData data = SpellCasterData.parse(json, where);
         List<DropRule> dropRules = parseDropRules(json.get("dropRules"), where + "/dropRules");
         return new SpellCasterVariant(selector, override, sticky, bossBar, learner, adaptive,
-                data == null ? SpellCasterData.EMPTY : data, dropRules);
+                disableAttackGoals, phase, data == null ? SpellCasterData.EMPTY : data, dropRules);
+    }
+
+    /**
+     * Parses the optional {@code onPhase} object of one variant.
+     *
+     * @param element the element, may be {@code null} when the key is absent
+     * @param where   path prefix for log messages
+     * @return the parsed show, or {@code null} when the key is absent
+     */
+    private static @Nullable PhaseEffect parsePhase(@Nullable JsonElement element, String where) {
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException(where + ": must be an object");
+        }
+        return PhaseEffect.parse(element.getAsJsonObject(), where);
+    }
+
+    /**
+     * @param mob the mob
+     * @return the phase show of the variant that currently matches this mob, if any
+     */
+    public @Nullable PhaseEffect phase(Mob mob) {
+        return phase(variantIndex(mob));
+    }
+
+    /**
+     * @param index a resolved variant index, or -1 for the species default
+     * @return the phase show of that variant, or {@code null}
+     */
+    public @Nullable PhaseEffect phase(int index) {
+        return index >= 0 && index < variants.size() ? variants.get(index).phase() : null;
     }
 
     /**
@@ -193,6 +270,30 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     }
 
     /**
+     * Resolves the vanilla attack goal override for one mob.
+     *
+     * @param mob the mob
+     * @return true when the matched variant, or the species default, disables vanilla attacks
+     */
+    public boolean disableAttackGoals(Mob mob) {
+        return disableAttackGoals(variantIndex(mob));
+    }
+
+    /**
+     * @param index a resolved variant index, or -1 for the species default
+     * @return the matched variant's override when it has one, otherwise the species wide flag
+     */
+    public boolean disableAttackGoals(int index) {
+        if (index >= 0) {
+            Boolean override = variants.get(index).disableAttackGoals();
+            if (override != null) {
+                return override;
+            }
+        }
+        return disableAttackGoals;
+    }
+
+    /**
      * @param mob the mob
      * @return true when the variant that currently matches this mob allows learning scroll spells
      */
@@ -227,7 +328,8 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     /**
      * @return true when at least one variant of this species allows learning scroll spells
      */
-    public boolean hasLearnerVariants() {        for (SpellCasterVariant variant : variants) {
+    public boolean hasLearnerVariants() {
+        for (SpellCasterVariant variant : variants) {
             if (variant.learner()) {
                 return true;
             }
@@ -293,9 +395,12 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
             if (locked >= variants.size() || !variants.get(locked).sticky()) {
                 return matched;
             }
-            if (matched < locked) {
+            if (matched < 0) {
                 return locked;
             }
+            // Variants are listed deepest phase first, so the lowest matching index is the furthest
+            // the mob has ever been; the lock may only move towards it.
+            return Math.min(matched, locked);
         }
         return matched;
     }
@@ -320,24 +425,29 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     }
 
     /**
-     * Collects every drop rule that matches the mob.
+     * Collects the drop rules of one effective variant index.
      *
      * <p>The matched variant's own rules come first, then the species wide {@code dropRules}. All
      * of them are returned, so two rules may share a selector (for example "always drop gold" plus
      * "20% chance of a loot table") instead of the second silently never firing.</p>
      *
-     * @param mob the dead mob
-     * @return the matching rules in evaluation order, possibly empty
+     * <p>A rule inside a variant needs no {@code select}: the variant already matched the mob, and
+     * drops are only rolled once it dies. Species wide rules keep their selector.</p>
+     *
+     * <p>Callers must pass the effective variant index rather than re-matching: the raw selector
+     * match can fall back to an earlier variant once the mob healed above the threshold, which
+     * would roll the wrong loot table for a boss that is still locked in its second phase.</p>
+     *
+     * @param mob   the dead mob
+     * @param index the effective variant index
+     * @return the applicable rules in evaluation order, possibly empty
      */
-    public List<DropRule> dropRulesFor(Mob mob) {
+    public List<DropRule> dropRulesFor(Mob mob, int index) {
         List<DropRule> matched = new ArrayList<>();
-        int index = variantIndex(mob);
         if (index >= 0) {
-            for (DropRule rule : variants.get(index).dropRules()) {
-                if (rule.matches(mob)) {
-                    matched.add(rule);
-                }
-            }
+            // The variant already matched and drops are only rolled on death, so a second
+            // selector on every rule would just be a chance to disagree with its own variant.
+            matched.addAll(variants.get(index).dropRules());
         }
         for (DropRule rule : dropRules) {
             if (rule.matches(mob)) {
@@ -348,13 +458,12 @@ public record SpellCasterRules(SpellCasterData fallback, List<SpellCasterVariant
     }
 
     /**
-     * Describes which variant a mob matched, for {@code /spellmob info} and debug logs.
+     * Describes one effective variant index, for {@code /spellmob info} and debug logs.
      *
-     * @param mob the mob
+     * @param index the effective variant index, or -1 for the species default
      * @return a short description
      */
-    public String describeMatch(Mob mob) {
-        int index = variantIndex(mob);
+    public String describeMatch(int index) {
         if (index >= 0) {
             SpellCasterVariant variant = variants.get(index);
             return "variant #" + index + " (" + variant.selector().describe()

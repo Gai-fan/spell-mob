@@ -104,7 +104,26 @@ saves/<世界>/datapacks/我的法术/
 - 距离超过 `range` 时同样 `canUse()` 失败、让位给近战。想让施法者站远处就开打，把 `range` 调大（会被配置 `maxRange` 截断，默认 32）。
 - 同一生物写了多条法术时，注册前会先按 `priority` 稳定排序，所以数字小的先尝试，同数字的保持 JSON 书写顺序；学来的法术（卷轴或 Boss 学习）与数据包法术一起按 `priority` 排序，同数字时数据包的法术先尝试。想让某个法术优先，给它更小的 `priority`，或者把它写在前面的变体里。
 
-近战 Goal 是原版注册的，本模组只能抢占、不能删除。想让生物完全放弃近战，目前只能用 `teleport` 类法术或更大的 `range` 拉开距离。
+近战/远程 Goal 是原版注册的，默认只能抢占；要彻底关闭，见下一节的 `disableAttackGoals`。
+
+### 关闭原版攻击 `disableAttackGoals`
+
+`disableAttackGoals` 为 `true` 时，这只生物不再使用原版的近战/远程攻击 Goal。默认 `false`，即保留原版攻击；写在根层对整个物种生效，写在变体里只对命中的个体生效。变体三态：`true` 移除、`false` 恢复、不写跟随根层。
+
+```json
+{
+  "disableAttackGoals": true,
+  "goals": [
+    { "spell": "irons_spellbooks:magic_missile", "cooldown": 60, "range": 24 }
+  ]
+}
+```
+
+- 覆盖 `MeleeAttackGoal`、`RangedAttackGoal`、`RangedBowAttackGoal`、`RangedCrossbowAttackGoal` 及其子类（如 `ZombieAttackGoal`、`DrownedAttackGoal`）；模组自定义 Goal 不会被移除。
+- **只移除攻击 Goal，目标选择 Goal 保留**：生物仍能锁定玩家并施法，但不会自己挥拳、射箭，也不会再靠原版攻击 Goal 追击。需要保持距离时仍要调 `range` 或用传送类法术。
+- 根层写 `true`、某个变体写 `false` 可以让个体恢复正常攻击；阶段切换或数据包移除后，同步逻辑会把之前移除的 Goal 按原优先级加回去。
+- 建议写在变体对象或根层；写在 `select` 里也认，但 `select` 仍要求至少一个真实条件，只写这个 flag 会被丢弃。
+- 改完执行 `/reload`，再 `/spellmob resync`（或让生物重新进入加载范围）。
 
 ### 条件
 
@@ -358,24 +377,28 @@ saves/<世界>/datapacks/我的法术/
 
 ### 阶段锁定 `sticky`
 
-血量阶段默认是双向的：Boss 被治疗回到阈值以上，就退回上一阶段，整套技能组跟着换回去。给变体加上 `"sticky": true` 之后，它**一旦命中就锁定**，血量回升也不会退回；继续掉到更深的阶段仍然允许，而锁定只会往前走。
+血量阶段默认是双向的：Boss 被治疗回到阈值以上，就退回上一阶段，整套技能组跟着换回去。给变体加上 `"sticky": true` 之后，它**一旦命中就锁定**，血量回升也不会退回；继续掉到更深的阶段仍然允许，锁只往更深的阶段走。
+
+顺序很关键：变体是**从上往下匹配，第一条命中就生效**，所以更深的阶段（阈值更低的那条）必须写在前面，否则永远轮不到它。
 
 ```json
 {
   "variants": [
-    { "select": { "healthBelow": 0.5 }, "sticky": true,
-      "goals": [ { "spell": "irons_spellbooks:wither_skull", "cooldown": 100 } ] },
-
     { "select": { "healthBelow": 0.2 }, "sticky": true,
-      "goals": [ { "spell": "irons_spellbooks:black_hole", "cooldown": 200 } ] }
+      "goals": [ { "spell": "irons_spellbooks:black_hole", "cooldown": 200 } ] },
+
+    { "select": { "healthBelow": 0.5 }, "sticky": true,
+      "goals": [ { "spell": "irons_spellbooks:wither_skull", "cooldown": 100 } ] }
   ]
 }
 ```
 
 - `sticky` 默认 `false`，即原来“血量回升就退回”的行为。
 - 只对带 `sticky` 的变体生效；没写 `sticky` 的变体照旧双向匹配。
+- 锁定记录的是**已经到达过的最深阶段**：30% 血时锁在 0.5 那条，掉到 10% 后锁换成 0.2 那条，再回到 60% 也不会退回默认组。
 - 改名会重置锁定（改名等于换了个体）；锁定状态写进存档，区块卸载再加载不会掉阶段。
 - 写在 `select` 里也认：`"select": { "healthBelow": 0.5, "sticky": true }`，效果相同。
+- 锁定之后，事件触发器（`onHurt`、`onTarget`、`onDeath`、`onKill`）、掉落规则与 `/spellmob info` 也都读锁定后的阶段，不会因为血量被奶回去而按旧阶段结算。
 
 ### 卷轴学习 `learner`
 
@@ -388,7 +411,61 @@ saves/<世界>/datapacks/我的法术/
 
 - 只有**已驯服**的生物能学卷轴，`learner` 本身不检查驯服，所以通常和 `select.tamed` 一起用。
 - 写在 `select` 里也认：`"select": { "name": "Bryan", "tamed": true, "learner": true }`。
-- jar 内置的 `wolf.json` 就是一个例子：野生的 Bryan 只会唤魔尖牙，被驯服后保留尖牙并获得学习能力。
+- `examples/classic` 里的 `wolf.json` 就是一个例子：野生的 Bryan 只会唤魔尖牙，被驯服后保留尖牙并获得学习能力。
+
+## Boss 阶段演出
+
+`onPhase` 写在**变体**上，生物**第一次进入**这个变体时播放一次（`replay: true` 改成每次进入都播）。它只负责演出，不改战斗数值：定身、震屏、音效、标题、地面冲击、击退、召唤，以及血条换色改名。
+
+```json
+{
+  "variants": [
+    {
+      "select": { "name": "king", "healthBelow": 0.5 },
+      "sticky": true,
+      "onPhase": {
+        "title": "%s 进入了第二阶段",
+        "subtitle": "地面开始震动",
+        "sound": "minecraft:entity.wither.spawn",
+        "shake": { "duration": 15, "radius": 16.0 },
+        "burst": { "radius": 6.0, "color": "auto" },
+        "knockback": 5.0,
+        "invulnerableTicks": 40,
+        "freezeTicks": 40,
+        "summon": { "entity": "minecraft:iron_golem", "count": 2, "radius": 3.0, "tags": ["spellmob_king_guard"] },
+        "bossBarColor": "red",
+        "bossBarName": "%s · 第二阶段",
+        "weather": "thunder",
+        "time": "night",
+        "phaseTicks": 40,
+        "replay": false
+      },
+      "goals": [ { "spell": "irons_spellbooks:chain_lightning", "level": 3, "cooldown": 160 } ]
+    }
+  ]
+}
+```
+
+| 字段 | 默认 | 说明 |
+| --- | --- | --- |
+| `title` / `subtitle` | 无 | 以屏幕中央标题显示给 32 格内的玩家，`%s` 替换成生物名。 |
+| `sound` | 无 | 演出开始时在生物位置播放的音效 id。 |
+| `shake` | 无 | `{ "duration": 15, "radius": 16.0 }`，屏幕震动（借 Iron's Spellbooks 的震动 API，客户端缺失时静默跳过）；`duration` 单位 tick，`radius` 单位格。 |
+| `burst` | 无 | 地面冲击波，`radius` 为最终半径，`color` 写 `auto` 用第一个法术的学派色，或写 `#RRGGBB`。 |
+| `knockback` | `0` | 演出开始 10 tick 后把 5 格内的玩家向外推开多少格（0–16）。 |
+| `invulnerableTicks` | `40` | 无敌时长（0–1200），到时恢复原来的无敌状态。 |
+| `freezeTicks` | 同无敌 | 定身时长，期间清空水平速度。 |
+| `summon` | 无 | `{ "entity": "...", "count": 1, "radius": 2.0, "tags": ["..."] }`，在生物周围环形召唤（`count` 1–16，`radius` 1–16），`tags` 会加到召唤物身上。 |
+| `bossBarColor` | 无 | 演出开始后血条颜色，取值同配置里的颜色名。 |
+| `bossBarName` | 无 | 演出开始后血条名字，`%s` 替换成生物名。 |
+| `weather` | 无 | `clear` / `rain` / `thunder`，需要配置打开 `bosses.allowWeatherChange`。 |
+| `time` | 无 | `day` / `noon` / `night` / `midnight`，同样需要 `bosses.allowWeatherChange`。 |
+| `phaseTicks` | `40` | 演出总时长（10–1200）。 |
+| `replay` | `false` | 为真时每次进入该变体都重播；为假时每只生物只播一次，重载后也不重播。 |
+
+演出期间的时间线：t0 播标题/音效/震屏并开始地面冲击波；t+5 召唤增援；t+10 击退；冲击波在前 10 tick 逐帧扩散；`phaseTicks` 结束时恢复 AI 并重建技能表。演出期间取消在途施法、停止移动、不能被伤害，也不能开始新的施法。
+
+只写 `onPhase`、不写 `goals` 也可以：生物会保留上一套技能，只是换了外观与状态。
 
 ## 掉落
 
@@ -406,6 +483,8 @@ saves/<世界>/datapacks/我的法术/
 > - 规则不再互相覆盖：多条规则同时命中时掉落会叠加。写兜底规则时，把条件都写进 `select`，不要依赖“前面的命中就跳过后面”。
 > - 只写 `dropRules`、不写 `goals` 是合法的：生物不施法，但照常掉东西。
 > - 多个变体共用同一批掉落时，直接写在根节点更省事。
+> - **掉落只在该生物死亡时结算一次**，血量阶段不会提前掉东西；所以变体里的规则不用、也不应该再写 `select`——变体命中就代表该结算，再写一遍只会因为条件对不上而永远不掉。
+> - `select` 里**不要写血量条件**：结算时生物已经死了，血量比例为 0，所以 `healthBelow` 永远成立（等于没写）、`healthAbove` 永远不成立（等于不掉）。加载时会打一条警告；要“按阶段掉落”，把规则写进对应变体的 `dropRules`，死亡时命中哪个变体就用哪一套。
 
 ```json
 "dropRules": [
@@ -426,7 +505,7 @@ saves/<世界>/datapacks/我的法术/
 ]
 ```
 
-写在变体里时，结构与根节点完全相同：
+写在变体里时，结构与根节点相同，但**不需要 `select`**：
 
 ```json
 "variants": [
@@ -434,7 +513,8 @@ saves/<世界>/datapacks/我的法术/
     "select": { "tags": ["spellmob_boss"] },
     "goals": [ ... ],
     "dropRules": [
-      { "select": { "tags": ["spellmob_boss"] }, "chance": 1.0, "drops": [ ... ] }
+      { "chance": 1.0, "drops": [ { "item": "minecraft:gold_block", "min": 3, "max": 6 } ] },
+      { "chance": 0.2, "drops": [ { "lootTable": "minecraft:chests/desert_pyramid" } ] }
     ]
   }
 ]
@@ -453,7 +533,7 @@ saves/<世界>/datapacks/我的法术/
 - 只发给 `bossBarRange` 格以内、非旁观模式的玩家；玩家进出范围会自动增减。
 - 与 `presentation.enabled` 独立：只想关法阵、留血条，就把 `enabled` 设 `false`、`bossBar` 设 `true`。
 - 生物死亡或区块卸载时血条自动收起；改配置项即时生效，不用重启。
-- 数据包可以逐个体覆盖：在 `spell_casters` 文件的根节点或某个变体里写 `"bossBar": true` 或 `"bossBar": false`，优先级高于 `bossBarTags` 与 `presentation.bossBar`；不写就沿用配置。同一物种的两个个体因此可以一个显示、一个不显示（jar 内置的 `zombie.json` 就是这样演示的）。
+- 数据包可以逐个体覆盖：在 `spell_casters` 文件的根节点或某个变体里写 `"bossBar": true` 或 `"bossBar": false`，优先级高于 `bossBarTags` 与 `presentation.bossBar`；不写就沿用配置。同一物种的两个个体因此可以一个显示、一个不显示（给两只同种生物分别写 `true` 与 `false` 就能看到对比）。
 
 ## Boss 重置
 
@@ -483,7 +563,7 @@ saves/<世界>/datapacks/我的法术/
 - 判定：卷轴落地后 2.5 格内最近的合格宠物会开始仪式；黑名单里的法术会画一圈黑法阵并提示，卷轴留在地上不消耗。
 - 冷却与上限：每学完一本进入 `scrollLearning.cooldown`（默认 30 分钟）冷却；一只宠物最多学 `maxSpells` 个（默认 5，0 = 关闭学习）。服务器管理员可以用 `/spellmob resetcooldown <目标>` 立刻清掉学习冷却。
 - 等级：卷轴写的是几级就学几级；再学同名法术时，只有更高等级的卷轴才会覆盖旧等级，此时法阵上会多出一圈螺旋上升的粒子（普通学习没有）。
-- 施法：学会的法术使用宠物专用参数——`pets.castPriority`（默认 4，可用 `pets.castPriorityOverrides` 按生物类型单独覆盖）、`pets.castRange`（默认 16 格），冷却按 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)` 计算（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放。
+- 施法：学会的法术使用宠物专用参数——`pets.castPriority`（默认 4，可用 `pets.castPriorityOverrides` 按生物类型单独覆盖）、`pets.castRange`（默认 16 格），冷却按 `clamp(法术默认冷却 × spellCooldownMultiplier, cooldownMin, cooldownMax)` 计算（默认 2 倍、60–600 tick），并同样受 `balance.cooldownMultiplier` 缩放。`pets.spellSelection` 默认 `smart`：宠物每次起手前按目标距离挑选——贴身时优先唤魔尖牙这类近身法术，超过 4 格优先投射物，目标在空中时跳过地震/岩浆这类地面法术；改成 `priority` 则永远按 `learnedPriority` 顺序取第一个可用的。
 - 法力：`pets.shareOwnerMana` 打开时（默认），宠物施法扣的是主人的法力，实际消耗 = 法术基础消耗 × `pets.manaCostMultiplier` × `pets.manaCostPercent` / 100；主人不在线时不检查法力、也不扣。
 - 其它：宠物坐下时仍能学卷轴，但坐下时不施法；`scrollLearning.enabled` 关掉后所有投掷卷轴都不再触发仪式。
 - 学会的状态存在生物 NBT 里（`adaptive.learned`），还带 `spellmob_caster` 标签，所以即使这个物种没有数据包规则，它也会继续 tick 冷却、继续施法。
@@ -532,6 +612,7 @@ saves/<世界>/datapacks/我的法术/
 | | `manaCostMultiplier` | `1.0` | 宠物法力消耗倍率。 |
 | | `manaCostPercent` | `100` | 宠物法力消耗的百分比（100 = 全额，50 = 半价，0 = 免费），与 `manaCostMultiplier` 相乘。 |
 | | `castPriorityOverrides` | `[]` | 按生物类型单独设置施法优先级，例如 `["minecraft:wolf=2", "minecraft:cat:3"]`；没列出的用 `castPriority`。 |
+| | `spellSelection` | `smart` | 宠物如何挑法术：`smart` 看与目标的距离、目标是否在空中，近身优先爪牙类、远处优先投射物；`priority` 永远按学会顺序取第一个可用的。 |
 | `filters` | `entityBlacklist` | 空 | 永不施法的实体 id。 |
 | | `dimensionBlacklist` | 空 | 禁用施法的维度。 |
 | `protection` | `protectedTags` | 空 | 带这些标签的生物不能被命名牌改名。 |
@@ -553,6 +634,7 @@ saves/<世界>/datapacks/我的法术/
 | `bosses` | `resetOnEscape` | `true` | 带 `presentation.bossTags` 标签的 Boss 在没人交战时是否自动回满血、清掉阶段锁（回到第一阶段）。 |
 | | `escapeRadius` | `32` | 玩家离 Boss 多近才算“还在交战”（8–128 格）。 |
 | | `escapeGrace` | `600` | 连续多少 tick 没有任何玩家在 `escapeRadius` 内就重置（600 = 30 秒）。 |
+| | `allowWeatherChange` | `false` | 是否允许 `onPhase` 演出修改天气与时间。默认关闭，避免数据包打扰别人的建筑与照明。 |
 | `species` | `extraRules` | 空 | 整个物种的规则，一行一个 JSON 对象；schema 与数据包文件相同，但没有 `variants`。 |
 
 同一个实体同时被数据包和 `[species] extraRules` 定义时，**数据包优先**，配置里的那条会被忽略（并打一行日志）。

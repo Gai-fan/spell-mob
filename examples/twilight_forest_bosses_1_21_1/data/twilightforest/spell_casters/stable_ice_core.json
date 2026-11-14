@@ -60,11 +60,10 @@
         "level": 1,
         "cooldown": 180,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
           "positionMode": "RELATIVE",
-          "range": 8.0,
           "relativeOffset": [
             0,
             0,
@@ -77,11 +76,10 @@
         "level": 2,
         "cooldown": 0,
         "priority": 0,
-        "range": 0,
+        "range": 6.0,
         "target": {
           "type": "POSITION",
-          "positionMode": "RANDOM_IN_RANGE",
-          "range": 6.0
+          "positionMode": "RANDOM_IN_RANGE"
         }
       }
     },
@@ -151,11 +149,10 @@
         "level": 1,
         "cooldown": 180,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
           "positionMode": "RELATIVE",
-          "range": 8.0,
           "relativeOffset": [
             0,
             0,
@@ -184,13 +181,13 @@
       "drops": [
         {
           "item": "minecraft:blue_ice",
-          "minCount": 4,
-          "maxCount": 8
+          "min": 4,
+          "max": 8
         },
         {
           "item": "minecraft:packed_ice",
-          "minCount": 8,
-          "maxCount": 16
+          "min": 8,
+          "max": 16
         },
         {
           "item": "minecraft:diamond",

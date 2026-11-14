@@ -143,14 +143,22 @@ public final class SpellMobCommands {
             source.sendSuccess(() -> Component.literal(name + " has no spell_casters data"), false);
             return 1;
         }
-        SpellCasterData data = rules.resolve(mob);
-        source.sendSuccess(() -> Component.literal(name + " -> " + rules.describeMatch(mob)
+        // Sticky phases live on the caster, so read the lock before falling back to the raw match.
+        int index = SpellCasterAttachments.peek(mob) instanceof SpellCaster spellCaster
+                ? spellCaster.effectiveVariantIndex()
+                : rules.effectiveIndex(mob, -1);
+        SpellCasterData data = rules.resolve(index);
+        source.sendSuccess(() -> Component.literal(name + " -> " + rules.describeMatch(index)
                 + " [" + rules.source() + "]"), false);
         source.sendSuccess(() -> Component.literal("  goals=" + data.goals().size()
                 + ", onHurt=" + (data.onHurt() != null)
                 + ", onTarget=" + (data.onTarget() != null)
                 + ", onDeath=" + (data.onDeath() != null)
                 + ", onKill=" + (data.onKill() != null)), false);
+        if (rules.disableAttackGoals(index)) {
+            source.sendSuccess(() -> Component.literal("  vanilla melee/ranged attack goals removed")
+                    .withStyle(ChatFormatting.GRAY), false);
+        }
         if (data.isEmpty()) {
             source.sendSuccess(() -> Component.literal("  this mob casts nothing")
                     .withStyle(ChatFormatting.GRAY), false);

@@ -246,9 +246,9 @@
       "drops": [
         {
           "item": "minecraft:emerald",
-          "minCount": 3,
-          "maxCount": 6,
-          "looting": true
+          "looting": true,
+          "min": 3,
+          "max": 6
         },
         {
           "item": "minecraft:amethyst_shard",

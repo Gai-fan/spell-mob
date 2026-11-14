@@ -38,6 +38,9 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
         tags = List.copyOf(tags);
     }
 
+    /** Matches everything, for rules that live inside a variant and need no selector of their own. */
+    public static final VariantSelector ANY = new VariantSelector(null, null, List.of(), null, null, null);
+
     /**
      * Parses a {@code select} object.
      *
@@ -47,6 +50,8 @@ public record VariantSelector(@Nullable String name, @Nullable Pattern namePatte
      * @throws IllegalArgumentException when no criterion is configured or a value is malformed
      */
     public static VariantSelector parse(JsonObject json, String where) {
+        JsonHelper.warnUnknown(json, where, "name", "nameRegex", "tags", "healthBelow", "healthAbove",
+                "tamed", "sticky", "bossBar", "learner", "adaptive", "disableAttackGoals");
         String name = JsonHelper.optString(json, "name", null);
         String regex = JsonHelper.optString(json, "nameRegex", null);
 

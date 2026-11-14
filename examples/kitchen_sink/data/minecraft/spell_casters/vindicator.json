@@ -5,7 +5,10 @@
       "_comment": "五种 select 条件同时使用：名称、标签、血量上下限。血量在 40% 到 60% 之间才命中，用斩杀组合。",
       "select": {
         "name": "典狱长",
-        "tags": ["spellmob_demo", "warden"],
+        "tags": [
+          "spellmob_demo",
+          "warden"
+        ],
         "healthBelow": 0.6,
         "healthAbove": 0.4
       },
@@ -74,7 +77,9 @@
       "_comment": "名称加标签：十五种目标类型的完整列表，以及 onHurt、onTarget、onDeath、onKill 四种事件触发器。",
       "select": {
         "name": "典狱长",
-        "tags": ["spellmob_demo"]
+        "tags": [
+          "spellmob_demo"
+        ]
       },
       "override": true,
       "goals": [
@@ -261,7 +266,11 @@
           "target": {
             "type": "POSITION",
             "positionMode": "RELATIVE",
-            "relativeOffset": [0, 0, 4]
+            "relativeOffset": [
+              0,
+              0,
+              4
+            ]
           }
         },
         {
@@ -370,9 +379,9 @@
       "drops": [
         {
           "item": "minecraft:emerald",
-          "minCount": 2,
-          "maxCount": 4,
-          "looting": true
+          "looting": true,
+          "min": 2,
+          "max": 4
         },
         {
           "item": "minecraft:enchanted_golden_apple",
@@ -388,7 +397,9 @@
     {
       "_comment": "按标签匹配的第二条规则，规则级概率 50%。",
       "select": {
-        "tags": ["prisoner"]
+        "tags": [
+          "prisoner"
+        ]
       },
       "chance": 0.5,
       "drops": [

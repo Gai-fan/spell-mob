@@ -120,9 +120,6 @@ run/
 # Datagen output
 run-data/
 
-# Local build mirror used when maven.neoforged.net is unreachable (environment specific)
-gradle/mirror.init.gradle
-tools/maven_mirror.py
-
-# Local dev run directories (1.20.1 and 1.21.1)
+# Local dev run directory
 run-1.20.1/
+

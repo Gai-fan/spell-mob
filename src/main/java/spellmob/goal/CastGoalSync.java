@@ -1,16 +1,25 @@
 package spellmob.goal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.goal.RangedAttackGoal;
+import net.minecraft.world.entity.ai.goal.RangedBowAttackGoal;
+import net.minecraft.world.entity.ai.goal.RangedCrossbowAttackGoal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import spellmob.capability.CancelReason;
 import spellmob.capability.SpellCaster;
 import spellmob.capability.SpellCasterAttachments;
+import spellmob.config.SpellMobConfig;
 import spellmob.data.SpellCastDefinition;
 import spellmob.data.SpellCasterData;
 import spellmob.data.SpellCasterRegistry;
@@ -27,6 +36,15 @@ import spellmob.util.Logs;
 public final class CastGoalSync {
 
     private static volatile boolean resyncRequested;
+
+    /**
+     * Mobs whose vanilla attack goals this class removed. The caster owns the actual goal
+     * instances, but a data pack reload can delete the rules before the caster is looked up; the
+     * marker lets {@link #sync(Mob)} reach the restore path instead of returning early. Weak keys
+     * keep unloaded mobs collectable.
+     */
+    private static final Set<Mob> ATTACK_GOALS_REMOVED =
+            Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
     private CastGoalSync() {
     }
@@ -70,19 +88,40 @@ public final class CastGoalSync {
         }
         SpellCasterRules rules = SpellCasterRegistry.get(mob.getType());
         SpellCaster spellCaster = SpellCasterAttachments.peek(mob) instanceof SpellCaster caster ? caster : null;
-        // No rules and no caster means this mob cannot carry any of our goals, so the list copy can
-        // be skipped. A caster is kept: it may still hold goals left behind by a removed rule.
-        if (rules == null && spellCaster == null) {
+        // Pets that learned a scroll have no data pack rules, but their learned goals still have to
+        // be rebuilt, hence the tag check. Mobs without rules and without the tag never own a
+        // caster, so returning early keeps them allocation free -- unless this class already removed
+        // their vanilla attack goals and a reload deleted the rule that asked for it.
+        if (rules == null && !mob.getTags().contains(SpellCaster.CASTER_TAG)
+                && !ATTACK_GOALS_REMOVED.contains(mob)) {
             return;
+        }
+        int index = rules == null
+                ? -1
+                : (spellCaster == null ? rules.variantIndex(mob) : spellCaster.effectiveVariantIndex());
+        // The flag can change with the variant, so every sync either removes the vanilla attack
+        // goals or puts back the ones a previous sync removed. NeoForge attachments are lazy: a
+        // mob whose rules ask for the flag has no caster yet on the first sync, so create it here
+        // before removing anything (the removed goals are stored on that caster).
+        if (rules != null && rules.disableAttackGoals(index)) {
+            if (spellCaster == null) {
+                spellCaster = SpellCasterAttachments.get(mob) instanceof SpellCaster caster ? caster : null;
+            }
+            if (spellCaster != null && removeVanillaAttackGoals(mob, spellCaster)) {
+                ATTACK_GOALS_REMOVED.add(mob);
+            }
+        } else if (spellCaster != null) {
+            ATTACK_GOALS_REMOVED.remove(mob);
+            spellCaster.restoreAttackGoals();
         }
         for (WrappedGoal wrapped : new ArrayList<>(mob.goalSelector.getAvailableGoals())) {
             if (wrapped.getGoal() instanceof CastSpellGoal goal && goal.mob() == mob) {
                 mob.goalSelector.removeGoal(goal);
             }
+            if (wrapped.getGoal() instanceof PetSpellGoal goal && goal.mob() == mob) {
+                mob.goalSelector.removeGoal(goal);
+            }
         }
-        int index = rules == null
-                ? -1
-                : (spellCaster == null ? rules.variantIndex(mob) : spellCaster.effectiveVariantIndex());
         SpellCasterData data = rules == null ? null : rules.resolve(index);
         // Learned spells live outside the data pack: they are rebuilt from the caster state on
         // every sync so a /reload or a variant change never wipes what a boss has learned. They
@@ -92,7 +131,10 @@ public final class CastGoalSync {
         if (data != null) {
             goals.addAll(data.goals());
         }
-        if (spellCaster != null) {
+        // A pet on "smart" spell selection owns a single PetSpellGoal that picks its spell from
+        // the learned list on every activation; one goal per spell would freeze the choice.
+        boolean smartPet = spellCaster != null && spellCaster.usesSmartPetSelection();
+        if (spellCaster != null && !smartPet) {
             goals.addAll(spellCaster.learnedDefinitions());
         }
         // Vanilla runs the first goal whose canUse() returns true in insertion order; priority
@@ -103,6 +145,10 @@ public final class CastGoalSync {
             mob.goalSelector.addGoal(definition.priority(), new CastSpellGoal(mob, definition));
         }
         int added = goals.size();
+        if (smartPet) {
+            mob.goalSelector.addGoal(SpellMobConfig.petCastPriority(mob.getType()), new PetSpellGoal(mob));
+            added++;
+        }
         if (added == 0) {
             // A reload removed the rules, or the resolved variant no longer carries any spell: an
             // event triggered cast would stay frozen forever, because nothing ticks a mob without
@@ -115,6 +161,37 @@ public final class CastGoalSync {
             return;
         }
         Logs.debug("{} now knows {} casting goal(s) [{}]", mob, added,
-                rules == null ? "learned only" : rules.describeMatch(mob));
+                rules == null ? "learned only" : rules.describeMatch(index));
+    }
+
+    /**
+     * Removes the vanilla melee and ranged attack goals of one mob, remembering them for a later
+     * restore. Target goals are deliberately left alone: a boss that cannot damage the player may
+     * still need to notice and chase them for its spells to find a target.
+     *
+     * @param mob    the mob whose goals are trimmed
+     * @param caster the caster that stores the removed goals
+     * @return true when at least one goal was removed by this call
+     */
+    private static boolean removeVanillaAttackGoals(Mob mob, SpellCaster caster) {
+        boolean removed = false;
+        for (WrappedGoal wrapped : new ArrayList<>(mob.goalSelector.getAvailableGoals())) {
+            Goal goal = wrapped.getGoal();
+            if (isVanillaAttackGoal(goal)) {
+                mob.goalSelector.removeGoal(goal);
+                caster.rememberRemovedAttackGoal(wrapped.getPriority(), goal);
+                removed = true;
+            }
+        }
+        return removed;
+    }
+
+    private static boolean isVanillaAttackGoal(Goal goal) {
+        // instanceof also catches the many vanilla subclasses, e.g. ZombieAttackGoal extends
+        // MeleeAttackGoal and Drowned.DrownedAttackGoal extends ZombieAttackGoal.
+        return goal instanceof MeleeAttackGoal
+                || goal instanceof RangedAttackGoal
+                || goal instanceof RangedBowAttackGoal<?>
+                || goal instanceof RangedCrossbowAttackGoal<?>;
     }
 }

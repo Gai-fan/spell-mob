@@ -63,11 +63,10 @@
         "level": 1,
         "cooldown": 200,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
-          "positionMode": "RANDOM_IN_RANGE",
-          "range": 8.0
+          "positionMode": "RANDOM_IN_RANGE"
         }
       },
       "onDeath": {
@@ -75,11 +74,10 @@
         "level": 2,
         "cooldown": 0,
         "priority": 0,
-        "range": 0,
+        "range": 5.0,
         "target": {
           "type": "POSITION",
-          "positionMode": "RANDOM_IN_RANGE",
-          "range": 5.0
+          "positionMode": "RANDOM_IN_RANGE"
         }
       }
     },
@@ -156,11 +154,10 @@
         "level": 1,
         "cooldown": 200,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
-          "positionMode": "RANDOM_IN_RANGE",
-          "range": 8.0
+          "positionMode": "RANDOM_IN_RANGE"
         }
       },
       "onTarget": {
@@ -184,19 +181,19 @@
       "drops": [
         {
           "item": "minecraft:ender_pearl",
-          "minCount": 2,
-          "maxCount": 5
+          "min": 2,
+          "max": 5
         },
         {
           "item": "minecraft:book",
-          "minCount": 3,
-          "maxCount": 6
+          "min": 3,
+          "max": 6
         },
         {
           "item": "minecraft:amethyst_shard",
           "chance": 0.2,
-          "minCount": 2,
-          "maxCount": 4
+          "min": 2,
+          "max": 4
         }
       ]
     }

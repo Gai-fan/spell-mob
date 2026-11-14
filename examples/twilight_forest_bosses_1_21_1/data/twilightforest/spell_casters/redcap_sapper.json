@@ -70,11 +70,10 @@
         "level": 1,
         "cooldown": 240,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
           "positionMode": "RELATIVE",
-          "range": 8.0,
           "relativeOffset": [
             0,
             0,
@@ -87,11 +86,10 @@
         "level": 3,
         "cooldown": 0,
         "priority": 0,
-        "range": 0,
+        "range": 6.0,
         "target": {
           "type": "POSITION",
-          "positionMode": "RANDOM_IN_RANGE",
-          "range": 6.0
+          "positionMode": "RANDOM_IN_RANGE"
         }
       },
       "onKill": {
@@ -169,11 +167,10 @@
         "level": 1,
         "cooldown": 240,
         "priority": 0,
-        "range": 0,
+        "range": 8.0,
         "target": {
           "type": "POSITION",
           "positionMode": "RELATIVE",
-          "range": 8.0,
           "relativeOffset": [
             0,
             0,
@@ -202,14 +199,14 @@
       "drops": [
         {
           "item": "minecraft:emerald",
-          "minCount": 3,
-          "maxCount": 6,
-          "looting": true
+          "looting": true,
+          "min": 3,
+          "max": 6
         },
         {
           "item": "minecraft:blaze_powder",
-          "minCount": 2,
-          "maxCount": 4
+          "min": 2,
+          "max": 4
         },
         {
           "item": "minecraft:enchanted_golden_apple",
